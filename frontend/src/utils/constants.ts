@@ -1,5 +1,5 @@
 // API URL - Cambiar por la URL real del deployment de Apps Script
-export const API_URL = import.meta.env.VITE_API_URL || 'https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec';
+export const API_URL = import.meta.env.VITE_API_URL || 'https://script.google.com/macros/s/AKfycbxpWGNuWzi5b2ejNtZdCNbhZ1ujagSzuFywPGk-6PeGx5nOUBBg2ybbwAMq-xSTrzk/exec';
 
 // Meses del año
 export const MESES = [
