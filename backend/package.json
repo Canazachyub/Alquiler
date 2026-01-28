@@ -1,0 +1,19 @@
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "description": "Backend API REST con Google Apps Script",
+  "scripts": {
+    "build": "tsc",
+    "push": "clasp push",
+    "pull": "clasp pull",
+    "deploy": "npm run build && clasp push && clasp deploy",
+    "open": "clasp open",
+    "logs": "clasp logs",
+    "login": "clasp login"
+  },
+  "devDependencies": {
+    "@google/clasp": "^2.4.2",
+    "@types/google-apps-script": "^1.0.83",
+    "typescript": "^5.3.3"
+  }
+}

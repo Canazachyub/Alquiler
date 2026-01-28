@@ -1,0 +1,50 @@
+name: Deploy Backend
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/deploy-backend.yml'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install clasp globally
+        run: npm install -g @google/clasp
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: backend
+
+      - name: Build TypeScript
+        run: npm run build
+        working-directory: backend
+
+      - name: Setup clasp credentials
+        run: |
+          echo '${{ secrets.CLASP_CREDENTIALS }}' > ~/.clasprc.json
+
+      - name: Create .clasp.json
+        run: |
+          echo '{"scriptId":"${{ secrets.SCRIPT_ID }}","rootDir":"./dist"}' > .clasp.json
+        working-directory: backend
+
+      - name: Push to Apps Script
+        run: clasp push --force
+        working-directory: backend
+
+      - name: Deploy new version
+        run: |
+          clasp deploy --description "Deploy from GitHub Actions - $(date +'%Y-%m-%d %H:%M:%S')"
+        working-directory: backend

@@ -1,0 +1,10 @@
+export { Dashboard } from './Dashboard';
+export { Ciudades } from './Ciudades';
+export { Edificios } from './Edificios';
+export { Pisos } from './Pisos';
+export { Habitaciones } from './Habitaciones';
+export { Inquilinos } from './Inquilinos';
+export { Pagos } from './Pagos';
+export { Gastos } from './Gastos';
+export { Reportes } from './Reportes';
+export { Configuracion } from './Configuracion';

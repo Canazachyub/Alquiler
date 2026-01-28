@@ -1,0 +1,28 @@
+{
+  "name": "alquiler-puno-juli",
+  "version": "2.0.0",
+  "description": "Sistema de Gestión de Alquileres - Puno/Juli",
+  "private": true,
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
+  "scripts": {
+    "dev:frontend": "npm run dev -w frontend",
+    "dev:backend": "npm run dev -w backend",
+    "build:frontend": "npm run build -w frontend",
+    "build:backend": "npm run build -w backend",
+    "build:all": "npm run build:frontend && npm run build:backend",
+    "lint": "npm run lint -w frontend",
+    "test": "npm run test -w frontend"
+  },
+  "keywords": [
+    "alquiler",
+    "gestion",
+    "react",
+    "typescript",
+    "google-apps-script"
+  ],
+  "author": "",
+  "license": "MIT"
+}
