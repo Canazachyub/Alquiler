@@ -155,7 +155,7 @@ export async function generateContratoPDF(data: ContratoData): Promise<void> {
   doc.text('CON DNI', margin, y);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-  doc.text(inquilino.dni || '________', margin + 18, y);
+  doc.text(String(inquilino.dni || '') || '________', margin + 18, y);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(darkGray[0], darkGray[1], darkGray[2]);
   doc.line(margin + 18, y + 1, margin + 40, y + 1);
