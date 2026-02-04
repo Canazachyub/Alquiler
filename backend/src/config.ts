@@ -28,7 +28,7 @@ const CONFIG = {
     INQUILINOS: [
       'ID', 'HabitacionId', 'Nombre', 'Apellido', 'DNI', 'Telefono', 'Email',
       'FechaIngreso', 'FechaSalida', 'Estado', 'ContactoEmergencia',
-      'TelefonoEmergencia', 'Observaciones'
+      'TelefonoEmergencia', 'Observaciones', 'Garantia', 'LlaveHabitacion', 'LlavePuertaCalle'
     ],
     PAGOS: [
       'ID', 'InquilinoId', 'HabitacionId', 'Fecha', 'Mes', 'Anio', 'Concepto',

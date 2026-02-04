@@ -2,6 +2,10 @@
 
 Sistema web completo para administrar propiedades de alquiler en multiples ciudades (Puno y Juli), con gestion de edificios, habitaciones, inquilinos, pagos y gastos.
 
+## Demo en Vivo
+
+**[https://canazachyub.github.io/Alquiler/](https://canazachyub.github.io/Alquiler/)**
+
 ## Stack Tecnologico
 
 | Componente | Tecnologia |
@@ -12,6 +16,7 @@ Sistema web completo para administrar propiedades de alquiler en multiples ciuda
 | **Graficos** | Recharts |
 | **Backend** | Google Apps Script (REST API) |
 | **Base de Datos** | Google Sheets |
+| **Deploy** | GitHub Pages + GitHub Actions (CI/CD) |
 
 ---
 
@@ -20,10 +25,11 @@ Sistema web completo para administrar propiedades de alquiler en multiples ciuda
 - **Multi-ciudad**: Gestiona propiedades en Puno y Juli
 - **Multi-edificio**: Multiples edificios por ciudad
 - **Dashboard interactivo**: Estadisticas en tiempo real con graficos
-- **Calendario de pagos**: Visualizacion de pagos por dia de ingreso del inquilino
+- **Calendario de pagos**: Visualizacion con colores (verde/rosa/ambar) por dia de ingreso del inquilino
 - **Gestion de gastos fijos**: Control de servicios recurrentes por edificio
 - **Vouchers PDF**: Generacion de comprobantes de pago
 - **Wizard de edificios**: Creacion rapida de edificio con pisos y habitaciones
+- **Deploy automatico**: CI/CD con GitHub Actions hacia GitHub Pages
 
 ---
 
@@ -31,37 +37,47 @@ Sistema web completo para administrar propiedades de alquiler en multiples ciuda
 
 ```
 ALQUILER PUNO JULI/
+├── .github/
+│   └── workflows/
+│       └── deploy.yml                # CI/CD - Deploy automatico a GitHub Pages
+│
 ├── backend/
-│   └── Code.gs                    # API REST completa (Google Apps Script)
+│   └── Code.gs                       # API REST completa (Google Apps Script)
 │
 ├── frontend/
 │   ├── src/
+│   │   ├── api/                      # Clientes API (ciudades, edificios, pagos, etc.)
 │   │   ├── components/
-│   │   │   ├── ui/                # Modal, Button, LoadingPage, EmptyState
-│   │   │   ├── cards/             # RoomCard, StatCard
-│   │   │   ├── forms/             # HabitacionForm, InquilinoForm, PagoForm, GastoForm
-│   │   │   ├── calendar/          # PaymentCalendar (calendario de pagos)
-│   │   │   ├── layout/            # Sidebar, Header, Layout
-│   │   │   └── voucher/           # VoucherPago (PDF)
+│   │   │   ├── ui/                   # Modal, ConfirmDialog, Loading, EmptyState, Notifications
+│   │   │   ├── cards/                # RoomCard, StatCard
+│   │   │   ├── forms/                # HabitacionForm, InquilinoForm, PagoForm, GastoForm, EdificioWizard
+│   │   │   ├── calendar/             # PaymentCalendar (calendario de pagos con colores)
+│   │   │   ├── layout/               # Sidebar, Header, Layout
+│   │   │   └── voucher/              # VoucherPago (PDF)
 │   │   │
 │   │   ├── pages/
-│   │   │   ├── Dashboard.tsx      # Estadisticas y graficos
-│   │   │   ├── Edificios.tsx      # Gestion de edificios + Wizard
-│   │   │   ├── Habitaciones.tsx   # Grid de habitaciones por piso
-│   │   │   ├── Pagos.tsx          # Registro y listado de pagos
-│   │   │   ├── Gastos.tsx         # Control de gastos
-│   │   │   └── GastosFijos.tsx    # Gastos recurrentes por edificio
+│   │   │   ├── Dashboard.tsx         # Estadisticas y graficos
+│   │   │   ├── Ciudades.tsx          # Gestion de ciudades
+│   │   │   ├── Edificios.tsx         # Gestion de edificios + Wizard
+│   │   │   ├── Pisos.tsx             # Gestion de pisos
+│   │   │   ├── Habitaciones.tsx      # Grid de habitaciones con estado de pago
+│   │   │   ├── Inquilinos.tsx        # Gestion de inquilinos
+│   │   │   ├── Pagos.tsx             # Registro y listado de pagos
+│   │   │   ├── Gastos.tsx            # Control de gastos
+│   │   │   ├── Reportes.tsx          # Reportes y estadisticas
+│   │   │   └── Configuracion.tsx     # Configuracion del sistema
 │   │   │
-│   │   ├── hooks/                 # Custom hooks (React Query)
-│   │   ├── services/              # api.ts (conexion con backend)
-│   │   ├── store/                 # Zustand stores
-│   │   ├── types/                 # TypeScript interfaces
-│   │   └── utils/                 # Formatters, constants
+│   │   ├── hooks/                    # Custom hooks (React Query)
+│   │   ├── store/                    # Zustand stores (config, ui)
+│   │   ├── types/                    # TypeScript interfaces
+│   │   └── utils/                    # Formatters, constants
 │   │
 │   ├── package.json
 │   ├── vite.config.ts
-│   └── tailwind.config.js
+│   ├── tailwind.config.js
+│   └── tsconfig.json
 │
+├── package.json                      # Monorepo (npm workspaces)
 └── README.md
 ```
 
@@ -106,7 +122,7 @@ GASTOS FIJOS (agua, luz, internet por edificio)
 
 ### Base URL
 ```
-https://script.google.com/macros/s/{DEPLOYMENT_ID}/exec
+https://script.google.com/macros/s/AKfycbxpWGNuWzi5b2ejNtZdCNbhZ1ujagSzuFywPGk-6PeGx5nOUBBg2ybbwAMq-xSTrzk/exec
 ```
 
 ### Ciudades
@@ -152,6 +168,7 @@ https://script.google.com/macros/s/{DEPLOYMENT_ID}/exec
 |--------|----------|-------------|
 | GET | `/gastos?mes=X&anio=Y` | Gastos del mes |
 | POST | `/gastos` | Registrar gasto |
+| DELETE | `/gastos/{id}` | Eliminar gasto |
 
 ### Gastos Fijos
 | Metodo | Endpoint | Descripcion |
@@ -163,6 +180,7 @@ https://script.google.com/macros/s/{DEPLOYMENT_ID}/exec
 | Metodo | Endpoint | Descripcion |
 |--------|----------|-------------|
 | GET | `/reportes/dashboard?mes=X&anio=Y` | Estadisticas del dashboard |
+| GET | `/reportes/mensual?mes=X&anio=Y` | Reporte mensual detallado |
 | GET | `/reportes/historico?meses=6` | Historico de ingresos/gastos |
 
 ---
@@ -171,8 +189,8 @@ https://script.google.com/macros/s/{DEPLOYMENT_ID}/exec
 
 ### 1. Clonar el proyecto
 ```bash
-git clone <repo-url>
-cd "ALQUILER PUNO JULI"
+git clone https://github.com/Canazachyub/Alquiler.git
+cd Alquiler
 ```
 
 ### 2. Configurar el Backend
@@ -192,22 +210,35 @@ cd "ALQUILER PUNO JULI"
 ### 3. Configurar el Frontend
 
 ```bash
-cd frontend
-
-# Instalar dependencias
+# Instalar dependencias (desde la raiz del monorepo)
 npm install
 
-# Crear archivo de configuracion
-# Editar src/services/api.ts y actualizar API_URL con tu URL de Apps Script
+# Actualizar la URL del API en frontend/src/utils/constants.ts
+# API_URL = 'https://script.google.com/macros/s/TU_DEPLOYMENT_ID/exec'
 
 # Iniciar servidor de desarrollo
-npm run dev
+npm run dev:frontend
 ```
 
 ### 4. Build para Produccion
 ```bash
-npm run build
+npm run build:frontend
 ```
+
+---
+
+## Deploy
+
+El proyecto utiliza **GitHub Actions** para deploy automatico a **GitHub Pages**.
+
+### CI/CD Pipeline
+- Cada push a `main` ejecuta el workflow `.github/workflows/deploy.yml`
+- Instala dependencias, compila el frontend y despliega a GitHub Pages
+- URL de produccion: **https://canazachyub.github.io/Alquiler/**
+
+### Configuracion de GitHub Pages
+1. Ir a **Settings > Pages** en el repositorio
+2. En **Source**, seleccionar **GitHub Actions**
 
 ---
 
@@ -227,6 +258,7 @@ npm run build
 ### Habitaciones
 - Grid visual por piso
 - Colores segun estado: Verde (al dia), Rojo (con deuda), Gris (vacante), Amarillo (mantenimiento)
+- Muestra dia de pago del inquilino (basado en fecha de ingreso)
 - Click para ver detalle y registrar inquilino/pago
 
 ### Pagos
@@ -236,8 +268,10 @@ npm run build
 - Fecha de pago editable
 
 ### Calendario de Pagos
-- Muestra cada inquilino en su dia de pago (basado en fecha de ingreso)
-- Verde = pagado, Rosa = pendiente, Ambar = mixto
+- Fondo verde = todos pagados
+- Fondo rosa = pagos pendientes
+- Fondo ambar = mixto (algunos pagados, otros pendientes)
+- Contadores numericos por dia
 - Click en el dia para ver detalle
 
 ---
@@ -262,33 +296,12 @@ npm run build
 
 ---
 
-## Tipos de Datos (TypeScript)
-
-```typescript
-// Estados de habitacion
-type EstadoHabitacion = 'vacant' | 'occupied' | 'maintenance';
-
-// Conceptos de pago
-type ConceptoPago = 'alquiler' | 'internet' | 'servicios' | 'otro';
-
-// Metodos de pago
-type MetodoPago = 'efectivo' | 'yape' | 'plin' | 'transferencia';
-
-// Categorias de gasto
-type CategoriaGasto = 'mantenimiento' | 'servicios' | 'limpieza' | 'reparacion' | 'otros';
-
-// Tipos de gasto fijo
-type TipoGastoFijo = 'agua' | 'luz' | 'internet' | 'gas' | 'limpieza' | 'vigilancia' | 'otro';
-```
-
----
-
 ## Tecnologias Utilizadas
 
 ### Frontend
 - **React 18** - Biblioteca UI
 - **TypeScript** - Tipado estatico
-- **Vite** - Build tool rapido
+- **Vite** - Build tool
 - **TailwindCSS** - Estilos utilitarios
 - **TanStack Query** - Cache y estado del servidor
 - **Zustand** - Estado global
@@ -302,32 +315,16 @@ type TipoGastoFijo = 'agua' | 'luz' | 'internet' | 'gas' | 'limpieza' | 'vigilan
 - **Google Apps Script** - Runtime JavaScript
 - **Google Sheets** - Base de datos
 
----
-
-## Proximas Mejoras
-
-- [ ] Autenticacion de usuarios
-- [ ] Notificaciones push de pagos vencidos
-- [ ] Exportacion a Excel
-- [ ] App movil (React Native)
-- [ ] Backup automatico de datos
-- [ ] Multi-moneda
+### DevOps
+- **GitHub Actions** - CI/CD automatizado
+- **GitHub Pages** - Hosting del frontend
 
 ---
 
-## Contribuir
+## Repositorio
 
-1. Fork del repositorio
-2. Crear rama feature (`git checkout -b feature/nueva-funcionalidad`)
-3. Commit de cambios (`git commit -m 'Agregar nueva funcionalidad'`)
-4. Push a la rama (`git push origin feature/nueva-funcionalidad`)
-5. Crear Pull Request
-
----
-
-## Licencia
-
-Este proyecto es de uso privado.
+- **Codigo**: [https://github.com/Canazachyub/Alquiler](https://github.com/Canazachyub/Alquiler)
+- **Demo**: [https://canazachyub.github.io/Alquiler/](https://canazachyub.github.io/Alquiler/)
 
 ---
 

@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Plus, Search, Edit, Trash2, User, Phone, Mail, Home } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, User, Phone, Mail, Home, FileText } from 'lucide-react';
 import { InquilinoForm } from '@/components/forms';
 import { Modal, ConfirmDialog, LoadingPage, EmptyState } from '@/components/ui';
+import { generateContratoPDF } from '@/components/voucher';
 import {
   useInquilinos,
   useCreateInquilino,
@@ -11,7 +12,7 @@ import {
 } from '@/hooks';
 import { useNotifications } from '@/store';
 import { formatDate, formatPhone } from '@/utils/formatters';
-import type { Inquilino, InquilinoInput } from '@/types';
+import type { Inquilino, InquilinoInput, Habitacion } from '@/types';
 
 export function Inquilinos() {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -19,6 +20,8 @@ export function Inquilinos() {
   const [deletingInquilino, setDeletingInquilino] = useState<Inquilino | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [showInactivos, setShowInactivos] = useState(false);
+  const [showContractDialog, setShowContractDialog] = useState(false);
+  const [newInquilinoData, setNewInquilinoData] = useState<{ inquilino: Inquilino; habitacion: Habitacion } | null>(null);
 
   const { data: inquilinos, isLoading } = useInquilinos();
   const { data: habitaciones } = useHabitaciones();
@@ -61,14 +64,56 @@ export function Inquilinos() {
       if (selectedInquilino) {
         await updateMutation.mutateAsync({ id: selectedInquilino.id, data });
         notify.success('Inquilino actualizado');
+        setIsModalOpen(false);
       } else {
-        await createMutation.mutateAsync(data);
+        const result = await createMutation.mutateAsync(data);
         notify.success('Inquilino registrado');
+        setIsModalOpen(false);
+
+        // Mostrar dialogo para descargar contrato
+        const habitacion = habitaciones?.find(h => h.id === data.habitacionId);
+        if (habitacion && result) {
+          const nuevoInquilino: Inquilino = {
+            id: result.id || '',
+            habitacionId: data.habitacionId,
+            nombre: data.nombre,
+            apellido: data.apellido,
+            dni: data.dni,
+            telefono: data.telefono,
+            email: data.email,
+            fechaIngreso: data.fechaIngreso,
+            estado: 'activo',
+            contactoEmergencia: data.contactoEmergencia,
+            telefonoEmergencia: data.telefonoEmergencia,
+            observaciones: data.observaciones,
+            garantia: data.garantia,
+            llaveHabitacion: data.llaveHabitacion,
+            llavePuertaCalle: data.llavePuertaCalle,
+          };
+          setNewInquilinoData({ inquilino: nuevoInquilino, habitacion });
+          setShowContractDialog(true);
+        }
       }
-      setIsModalOpen(false);
     } catch (error) {
       notify.error('Error al guardar');
     }
+  };
+
+  const handleDownloadContract = async () => {
+    if (newInquilinoData) {
+      await generateContratoPDF({
+        inquilino: newInquilinoData.inquilino,
+        habitacion: newInquilinoData.habitacion,
+      });
+      notify.success('Contrato descargado');
+    }
+    setShowContractDialog(false);
+    setNewInquilinoData(null);
+  };
+
+  const handleSkipContract = () => {
+    setShowContractDialog(false);
+    setNewInquilinoData(null);
   };
 
   const confirmDelete = async () => {
@@ -205,14 +250,29 @@ export function Inquilinos() {
                   <td>
                     <div className="flex gap-1">
                       <button
+                        onClick={async () => {
+                          const hab = habitaciones?.find(h => h.id === inq.habitacionId);
+                          if (hab) {
+                            await generateContratoPDF({ inquilino: inq, habitacion: hab });
+                            notify.success('Contrato descargado');
+                          }
+                        }}
+                        className="p-2 hover:bg-blue-50 rounded-lg"
+                        title="Descargar contrato"
+                      >
+                        <FileText className="w-4 h-4 text-blue-500" />
+                      </button>
+                      <button
                         onClick={() => handleEdit(inq)}
                         className="p-2 hover:bg-gray-100 rounded-lg"
+                        title="Editar"
                       >
                         <Edit className="w-4 h-4 text-gray-500" />
                       </button>
                       <button
                         onClick={() => handleDelete(inq)}
                         className="p-2 hover:bg-red-50 rounded-lg"
+                        title="Eliminar"
                       >
                         <Trash2 className="w-4 h-4 text-red-500" />
                       </button>
@@ -251,6 +311,45 @@ export function Inquilinos() {
         confirmText="Eliminar"
         isLoading={deleteMutation.isPending}
       />
+
+      {/* Dialogo para descargar contrato */}
+      <Modal
+        isOpen={showContractDialog}
+        onClose={handleSkipContract}
+        title="Inquilino Registrado"
+        size="md"
+      >
+        <div className="text-center py-4">
+          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-green-100 flex items-center justify-center">
+            <FileText className="w-8 h-8 text-green-600" />
+          </div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">
+            {newInquilinoData?.inquilino.nombre} {newInquilinoData?.inquilino.apellido}
+          </h3>
+          <p className="text-gray-500 mb-6">
+            El inquilino ha sido registrado exitosamente en la habitacion{' '}
+            <span className="font-medium">{newInquilinoData?.habitacion.codigo}</span>.
+          </p>
+          <p className="text-sm text-gray-600 mb-6">
+            Desea descargar el contrato de alquiler para imprimir?
+          </p>
+          <div className="flex justify-center gap-3">
+            <button
+              onClick={handleSkipContract}
+              className="btn btn-outline"
+            >
+              Omitir
+            </button>
+            <button
+              onClick={handleDownloadContract}
+              className="btn btn-primary"
+            >
+              <FileText className="w-4 h-4 mr-2" />
+              Descargar Contrato
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

@@ -1,5 +1,5 @@
 // API URL - Cambiar por la URL real del deployment de Apps Script
-export const API_URL = import.meta.env.VITE_API_URL || 'https://script.google.com/macros/s/AKfycbxpWGNuWzi5b2ejNtZdCNbhZ1ujagSzuFywPGk-6PeGx5nOUBBg2ybbwAMq-xSTrzk/exec';
+export const API_URL = import.meta.env.VITE_API_URL || 'https://script.google.com/macros/s/AKfycbxqPLVn1cBa0E-x-Ywoo2qdB583G1yVJGet5h0rzcBpVr4P9lE9SW1JzGKB5BPvJTYT/exec';
 
 // Meses del año
 export const MESES = [

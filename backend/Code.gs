@@ -27,7 +27,7 @@ const CONFIG = {
     EDIFICIOS: ['ID', 'CiudadId', 'Nombre', 'Descripcion', 'Direccion', 'TotalPisos', 'Activo'],
     PISOS: ['ID', 'EdificioId', 'Numero', 'Descripcion'],
     HABITACIONES: ['ID', 'PisoId', 'Codigo', 'Ubicacion', 'MontoAlquiler', 'MontoInternet', 'MontoServicios', 'Estado', 'Activo', 'Observaciones'],
-    INQUILINOS: ['ID', 'HabitacionId', 'Nombre', 'Apellido', 'DNI', 'Telefono', 'Email', 'FechaIngreso', 'FechaSalida', 'Estado', 'ContactoEmergencia', 'TelefonoEmergencia', 'Observaciones'],
+    INQUILINOS: ['ID', 'HabitacionId', 'Nombre', 'Apellido', 'DNI', 'Telefono', 'Email', 'FechaIngreso', 'FechaSalida', 'Estado', 'ContactoEmergencia', 'TelefonoEmergencia', 'Observaciones', 'Garantia', 'LlaveHabitacion', 'LlavePuertaCalle'],
     PAGOS: ['ID', 'InquilinoId', 'HabitacionId', 'Fecha', 'Mes', 'Anio', 'Concepto', 'Monto', 'MetodoPago', 'Referencia', 'Estado', 'Observaciones'],
     GASTOS: ['ID', 'EdificioId', 'HabitacionId', 'Fecha', 'Concepto', 'Categoria', 'Monto', 'ComprobanteUrl', 'Observaciones'],
     GASTOS_FIJOS: ['ID', 'EdificioId', 'Tipo', 'Descripcion', 'Monto', 'DiaVencimiento', 'Activo']
@@ -124,11 +124,20 @@ class BaseRepository {
     return sheet.getRange(2, 1, lastRow - 1, this.headers.length).getValues();
   }
 
+  // Convierte header a camelCase, manejando acrónimos como DNI, ID
+  headerToKey(header) {
+    // Si es todo mayúsculas (acrónimo como ID, DNI), convertir todo a minúsculas
+    if (header === header.toUpperCase()) {
+      return header.toLowerCase();
+    }
+    // PascalCase a camelCase estándar: "CiudadId" -> "ciudadId"
+    return header.charAt(0).toLowerCase() + header.slice(1);
+  }
+
   rowToObject(row) {
     const obj = {};
     this.headers.forEach((header, index) => {
-      // Convertir header a camelCase: "ID" -> "id", "CiudadId" -> "ciudadId"
-      const key = header === 'ID' ? 'id' : header.charAt(0).toLowerCase() + header.slice(1);
+      const key = this.headerToKey(header);
       let value = row[index];
       if (value instanceof Date) {
         value = value.toISOString();
@@ -140,8 +149,7 @@ class BaseRepository {
 
   objectToRow(obj) {
     return this.headers.map(header => {
-      // Convertir header a camelCase: "ID" -> "id", "CiudadId" -> "ciudadId"
-      const key = header === 'ID' ? 'id' : header.charAt(0).toLowerCase() + header.slice(1);
+      const key = this.headerToKey(header);
       const value = obj[key];
       if (typeof value === 'string' && header.toLowerCase().includes('fecha')) {
         return new Date(value);

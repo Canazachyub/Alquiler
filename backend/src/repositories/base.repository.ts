@@ -28,10 +28,20 @@ class BaseRepository {
     return sheet.getRange(2, 1, lastRow - 1, this.headers.length).getValues();
   }
 
+  // Convierte header a camelCase, manejando acrónimos como DNI, ID
+  private headerToKey(header: string): string {
+    // Si es todo mayúsculas (acrónimo), convertir a minúsculas
+    if (header === header.toUpperCase()) {
+      return header.toLowerCase();
+    }
+    // PascalCase a camelCase estándar
+    return header.charAt(0).toLowerCase() + header.slice(1);
+  }
+
   protected rowToObject<T>(row: unknown[]): T {
     const obj: Record<string, unknown> = {};
     this.headers.forEach((header, index) => {
-      const key = header.charAt(0).toLowerCase() + header.slice(1);
+      const key = this.headerToKey(header);
       let value = row[index];
 
       // Convertir fechas a ISO string
@@ -45,9 +55,14 @@ class BaseRepository {
   }
 
   protected objectToRow(obj: Record<string, unknown>): unknown[] {
+    // Crear mapa de claves en minúsculas para búsqueda case-insensitive
+    const objLowerKeys = new Map<string, string>();
+    Object.keys(obj).forEach(k => objLowerKeys.set(k.toLowerCase(), k));
+
     return this.headers.map((header) => {
-      const key = header.charAt(0).toLowerCase() + header.slice(1);
-      const value = obj[key];
+      const headerLower = header.toLowerCase();
+      const actualKey = objLowerKeys.get(headerLower);
+      const value = actualKey ? obj[actualKey] : undefined;
 
       // Convertir strings de fecha a Date
       if (typeof value === 'string' && header.toLowerCase().includes('fecha')) {

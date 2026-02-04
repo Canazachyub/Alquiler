@@ -52,6 +52,10 @@ interface Inquilino {
   contactoEmergencia: string;
   telefonoEmergencia: string;
   observaciones: string;
+  // Campos del contrato
+  garantia: boolean;
+  llaveHabitacion: boolean;
+  llavePuertaCalle: boolean;
 }
 
 interface Pago {

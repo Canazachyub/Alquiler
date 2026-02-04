@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import type { PagoInput, HabitacionConDetalles } from '@/types';
 import { METODOS_PAGO, CONCEPTOS_PAGO, MESES } from '@/utils/constants';
@@ -50,6 +51,18 @@ export function PagoForm({
 
   // Obtener la habitación seleccionada
   const habitacionSeleccionada = habitaciones.find((h) => h.id === selectedHabitacionId);
+
+  // Auto-completar monto al montar con habitación preseleccionada
+  useEffect(() => {
+    if (initialData?.habitacionId && habitacionSeleccionada && !initialData?.monto) {
+      const concepto = initialData?.concepto || 'alquiler';
+      if (concepto === 'alquiler') {
+        setValue('monto', habitacionSeleccionada.montoAlquiler);
+      } else if (concepto === 'internet') {
+        setValue('monto', habitacionSeleccionada.montoInternet);
+      }
+    }
+  }, [initialData, habitacionSeleccionada, setValue]);
 
   // Auto-completar monto según concepto
   const handleHabitacionChange = (habitacionId: string) => {

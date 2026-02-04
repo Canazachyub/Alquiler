@@ -1,8 +1,8 @@
 import { useForm } from 'react-hook-form';
-import type { InquilinoInput, Habitacion } from '@/types';
+import type { InquilinoInput, Habitacion, HabitacionConDetalles } from '@/types';
 
 interface InquilinoFormProps {
-  habitaciones: Habitacion[];
+  habitaciones: (Habitacion | HabitacionConDetalles)[];
   initialData?: Partial<InquilinoInput>;
   onSubmit: (data: InquilinoInput) => void;
   onCancel: () => void;
@@ -32,6 +32,9 @@ export function InquilinoForm({
       contactoEmergencia: initialData?.contactoEmergencia || '',
       telefonoEmergencia: initialData?.telefonoEmergencia || '',
       observaciones: initialData?.observaciones || '',
+      garantia: initialData?.garantia || false,
+      llaveHabitacion: initialData?.llaveHabitacion || false,
+      llavePuertaCalle: initialData?.llavePuertaCalle || false,
     },
   });
 
@@ -149,11 +152,14 @@ export function InquilinoForm({
             className="select"
           >
             <option value="">Seleccionar habitación</option>
-            {habitacionesDisponibles.map((hab) => (
-              <option key={hab.id} value={hab.id}>
-                {hab.codigo} - Piso {hab.piso?.numero}
-              </option>
-            ))}
+            {habitacionesDisponibles.map((hab) => {
+              const pisoNum = hab.piso?.numero || (hab as HabitacionConDetalles).pisoNumero;
+              return (
+                <option key={hab.id} value={hab.id}>
+                  {hab.codigo}{pisoNum ? ` - Piso ${pisoNum}` : ''}
+                </option>
+              );
+            })}
           </select>
           {errors.habitacionId && (
             <p className="text-sm text-red-500 mt-1">{errors.habitacionId.message}</p>
@@ -193,6 +199,51 @@ export function InquilinoForm({
           rows={3}
           placeholder="Notas adicionales..."
         />
+      </div>
+
+      {/* Contrato - Garantia y Llaves */}
+      <div className="border-t pt-4 mt-4">
+        <h4 className="font-medium text-gray-700 mb-3">Datos del Contrato</h4>
+        <div className="grid grid-cols-3 gap-4">
+          {/* Garantia */}
+          <label className="flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
+            <input
+              type="checkbox"
+              {...register('garantia')}
+              className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            />
+            <div>
+              <span className="font-medium text-gray-700">Garantia</span>
+              <p className="text-xs text-gray-500">Se entrego garantia</p>
+            </div>
+          </label>
+
+          {/* Llave Habitacion */}
+          <label className="flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
+            <input
+              type="checkbox"
+              {...register('llaveHabitacion')}
+              className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            />
+            <div>
+              <span className="font-medium text-gray-700">Llave Habitacion</span>
+              <p className="text-xs text-gray-500">Se entrego llave</p>
+            </div>
+          </label>
+
+          {/* Llave Puerta Calle */}
+          <label className="flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
+            <input
+              type="checkbox"
+              {...register('llavePuertaCalle')}
+              className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            />
+            <div>
+              <span className="font-medium text-gray-700">Llave Puerta</span>
+              <p className="text-xs text-gray-500">Llave de calle</p>
+            </div>
+          </label>
+        </div>
       </div>
 
       {/* Botones */}

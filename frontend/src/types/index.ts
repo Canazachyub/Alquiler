@@ -133,6 +133,10 @@ export interface Inquilino extends BaseEntity {
   contactoEmergencia?: string;
   telefonoEmergencia?: string;
   observaciones?: string;
+  // Campos del contrato
+  garantia?: boolean;
+  llaveHabitacion?: boolean;
+  llavePuertaCalle?: boolean;
   // Relaciones
   habitacion?: Habitacion;
 }
@@ -148,6 +152,10 @@ export interface InquilinoInput {
   contactoEmergencia?: string;
   telefonoEmergencia?: string;
   observaciones?: string;
+  // Campos del contrato
+  garantia?: boolean;
+  llaveHabitacion?: boolean;
+  llavePuertaCalle?: boolean;
 }
 
 // ============================================

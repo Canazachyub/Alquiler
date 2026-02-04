@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Plus, Search, ChevronLeft, ChevronRight, Calendar, CreditCard, Printer, FileDown } from 'lucide-react';
 import { PagoForm } from '@/components/forms';
 import { Modal, LoadingPage, EmptyState } from '@/components/ui';
@@ -16,11 +17,15 @@ import { MESES } from '@/utils/constants';
 import type { Pago, PagoInput } from '@/types';
 
 export function Pagos() {
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [conceptoFilter, setConceptoFilter] = useState<string>('');
   const [voucherPago, setVoucherPago] = useState<Pago | null>(null);
   const [isVoucherModalOpen, setIsVoucherModalOpen] = useState(false);
+  const [preselectedHabitacionId, setPreselectedHabitacionId] = useState<string | null>(null);
 
   const { mesActual, anioActual, edificioSeleccionado, setMesAnio } = useConfigStore();
   const { notify } = useNotifications();
@@ -30,6 +35,17 @@ export function Pagos() {
   const { data: habitaciones } = useHabitacionesConEstadoPago(mesActual, anioActual, edificioSeleccionado || undefined);
   const { data: inquilinos } = useInquilinos();
   const createMutation = useCreatePago();
+
+  // Auto-abrir modal si viene con parámetro hab en URL
+  useEffect(() => {
+    const habParam = searchParams.get('hab');
+    if (habParam && habitaciones && habitaciones.length > 0) {
+      setPreselectedHabitacionId(habParam);
+      setIsModalOpen(true);
+      // Limpiar el parámetro de la URL
+      navigate('/pagos', { replace: true });
+    }
+  }, [searchParams, habitaciones, navigate]);
 
   // Navegar meses
   const navigateMonth = (delta: number) => {
@@ -66,7 +82,13 @@ export function Pagos() {
   });
 
   const handleCreate = () => {
+    setPreselectedHabitacionId(null);
     setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setPreselectedHabitacionId(null);
   };
 
   const handleSubmit = async (data: PagoInput) => {
@@ -315,7 +337,7 @@ export function Pagos() {
       {/* Modal de registro de pago */}
       <Modal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={handleCloseModal}
         title="Registrar Pago"
         size="lg"
       >
@@ -323,8 +345,9 @@ export function Pagos() {
           habitaciones={habitaciones || []}
           mesActual={mesActual}
           anioActual={anioActual}
+          initialData={preselectedHabitacionId ? { habitacionId: preselectedHabitacionId } : undefined}
           onSubmit={handleSubmit}
-          onCancel={() => setIsModalOpen(false)}
+          onCancel={handleCloseModal}
           isLoading={createMutation.isPending}
         />
       </Modal>

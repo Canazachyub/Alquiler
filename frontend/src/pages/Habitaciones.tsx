@@ -7,6 +7,7 @@ import {
   useHabitacionesConEstadoPago,
   useCreateHabitacion,
   useUpdateHabitacion,
+  usePisos,
 } from '@/hooks';
 import { useConfigStore, useNotifications } from '@/store';
 import { formatCurrency } from '@/utils/formatters';
@@ -28,6 +29,8 @@ export function Habitaciones() {
     anioActual,
     edificioSeleccionado || undefined
   );
+
+  const { data: pisos } = usePisos(edificioSeleccionado || undefined);
 
   const createMutation = useCreateHabitacion();
   const updateMutation = useUpdateHabitacion();
@@ -224,7 +227,7 @@ export function Habitaciones() {
         size="lg"
       >
         <HabitacionForm
-          pisos={[]} // TODO: cargar pisos
+          pisos={pisos || []}
           initialData={selectedHabitacion || undefined}
           onSubmit={handleSubmit}
           onCancel={() => setIsModalOpen(false)}
