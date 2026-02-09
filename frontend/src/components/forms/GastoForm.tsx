@@ -62,7 +62,7 @@ export function GastoForm({
             ))}
           </select>
           {errors.edificioId && (
-            <p className="text-sm text-red-500 mt-1">{errors.edificioId.message}</p>
+            <p className="text-xs text-danger-600 mt-1 font-medium">{errors.edificioId.message}</p>
           )}
         </div>
 
@@ -88,7 +88,7 @@ export function GastoForm({
             className="input"
           />
           {errors.fecha && (
-            <p className="text-sm text-red-500 mt-1">{errors.fecha.message}</p>
+            <p className="text-xs text-danger-600 mt-1 font-medium">{errors.fecha.message}</p>
           )}
         </div>
 
@@ -113,7 +113,7 @@ export function GastoForm({
             placeholder="Descripción del gasto"
           />
           {errors.concepto && (
-            <p className="text-sm text-red-500 mt-1">{errors.concepto.message}</p>
+            <p className="text-xs text-danger-600 mt-1 font-medium">{errors.concepto.message}</p>
           )}
         </div>
 
@@ -131,7 +131,7 @@ export function GastoForm({
             className="input"
           />
           {errors.monto && (
-            <p className="text-sm text-red-500 mt-1">{errors.monto.message}</p>
+            <p className="text-xs text-danger-600 mt-1 font-medium">{errors.monto.message}</p>
           )}
         </div>
 
@@ -158,7 +158,7 @@ export function GastoForm({
       </div>
 
       {/* Botones */}
-      <div className="flex justify-end gap-2 pt-4 border-t">
+      <div className="flex justify-end gap-2.5 pt-4 border-t border-gray-100">
         <button type="button" onClick={onCancel} className="btn btn-outline">
           Cancelar
         </button>

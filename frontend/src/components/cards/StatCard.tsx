@@ -14,17 +14,24 @@ interface StatCardProps {
 }
 
 const variants = {
-  default: 'bg-white',
-  success: 'bg-green-50 border-green-200',
-  warning: 'bg-yellow-50 border-yellow-200',
-  danger: 'bg-red-50 border-red-200',
+  default: 'bg-white border-gray-100',
+  success: 'bg-white border-success-200/60',
+  warning: 'bg-white border-warning-200/60',
+  danger: 'bg-white border-danger-200/60',
 };
 
 const iconVariants = {
-  default: 'bg-primary-100 text-primary-600',
-  success: 'bg-green-100 text-green-600',
-  warning: 'bg-yellow-100 text-yellow-600',
-  danger: 'bg-red-100 text-red-600',
+  default: 'bg-primary-50 text-primary-600',
+  success: 'bg-success-50 text-success-600',
+  warning: 'bg-warning-50 text-warning-600',
+  danger: 'bg-danger-50 text-danger-600',
+};
+
+const valueVariants = {
+  default: 'text-gray-900',
+  success: 'text-success-700',
+  warning: 'text-warning-700',
+  danger: 'text-danger-700',
 };
 
 export function StatCard({
@@ -36,19 +43,23 @@ export function StatCard({
   variant = 'default',
 }: StatCardProps) {
   return (
-    <div className={cn('card p-5', variants[variant])}>
+    <div className={cn('card p-4 md:p-5', variants[variant])}>
       <div className="flex items-start justify-between">
-        <div>
-          <p className="text-sm font-medium text-gray-500">{title}</p>
-          <p className="text-2xl font-bold text-gray-900 mt-1">{value}</p>
+        <div className="min-w-0 flex-1">
+          <p className="text-xs md:text-xs font-semibold text-gray-500 uppercase tracking-wider truncate">
+            {title}
+          </p>
+          <p className={cn('text-xl md:text-2xl font-bold mt-2 truncate', valueVariants[variant])}>
+            {value}
+          </p>
           {subtitle && (
-            <p className="text-sm text-gray-500 mt-1">{subtitle}</p>
+            <p className="text-xs md:text-sm text-gray-500 mt-1.5 font-medium">{subtitle}</p>
           )}
           {trend && (
             <p
               className={cn(
-                'text-sm mt-1 flex items-center gap-1',
-                trend.isPositive ? 'text-green-600' : 'text-red-600'
+                'text-xs font-semibold mt-1.5 flex items-center gap-1',
+                trend.isPositive ? 'text-success-600' : 'text-danger-600'
               )}
             >
               <span>{trend.isPositive ? '↑' : '↓'}</span>
@@ -57,8 +68,8 @@ export function StatCard({
           )}
         </div>
         {Icon && (
-          <div className={cn('p-3 rounded-lg', iconVariants[variant])}>
-            <Icon className="w-6 h-6" />
+          <div className={cn('p-2.5 md:p-3 rounded-xl flex-shrink-0', iconVariants[variant])}>
+            <Icon className="w-4 h-4 md:w-5 md:h-5" strokeWidth={2} />
           </div>
         )}
       </div>

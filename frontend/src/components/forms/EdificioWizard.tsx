@@ -156,7 +156,7 @@ export function EdificioWizard({ ciudades, onSubmit, onCancel, isLoading }: Edif
                 ))}
               </select>
               {errors.ciudadId && (
-                <p className="text-sm text-red-500 mt-1">{errors.ciudadId.message}</p>
+                <p className="text-xs text-danger-600 mt-1 font-medium">{errors.ciudadId.message}</p>
               )}
             </div>
 
@@ -168,7 +168,7 @@ export function EdificioWizard({ ciudades, onSubmit, onCancel, isLoading }: Edif
                 placeholder="Ej: Edificio Los Rosales"
               />
               {errors.nombre && (
-                <p className="text-sm text-red-500 mt-1">{errors.nombre.message}</p>
+                <p className="text-xs text-danger-600 mt-1 font-medium">{errors.nombre.message}</p>
               )}
             </div>
 
@@ -190,7 +190,7 @@ export function EdificioWizard({ ciudades, onSubmit, onCancel, isLoading }: Edif
                 placeholder="Ej: Jr. Lima 123"
               />
               {errors.direccion && (
-                <p className="text-sm text-red-500 mt-1">{errors.direccion.message}</p>
+                <p className="text-xs text-danger-600 mt-1 font-medium">{errors.direccion.message}</p>
               )}
             </div>
           </div>
@@ -223,7 +223,7 @@ export function EdificioWizard({ ciudades, onSubmit, onCancel, isLoading }: Edif
                       <button
                         type="button"
                         onClick={() => remove(index)}
-                        className="p-1 text-red-500 hover:bg-red-50 rounded"
+                        className="p-1 text-danger-600 hover:bg-danger-50 rounded"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -292,7 +292,7 @@ export function EdificioWizard({ ciudades, onSubmit, onCancel, isLoading }: Edif
                 </div>
                 <div className="col-span-2">
                   <span className="text-gray-600">Ingreso mensual estimado (100% ocupacion):</span>
-                  <span className="ml-2 font-medium text-green-600">{formatCurrency(ingresoMensualEstimado)}</span>
+                  <span className="ml-2 font-medium text-success-600">{formatCurrency(ingresoMensualEstimado)}</span>
                 </div>
               </div>
             </div>
@@ -374,7 +374,7 @@ export function EdificioWizard({ ciudades, onSubmit, onCancel, isLoading }: Edif
                     <p className="text-xs text-gray-500">Habitaciones</p>
                   </div>
                   <div className="bg-white p-3 rounded">
-                    <p className="text-2xl font-bold text-green-600">{formatCurrency(ingresoMensualEstimado)}</p>
+                    <p className="text-2xl font-bold text-success-600">{formatCurrency(ingresoMensualEstimado)}</p>
                     <p className="text-xs text-gray-500">Ingreso Est./Mes</p>
                   </div>
                 </div>

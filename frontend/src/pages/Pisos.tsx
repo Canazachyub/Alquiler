@@ -143,9 +143,9 @@ export function Pisos() {
                   </button>
                   <button
                     onClick={() => handleDelete(piso)}
-                    className="p-1.5 hover:bg-red-50 rounded-lg transition-colors"
+                    className="p-1.5 hover:bg-danger-50 rounded-lg transition-colors"
                   >
-                    <Trash2 className="w-4 h-4 text-red-500" />
+                    <Trash2 className="w-4 h-4 text-danger-600" />
                   </button>
                 </div>
               </div>
@@ -234,7 +234,7 @@ function PisoForm({
           ))}
         </select>
         {errors.edificioId && (
-          <p className="text-sm text-red-500 mt-1">{errors.edificioId.message}</p>
+          <p className="text-xs text-danger-600 mt-1 font-medium">{errors.edificioId.message}</p>
         )}
       </div>
 
@@ -251,7 +251,7 @@ function PisoForm({
           min={1}
         />
         {errors.numero && (
-          <p className="text-sm text-red-500 mt-1">{errors.numero.message}</p>
+          <p className="text-xs text-danger-600 mt-1 font-medium">{errors.numero.message}</p>
         )}
       </div>
 

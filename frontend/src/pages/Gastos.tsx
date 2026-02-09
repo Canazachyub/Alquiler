@@ -104,14 +104,14 @@ export function Gastos() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Gastos</h1>
-          <p className="text-gray-500">Control de gastos y egresos</p>
+      <div className="flex items-center justify-between gap-2">
+        <div className="min-w-0">
+          <h1 className="text-xl md:text-2xl font-bold">Gastos</h1>
+          <p className="text-gray-500 text-sm mt-0.5 hidden sm:block">Control de gastos y egresos</p>
         </div>
-        <button onClick={handleCreate} className="btn btn-primary">
-          <Plus className="w-4 h-4 mr-2" />
-          Nuevo Gasto
+        <button onClick={handleCreate} className="btn btn-primary whitespace-nowrap">
+          <Plus className="w-4 h-4 md:mr-2" />
+          <span className="hidden sm:inline">Nuevo Gasto</span>
         </button>
       </div>
 
@@ -151,18 +151,18 @@ export function Gastos() {
             </button>
           </div>
 
-          <div className="text-lg font-semibold text-red-600">
+          <div className="text-lg font-bold text-danger-700">
             Total: {formatCurrency(totalGastos)}
           </div>
         </div>
 
         {/* Resumen por categoría */}
         {resumenCategoria && (
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mt-4 pt-4 border-t">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 md:gap-4 mt-3 md:mt-4 pt-3 md:pt-4 border-t border-gray-100">
             {CATEGORIAS_GASTO.map((cat) => (
               <div key={cat.value}>
-                <p className="text-sm text-gray-500">{cat.label}</p>
-                <p className="text-lg font-bold text-gray-900">
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{cat.label}</p>
+                <p className="text-base md:text-lg font-bold text-gray-900 mt-1">
                   {formatCurrency(resumenCategoria[cat.value] || 0)}
                 </p>
               </div>
@@ -172,14 +172,14 @@ export function Gastos() {
       </div>
 
       {/* Filtros */}
-      <div className="card p-4">
-        <div className="flex flex-wrap items-center gap-4">
-          <div className="flex-1 min-w-64">
+      <div className="card p-3 md:p-4">
+        <div className="flex flex-wrap items-center gap-3 md:gap-4">
+          <div className="flex-1 min-w-0">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input
                 type="text"
-                placeholder="Buscar por concepto..."
+                placeholder="Buscar..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="input pl-10"
@@ -190,7 +190,7 @@ export function Gastos() {
           <select
             value={categoriaFilter}
             onChange={(e) => setCategoriaFilter(e.target.value)}
-            className="select w-40"
+            className="select w-36 md:w-40"
           >
             <option value="">Todas las categorías</option>
             {CATEGORIAS_GASTO.map((cat) => (
@@ -216,38 +216,38 @@ export function Gastos() {
           }
         />
       ) : (
-        <div className="card overflow-hidden">
+        <div className="card overflow-hidden overflow-x-auto">
           <table className="table">
             <thead>
               <tr>
-                <th>Fecha</th>
+                <th className="hidden sm:table-cell">Fecha</th>
                 <th>Concepto</th>
-                <th>Categoría</th>
+                <th className="hidden md:table-cell">Categoría</th>
                 <th>Monto</th>
-                <th>Habitación</th>
-                <th>Acciones</th>
+                <th className="hidden md:table-cell">Hab.</th>
+                <th>Acc.</th>
               </tr>
             </thead>
             <tbody>
               {filteredGastos?.map((gasto) => (
                 <tr key={gasto.id}>
-                  <td>{formatDate(gasto.fecha)}</td>
+                  <td className="hidden sm:table-cell">{formatDate(gasto.fecha)}</td>
                   <td>{gasto.concepto}</td>
-                  <td>
+                  <td className="hidden md:table-cell">
                     <span className="badge badge-info capitalize">{gasto.categoria}</span>
                   </td>
-                  <td className="font-medium text-red-600">
+                  <td className="font-semibold text-danger-700">
                     {formatCurrency(gasto.monto)}
                   </td>
-                  <td className="text-gray-500">
+                  <td className="text-gray-500 hidden md:table-cell">
                     {gasto.habitacion?.codigo || 'General'}
                   </td>
                   <td>
                     <button
                       onClick={() => setDeletingGasto(gasto)}
-                      className="p-2 hover:bg-red-50 rounded-lg"
+                      className="p-2 hover:bg-danger-50 rounded-lg transition-colors"
                     >
-                      <Trash2 className="w-4 h-4 text-red-500" />
+                      <Trash2 className="w-4 h-4 text-danger-600" />
                     </button>
                   </td>
                 </tr>

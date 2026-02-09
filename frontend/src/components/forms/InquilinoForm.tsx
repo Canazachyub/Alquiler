@@ -45,7 +45,7 @@ export function InquilinoForm({
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
         {/* Nombre */}
         <div>
           <label className="label">Nombre *</label>
@@ -55,7 +55,7 @@ export function InquilinoForm({
             placeholder="Nombre"
           />
           {errors.nombre && (
-            <p className="text-sm text-red-500 mt-1">{errors.nombre.message}</p>
+            <p className="text-xs text-danger-600 mt-1 font-medium">{errors.nombre.message}</p>
           )}
         </div>
 
@@ -68,7 +68,7 @@ export function InquilinoForm({
             placeholder="Apellido"
           />
           {errors.apellido && (
-            <p className="text-sm text-red-500 mt-1">{errors.apellido.message}</p>
+            <p className="text-xs text-danger-600 mt-1 font-medium">{errors.apellido.message}</p>
           )}
         </div>
 
@@ -88,7 +88,7 @@ export function InquilinoForm({
             maxLength={8}
           />
           {errors.dni && (
-            <p className="text-sm text-red-500 mt-1">{errors.dni.message}</p>
+            <p className="text-xs text-danger-600 mt-1 font-medium">{errors.dni.message}</p>
           )}
         </div>
 
@@ -108,7 +108,7 @@ export function InquilinoForm({
             maxLength={9}
           />
           {errors.telefono && (
-            <p className="text-sm text-red-500 mt-1">{errors.telefono.message}</p>
+            <p className="text-xs text-danger-600 mt-1 font-medium">{errors.telefono.message}</p>
           )}
         </div>
 
@@ -127,7 +127,7 @@ export function InquilinoForm({
             placeholder="correo@ejemplo.com"
           />
           {errors.email && (
-            <p className="text-sm text-red-500 mt-1">{errors.email.message}</p>
+            <p className="text-xs text-danger-600 mt-1 font-medium">{errors.email.message}</p>
           )}
         </div>
 
@@ -140,12 +140,12 @@ export function InquilinoForm({
             className="input"
           />
           {errors.fechaIngreso && (
-            <p className="text-sm text-red-500 mt-1">{errors.fechaIngreso.message}</p>
+            <p className="text-xs text-danger-600 mt-1 font-medium">{errors.fechaIngreso.message}</p>
           )}
         </div>
 
         {/* Habitación */}
-        <div className="col-span-2">
+        <div className="md:col-span-2">
           <label className="label">Habitación *</label>
           <select
             {...register('habitacionId', { required: 'Seleccione una habitación' })}
@@ -162,15 +162,15 @@ export function InquilinoForm({
             })}
           </select>
           {errors.habitacionId && (
-            <p className="text-sm text-red-500 mt-1">{errors.habitacionId.message}</p>
+            <p className="text-xs text-danger-600 mt-1 font-medium">{errors.habitacionId.message}</p>
           )}
         </div>
       </div>
 
       {/* Contacto de Emergencia */}
-      <div className="border-t pt-4 mt-4">
-        <h4 className="font-medium text-gray-700 mb-3">Contacto de Emergencia</h4>
-        <div className="grid grid-cols-2 gap-4">
+      <div className="border-t border-gray-100 pt-4 mt-4">
+        <h4 className="text-sm font-bold text-gray-800 mb-3">Contacto de Emergencia</h4>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
           <div>
             <label className="label">Nombre</label>
             <input
@@ -202,15 +202,15 @@ export function InquilinoForm({
       </div>
 
       {/* Contrato - Garantia y Llaves */}
-      <div className="border-t pt-4 mt-4">
-        <h4 className="font-medium text-gray-700 mb-3">Datos del Contrato</h4>
-        <div className="grid grid-cols-3 gap-4">
+      <div className="border-t border-gray-100 pt-4 mt-4">
+        <h4 className="text-sm font-bold text-gray-800 mb-3">Datos del Contrato</h4>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4">
           {/* Garantia */}
-          <label className="flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
+          <label className="flex items-center gap-3 p-3 border border-gray-200 rounded-xl cursor-pointer hover:bg-slate-50 transition-colors">
             <input
               type="checkbox"
               {...register('garantia')}
-              className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              className="w-5 h-5 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
             />
             <div>
               <span className="font-medium text-gray-700">Garantia</span>
@@ -219,11 +219,11 @@ export function InquilinoForm({
           </label>
 
           {/* Llave Habitacion */}
-          <label className="flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
+          <label className="flex items-center gap-3 p-3 border border-gray-200 rounded-xl cursor-pointer hover:bg-slate-50 transition-colors">
             <input
               type="checkbox"
               {...register('llaveHabitacion')}
-              className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              className="w-5 h-5 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
             />
             <div>
               <span className="font-medium text-gray-700">Llave Habitacion</span>
@@ -232,11 +232,11 @@ export function InquilinoForm({
           </label>
 
           {/* Llave Puerta Calle */}
-          <label className="flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
+          <label className="flex items-center gap-3 p-3 border border-gray-200 rounded-xl cursor-pointer hover:bg-slate-50 transition-colors">
             <input
               type="checkbox"
               {...register('llavePuertaCalle')}
-              className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              className="w-5 h-5 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
             />
             <div>
               <span className="font-medium text-gray-700">Llave Puerta</span>
@@ -247,7 +247,7 @@ export function InquilinoForm({
       </div>
 
       {/* Botones */}
-      <div className="flex justify-end gap-2 pt-4 border-t">
+      <div className="flex justify-end gap-2.5 pt-4 border-t border-gray-100">
         <button type="button" onClick={onCancel} className="btn btn-outline">
           Cancelar
         </button>

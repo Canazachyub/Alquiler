@@ -9,16 +9,17 @@ export function Layout() {
   const { sidebarCollapsed } = useConfigStore();
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-slate-50">
       <Sidebar />
       <div
         className={cn(
           'transition-all duration-300',
-          sidebarCollapsed ? 'ml-16' : 'ml-64'
+          'ml-0',
+          sidebarCollapsed ? 'md:ml-[72px]' : 'md:ml-64'
         )}
       >
         <Header />
-        <main className="p-6">
+        <main className="p-3 md:p-6 lg:p-8">
           <Outlet />
         </main>
       </div>

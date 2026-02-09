@@ -221,8 +221,8 @@ export function Edificios() {
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-lg bg-blue-100 flex items-center justify-center">
-                        <Building2 className="w-6 h-6 text-blue-600" />
+                      <div className="w-12 h-12 rounded-lg bg-primary-100 flex items-center justify-center">
+                        <Building2 className="w-6 h-6 text-primary-600" />
                       </div>
                       <div>
                         <h3 className="font-semibold text-lg">{edificio.nombre}</h3>
@@ -247,9 +247,9 @@ export function Edificios() {
                           e.stopPropagation();
                           handleDelete(edificio);
                         }}
-                        className="p-2 hover:bg-red-50 rounded-lg transition-colors"
+                        className="p-2 hover:bg-danger-50 rounded-lg transition-colors"
                       >
-                        <Trash2 className="w-4 h-4 text-red-500" />
+                        <Trash2 className="w-4 h-4 text-danger-600" />
                       </button>
                     </div>
                   </div>
@@ -328,7 +328,7 @@ export function Edificios() {
                               <p className="text-sm text-gray-500 mt-1">{gasto.descripcion}</p>
                             )}
                             <div className="flex items-center gap-4 mt-2 text-sm">
-                              <span className="flex items-center gap-1 text-green-600 font-medium">
+                              <span className="flex items-center gap-1 text-success-600 font-medium">
                                 <DollarSign className="w-3 h-3" />
                                 {formatCurrency(gasto.monto)}
                               </span>
@@ -347,9 +347,9 @@ export function Edificios() {
                             </button>
                             <button
                               onClick={() => handleDeleteGastoFijo(gasto)}
-                              className="p-1.5 hover:bg-red-50 rounded transition-colors"
+                              className="p-1.5 hover:bg-danger-50 rounded transition-colors"
                             >
-                              <Trash2 className="w-3.5 h-3.5 text-red-500" />
+                              <Trash2 className="w-3.5 h-3.5 text-danger-600" />
                             </button>
                           </div>
                         </div>
@@ -498,7 +498,7 @@ function EdificioForm({
           ))}
         </select>
         {errors.ciudadId && (
-          <p className="text-sm text-red-500 mt-1">{errors.ciudadId.message}</p>
+          <p className="text-xs text-danger-600 mt-1 font-medium">{errors.ciudadId.message}</p>
         )}
       </div>
 
@@ -510,7 +510,7 @@ function EdificioForm({
           placeholder="Ej: Edificio Central"
         />
         {errors.nombre && (
-          <p className="text-sm text-red-500 mt-1">{errors.nombre.message}</p>
+          <p className="text-xs text-danger-600 mt-1 font-medium">{errors.nombre.message}</p>
         )}
       </div>
 
@@ -532,7 +532,7 @@ function EdificioForm({
           placeholder="Ej: Jr. Lima 123"
         />
         {errors.direccion && (
-          <p className="text-sm text-red-500 mt-1">{errors.direccion.message}</p>
+          <p className="text-xs text-danger-600 mt-1 font-medium">{errors.direccion.message}</p>
         )}
       </div>
 
@@ -549,7 +549,7 @@ function EdificioForm({
           min={1}
         />
         {errors.totalPisos && (
-          <p className="text-sm text-red-500 mt-1">{errors.totalPisos.message}</p>
+          <p className="text-xs text-danger-600 mt-1 font-medium">{errors.totalPisos.message}</p>
         )}
       </div>
 
@@ -616,7 +616,7 @@ function GastoFijoForm({
           ))}
         </select>
         {errors.tipo && (
-          <p className="text-sm text-red-500 mt-1">{errors.tipo.message}</p>
+          <p className="text-xs text-danger-600 mt-1 font-medium">{errors.tipo.message}</p>
         )}
       </div>
 
@@ -643,7 +643,7 @@ function GastoFijoForm({
           placeholder="0.00"
         />
         {errors.monto && (
-          <p className="text-sm text-red-500 mt-1">{errors.monto.message}</p>
+          <p className="text-xs text-danger-600 mt-1 font-medium">{errors.monto.message}</p>
         )}
       </div>
 
@@ -664,7 +664,7 @@ function GastoFijoForm({
         />
         <p className="text-xs text-gray-500 mt-1">Dia del mes en que vence el pago (1-31)</p>
         {errors.diaVencimiento && (
-          <p className="text-sm text-red-500 mt-1">{errors.diaVencimiento.message}</p>
+          <p className="text-xs text-danger-600 mt-1 font-medium">{errors.diaVencimiento.message}</p>
         )}
       </div>
 

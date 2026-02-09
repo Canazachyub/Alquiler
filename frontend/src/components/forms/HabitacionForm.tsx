@@ -52,7 +52,7 @@ export function HabitacionForm({
             ))}
           </select>
           {errors.pisoId && (
-            <p className="text-sm text-red-500 mt-1">{errors.pisoId.message}</p>
+            <p className="text-xs text-danger-600 mt-1 font-medium">{errors.pisoId.message}</p>
           )}
         </div>
 
@@ -65,7 +65,7 @@ export function HabitacionForm({
             placeholder="Ej: A1, B2"
           />
           {errors.codigo && (
-            <p className="text-sm text-red-500 mt-1">{errors.codigo.message}</p>
+            <p className="text-xs text-danger-600 mt-1 font-medium">{errors.codigo.message}</p>
           )}
         </div>
 
@@ -106,7 +106,7 @@ export function HabitacionForm({
             className="input"
           />
           {errors.montoAlquiler && (
-            <p className="text-sm text-red-500 mt-1">{errors.montoAlquiler.message}</p>
+            <p className="text-xs text-danger-600 mt-1 font-medium">{errors.montoAlquiler.message}</p>
           )}
         </div>
 
@@ -149,7 +149,7 @@ export function HabitacionForm({
       </div>
 
       {/* Botones */}
-      <div className="flex justify-end gap-2 pt-4 border-t">
+      <div className="flex justify-end gap-2.5 pt-4 border-t border-gray-100">
         <button type="button" onClick={onCancel} className="btn btn-outline">
           Cancelar
         </button>

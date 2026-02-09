@@ -12,12 +12,14 @@ interface ConfigState {
 
   // UI
   sidebarCollapsed: boolean;
+  sidebarMobileOpen: boolean;
 
   // Actions
   setMesAnio: (mes: number, anio: number) => void;
   setCiudadSeleccionada: (ciudadId: string | null) => void;
   setEdificioSeleccionado: (edificioId: string | null) => void;
   toggleSidebar: () => void;
+  setSidebarMobileOpen: (open: boolean) => void;
   resetFiltros: () => void;
 }
 
@@ -31,18 +33,21 @@ export const useConfigStore = create<ConfigState>()(
       ciudadSeleccionada: null,
       edificioSeleccionado: null,
       sidebarCollapsed: false,
+      sidebarMobileOpen: false,
 
       setMesAnio: (mes, anio) => set({ mesActual: mes, anioActual: anio }),
 
       setCiudadSeleccionada: (ciudadId) =>
         set({
           ciudadSeleccionada: ciudadId,
-          edificioSeleccionado: null, // Reset edificio al cambiar ciudad
+          edificioSeleccionado: null,
         }),
 
       setEdificioSeleccionado: (edificioId) => set({ edificioSeleccionado: edificioId }),
 
       toggleSidebar: () => set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
+
+      setSidebarMobileOpen: (open) => set({ sidebarMobileOpen: open }),
 
       resetFiltros: () =>
         set({

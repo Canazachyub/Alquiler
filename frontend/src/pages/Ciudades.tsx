@@ -111,9 +111,9 @@ export function Ciudades() {
                   </button>
                   <button
                     onClick={() => handleDelete(ciudad)}
-                    className="p-2 hover:bg-red-50 rounded-lg transition-colors"
+                    className="p-2 hover:bg-danger-50 rounded-lg transition-colors"
                   >
-                    <Trash2 className="w-4 h-4 text-red-500" />
+                    <Trash2 className="w-4 h-4 text-danger-600" />
                   </button>
                 </div>
               </div>
@@ -188,7 +188,7 @@ function CiudadForm({
           placeholder="Ej: Puno, Juli"
         />
         {errors.nombre && (
-          <p className="text-sm text-red-500 mt-1">{errors.nombre.message}</p>
+          <p className="text-xs text-danger-600 mt-1 font-medium">{errors.nombre.message}</p>
         )}
       </div>
 
@@ -213,7 +213,7 @@ function CiudadForm({
         </label>
       </div>
 
-      <div className="flex justify-end gap-2 pt-4 border-t">
+      <div className="flex justify-end gap-2.5 pt-4 border-t border-gray-100">
         <button type="button" onClick={onCancel} className="btn btn-outline">
           Cancelar
         </button>

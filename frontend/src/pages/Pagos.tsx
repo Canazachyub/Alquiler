@@ -142,36 +142,36 @@ export function Pagos() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Pagos</h1>
-          <p className="text-gray-500">Registro y seguimiento de pagos</p>
+      <div className="flex items-center justify-between gap-2">
+        <div className="min-w-0">
+          <h1 className="text-xl md:text-2xl font-bold">Pagos</h1>
+          <p className="text-gray-500 text-sm mt-0.5 hidden sm:block">Registro y seguimiento de pagos</p>
         </div>
-        <button onClick={handleCreate} className="btn btn-primary">
-          <Plus className="w-4 h-4 mr-2" />
-          Registrar Pago
+        <button onClick={handleCreate} className="btn btn-primary whitespace-nowrap">
+          <Plus className="w-4 h-4 md:mr-2" />
+          <span className="hidden sm:inline">Registrar Pago</span>
         </button>
       </div>
 
       {/* Navegación de meses */}
-      <div className="card p-4">
-        <div className="flex flex-wrap items-center justify-between gap-4">
+      <div className="card p-3 md:p-4">
+        <div className="flex flex-wrap items-center justify-between gap-2 md:gap-4">
           {/* Controles de navegación */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5 md:gap-3 flex-wrap">
             <button
               onClick={() => navigateMonth(-1)}
               className="btn btn-outline btn-sm"
             >
               <ChevronLeft className="w-4 h-4" />
-              Anterior
+              <span className="hidden sm:inline">Anterior</span>
             </button>
 
-            <div className="flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-gray-400" />
+            <div className="flex items-center gap-1 md:gap-2">
+              <Calendar className="w-4 h-4 text-gray-400 hidden md:block" />
               <select
                 value={mesActual}
                 onChange={(e) => setMesAnio(Number(e.target.value), anioActual)}
-                className="select w-32"
+                className="select w-24 md:w-32 text-xs md:text-sm"
               >
                 {MESES.map((mes) => (
                   <option key={mes.value} value={mes.value}>
@@ -182,7 +182,7 @@ export function Pagos() {
               <select
                 value={anioActual}
                 onChange={(e) => setMesAnio(mesActual, Number(e.target.value))}
-                className="select w-24"
+                className="select w-20 md:w-24 text-xs md:text-sm"
               >
                 {years.map((year) => (
                   <option key={year} value={year}>
@@ -196,51 +196,51 @@ export function Pagos() {
               onClick={() => navigateMonth(1)}
               className="btn btn-outline btn-sm"
             >
-              Siguiente
+              <span className="hidden sm:inline">Siguiente</span>
               <ChevronRight className="w-4 h-4" />
             </button>
 
             <button onClick={goToCurrentMonth} className="btn btn-success btn-sm">
-              Mes Actual
+              Hoy
             </button>
           </div>
         </div>
 
         {/* Resumen del mes */}
         {resumen && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4 pt-4 border-t">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mt-3 md:mt-4 pt-3 md:pt-4 border-t border-gray-100">
             <div>
-              <p className="text-sm text-gray-500">Total Recaudado</p>
-              <p className="text-xl font-bold text-green-600">
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Total Recaudado</p>
+              <p className="text-lg md:text-xl font-bold text-success-700 mt-1">
                 {formatCurrency(resumen.totalRecaudado)}
               </p>
             </div>
             <div>
-              <p className="text-sm text-gray-500">Pagos Registrados</p>
-              <p className="text-xl font-bold text-primary-600">{resumen.totalPagos}</p>
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Pagos</p>
+              <p className="text-lg md:text-xl font-bold text-primary-700 mt-1">{resumen.totalPagos}</p>
             </div>
             <div>
-              <p className="text-sm text-gray-500">Habitaciones Pagadas</p>
-              <p className="text-xl font-bold text-green-600">{resumen.habitacionesPagadas}</p>
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Pagadas</p>
+              <p className="text-lg md:text-xl font-bold text-success-700 mt-1">{resumen.habitacionesPagadas}</p>
             </div>
             <div>
-              <p className="text-sm text-gray-500">Pendientes</p>
-              <p className="text-xl font-bold text-red-600">{resumen.habitacionesPendientes}</p>
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Pendientes</p>
+              <p className="text-lg md:text-xl font-bold text-danger-700 mt-1">{resumen.habitacionesPendientes}</p>
             </div>
           </div>
         )}
       </div>
 
       {/* Filtros */}
-      <div className="card p-4">
-        <div className="flex flex-wrap items-center gap-4">
+      <div className="card p-3 md:p-4">
+        <div className="flex flex-wrap items-center gap-3 md:gap-4">
           {/* Búsqueda */}
-          <div className="flex-1 min-w-64">
+          <div className="flex-1 min-w-0">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input
                 type="text"
-                placeholder="Buscar por habitación o concepto..."
+                placeholder="Buscar..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="input pl-10"
@@ -252,7 +252,7 @@ export function Pagos() {
           <select
             value={conceptoFilter}
             onChange={(e) => setConceptoFilter(e.target.value)}
-            className="select w-40"
+            className="select w-32 md:w-40"
           >
             <option value="">Todos</option>
             <option value="alquiler">Alquiler</option>
@@ -264,8 +264,8 @@ export function Pagos() {
       </div>
 
       {/* Indicador del mes */}
-      <div className="bg-primary-600 text-white py-2 px-4 rounded-lg text-center font-medium">
-        Mostrando pagos de {formatMonthYear(mesActual, anioActual)}
+      <div className="bg-gradient-to-r from-primary-600 to-primary-700 text-white py-2.5 px-4 rounded-xl text-center font-semibold text-sm md:text-base tracking-wide shadow-sm">
+        Pagos de {formatMonthYear(mesActual, anioActual)}
       </div>
 
       {/* Tabla de pagos */}
@@ -282,29 +282,29 @@ export function Pagos() {
           }
         />
       ) : (
-        <div className="card overflow-hidden">
+        <div className="card overflow-hidden overflow-x-auto">
           <table className="table">
             <thead>
               <tr>
-                <th>Fecha</th>
-                <th>Habitacion</th>
+                <th className="hidden sm:table-cell">Fecha</th>
+                <th>Hab.</th>
                 <th>Concepto</th>
                 <th>Monto</th>
-                <th>Metodo</th>
+                <th className="hidden md:table-cell">Metodo</th>
                 <th>Estado</th>
-                <th>Acciones</th>
+                <th>Acc.</th>
               </tr>
             </thead>
             <tbody>
               {filteredPagos?.map((pago) => (
                 <tr key={pago.id}>
-                  <td>{formatDate(pago.fecha)}</td>
+                  <td className="hidden sm:table-cell">{formatDate(pago.fecha)}</td>
                   <td>
                     <span className="font-medium">{pago.habitacion?.codigo || pago.habitacionId}</span>
                   </td>
                   <td className="capitalize">{pago.concepto}</td>
                   <td className="font-medium">{formatCurrency(pago.monto)}</td>
-                  <td className="capitalize">{pago.metodoPago}</td>
+                  <td className="capitalize hidden md:table-cell">{pago.metodoPago}</td>
                   <td>
                     <span
                       className={`badge ${

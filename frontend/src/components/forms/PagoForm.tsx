@@ -94,9 +94,9 @@ export function PagoForm({
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
         {/* Habitación */}
-        <div className="col-span-2">
+        <div className="md:col-span-2">
           <label className="label">Habitación *</label>
           <select
             {...register('habitacionId', { required: 'Seleccione una habitación' })}
@@ -111,7 +111,7 @@ export function PagoForm({
             ))}
           </select>
           {errors.habitacionId && (
-            <p className="text-sm text-red-500 mt-1">{errors.habitacionId.message}</p>
+            <p className="text-xs text-danger-600 mt-1 font-medium">{errors.habitacionId.message}</p>
           )}
         </div>
 
@@ -124,7 +124,7 @@ export function PagoForm({
             className="input"
           />
           {errors.fecha && (
-            <p className="text-sm text-red-500 mt-1">{errors.fecha.message}</p>
+            <p className="text-xs text-danger-600 mt-1 font-medium">{errors.fecha.message}</p>
           )}
         </div>
 
@@ -194,7 +194,7 @@ export function PagoForm({
             className="input"
           />
           {errors.monto && (
-            <p className="text-sm text-red-500 mt-1">{errors.monto.message}</p>
+            <p className="text-xs text-danger-600 mt-1 font-medium">{errors.monto.message}</p>
           )}
         </div>
 
@@ -211,28 +211,28 @@ export function PagoForm({
 
       {/* Info de la habitación seleccionada */}
       {habitacionSeleccionada && (
-        <div className="bg-gray-50 p-3 rounded-lg text-sm">
-          <div className="grid grid-cols-2 gap-2">
+        <div className="bg-slate-50 p-3.5 rounded-xl text-sm border border-gray-100">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
             <div>
-              <span className="text-gray-500">Alquiler:</span>{' '}
-              <span className="font-medium">
+              <span className="text-gray-500 font-medium">Alquiler:</span>{' '}
+              <span className="font-semibold">
                 {formatCurrency(habitacionSeleccionada.montoAlquiler)}
               </span>
               {habitacionSeleccionada.alquilerPagado ? (
-                <span className="text-green-600 ml-2">Pagado</span>
+                <span className="text-success-600 ml-2 font-semibold text-xs">Pagado</span>
               ) : (
-                <span className="text-red-600 ml-2">Pendiente</span>
+                <span className="text-danger-600 ml-2 font-semibold text-xs">Pendiente</span>
               )}
             </div>
             <div>
-              <span className="text-gray-500">Internet:</span>{' '}
-              <span className="font-medium">
+              <span className="text-gray-500 font-medium">Internet:</span>{' '}
+              <span className="font-semibold">
                 {formatCurrency(habitacionSeleccionada.montoInternet)}
               </span>
               {habitacionSeleccionada.internetPagado ? (
-                <span className="text-green-600 ml-2">Pagado</span>
+                <span className="text-success-600 ml-2 font-semibold text-xs">Pagado</span>
               ) : (
-                <span className="text-red-600 ml-2">Pendiente</span>
+                <span className="text-danger-600 ml-2 font-semibold text-xs">Pendiente</span>
               )}
             </div>
           </div>
@@ -251,7 +251,7 @@ export function PagoForm({
       </div>
 
       {/* Botones */}
-      <div className="flex justify-end gap-2 pt-4 border-t">
+      <div className="flex justify-end gap-2.5 pt-4 border-t border-gray-100">
         <button type="button" onClick={onCancel} className="btn btn-outline">
           Cancelar
         </button>

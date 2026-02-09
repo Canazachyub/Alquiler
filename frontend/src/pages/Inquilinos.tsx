@@ -134,22 +134,22 @@ export function Inquilinos() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Inquilinos</h1>
-          <p className="text-gray-500">Gestiona los inquilinos de tus propiedades</p>
+      <div className="flex items-center justify-between gap-2">
+        <div className="min-w-0">
+          <h1 className="text-xl md:text-2xl font-bold">Inquilinos</h1>
+          <p className="text-gray-500 text-sm mt-0.5 hidden sm:block">Gestiona los inquilinos de tus propiedades</p>
         </div>
-        <button onClick={handleCreate} className="btn btn-primary">
-          <Plus className="w-4 h-4 mr-2" />
-          Nuevo Inquilino
+        <button onClick={handleCreate} className="btn btn-primary whitespace-nowrap">
+          <Plus className="w-4 h-4 md:mr-2" />
+          <span className="hidden sm:inline">Nuevo Inquilino</span>
         </button>
       </div>
 
       {/* Filtros */}
-      <div className="card p-4">
-        <div className="flex flex-wrap items-center gap-4">
+      <div className="card p-3 md:p-4">
+        <div className="flex flex-wrap items-center gap-3 md:gap-4">
           {/* Búsqueda */}
-          <div className="flex-1 min-w-64">
+          <div className="flex-1 min-w-0">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input
@@ -189,14 +189,14 @@ export function Inquilinos() {
           }
         />
       ) : (
-        <div className="card overflow-hidden">
+        <div className="card overflow-hidden overflow-x-auto">
           <table className="table">
             <thead>
               <tr>
                 <th>Inquilino</th>
-                <th>Contacto</th>
-                <th>Habitación</th>
-                <th>Fecha Ingreso</th>
+                <th className="hidden md:table-cell">Contacto</th>
+                <th>Hab.</th>
+                <th className="hidden sm:table-cell">Ingreso</th>
                 <th>Estado</th>
                 <th>Acciones</th>
               </tr>
@@ -206,18 +206,18 @@ export function Inquilinos() {
                 <tr key={inq.id}>
                   <td>
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center">
-                        <User className="w-5 h-5 text-primary-600" />
+                      <div className="w-9 h-9 rounded-lg bg-primary-50 flex items-center justify-center">
+                        <User className="w-4 h-4 text-primary-600" />
                       </div>
                       <div>
-                        <p className="font-medium">
+                        <p className="font-semibold text-gray-900 text-sm">
                           {inq.nombre} {inq.apellido}
                         </p>
-                        <p className="text-sm text-gray-500">DNI: {inq.dni}</p>
+                        <p className="text-xs text-gray-500">DNI: {inq.dni}</p>
                       </div>
                     </div>
                   </td>
-                  <td>
+                  <td className="hidden md:table-cell">
                     <div className="space-y-1">
                       <div className="flex items-center gap-1 text-sm">
                         <Phone className="w-3 h-3 text-gray-400" />
@@ -237,7 +237,7 @@ export function Inquilinos() {
                       <span>{inq.habitacion?.codigo || inq.habitacionId}</span>
                     </div>
                   </td>
-                  <td>{formatDate(inq.fechaIngreso)}</td>
+                  <td className="hidden sm:table-cell">{formatDate(inq.fechaIngreso)}</td>
                   <td>
                     <span
                       className={`badge ${
@@ -257,24 +257,24 @@ export function Inquilinos() {
                             notify.success('Contrato descargado');
                           }
                         }}
-                        className="p-2 hover:bg-blue-50 rounded-lg"
+                        className="p-2 hover:bg-primary-50 rounded-lg transition-colors"
                         title="Descargar contrato"
                       >
-                        <FileText className="w-4 h-4 text-blue-500" />
+                        <FileText className="w-4 h-4 text-primary-500" />
                       </button>
                       <button
                         onClick={() => handleEdit(inq)}
-                        className="p-2 hover:bg-gray-100 rounded-lg"
+                        className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                         title="Editar"
                       >
                         <Edit className="w-4 h-4 text-gray-500" />
                       </button>
                       <button
                         onClick={() => handleDelete(inq)}
-                        className="p-2 hover:bg-red-50 rounded-lg"
+                        className="p-2 hover:bg-danger-50 rounded-lg transition-colors"
                         title="Eliminar"
                       >
-                        <Trash2 className="w-4 h-4 text-red-500" />
+                        <Trash2 className="w-4 h-4 text-danger-600" />
                       </button>
                     </div>
                   </td>
@@ -320,8 +320,8 @@ export function Inquilinos() {
         size="md"
       >
         <div className="text-center py-4">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-green-100 flex items-center justify-center">
-            <FileText className="w-8 h-8 text-green-600" />
+          <div className="w-14 h-14 mx-auto mb-4 rounded-xl bg-success-50 flex items-center justify-center">
+            <FileText className="w-7 h-7 text-success-600" />
           </div>
           <h3 className="text-lg font-semibold text-gray-900 mb-2">
             {newInquilinoData?.inquilino.nombre} {newInquilinoData?.inquilino.apellido}

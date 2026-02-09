@@ -82,19 +82,28 @@ export async function generateContratoPDF(data: ContratoData): Promise<void> {
   doc.rect(margin + 7.5, y + 12, 3, 4, 'F');
 
   // Titulo
-  doc.setFontSize(22);
+  doc.setFontSize(20);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(darkGray[0], darkGray[1], darkGray[2]);
-  doc.text('Contrato De Alquiler', margin + 23, y + 8);
+  doc.text('CONTRATO DE ALQUILER', margin + 23, y + 7);
+
+  // Nombre edificio
+  const nombreEdificio = String(edificio?.nombre || '');
+  if (nombreEdificio) {
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+    doc.text(nombreEdificio.toUpperCase(), margin + 23, y + 13);
+  }
 
   // Direccion y telefono
-  doc.setFontSize(10);
+  doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(lightGray[0], lightGray[1], lightGray[2]);
   const direccion = String(edificio?.direccion || 'Jr. Candelaria A16');
   const telefono = String(edificio?.telefono || '051-601731');
-  doc.text(direccion, margin + 23, y + 14);
-  doc.text(telefono, margin + 23, y + 19);
+  doc.text(direccion, margin + 23, nombreEdificio ? y + 17 : y + 13);
+  doc.text(telefono, margin + 23, nombreEdificio ? y + 21 : y + 17);
 
   // QR Code real
   const qrX = pageWidth - margin - 22;
@@ -416,18 +425,45 @@ export async function generateContratoPDF(data: ContratoData): Promise<void> {
     yRight += (lines.length * 4) + 6;
   });
 
-  // ========== FIRMA ==========
-  const firmaY = Math.max(yLeft + 25, yRight + 15);
-
-  // Linea para firma
-  doc.setDrawColor(darkGray[0], darkGray[1], darkGray[2]);
-  doc.setLineWidth(0.5);
-  doc.line(pageWidth - margin - 55, firmaY, pageWidth - margin, firmaY);
-
-  doc.setFontSize(11);
+  // ========== MONTO DE ALQUILER ==========
+  yLeft += 3;
+  doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(darkGray[0], darkGray[1], darkGray[2]);
-  doc.text('FIRMA', pageWidth - margin - 35, firmaY + 6);
+  doc.text('MONTO DE ALQUILER:', leftColX, yLeft);
+
+  yLeft += 5;
+  // Cuadro con monto
+  doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+  doc.roundedRect(leftColX, yLeft, 50, 12, 2, 2, 'F');
+  doc.setFontSize(14);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(255, 255, 255);
+  const montoText = `S/ ${habitacion.montoAlquiler || '___'}`;
+  doc.text(montoText, leftColX + 25, yLeft + 8, { align: 'center' });
+
+  // ========== FIRMA Y HUELLA ==========
+  const firmaY = Math.max(yLeft + 25, yRight + 15);
+
+  // Firma
+  doc.setDrawColor(darkGray[0], darkGray[1], darkGray[2]);
+  doc.setLineWidth(0.5);
+  doc.line(margin + 20, firmaY, margin + 75, firmaY);
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(darkGray[0], darkGray[1], darkGray[2]);
+  doc.text('FIRMA DEL INQUILINO', margin + 25, firmaY + 5);
+
+  // Huella dactilar
+  const huellaX = pageWidth - margin - 40;
+  doc.setDrawColor(darkGray[0], darkGray[1], darkGray[2]);
+  doc.setLineWidth(0.5);
+  doc.roundedRect(huellaX, firmaY - 20, 30, 25, 2, 2, 'S');
+  doc.setFontSize(7);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(lightGray[0], lightGray[1], lightGray[2]);
+  doc.text('HUELLA', huellaX + 15, firmaY - 1, { align: 'center' });
+  doc.text('DACTILAR', huellaX + 15, firmaY + 3, { align: 'center' });
 
   // ========== DECORACION INFERIOR ==========
   // Olas decorativas con gradiente
@@ -505,7 +541,7 @@ export function ContratoAlquiler({ inquilino, habitacion, edificio, onDownload }
       <div className="mt-6 flex justify-center">
         <button
           onClick={handleDownload}
-          className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+          className="btn btn-primary"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />

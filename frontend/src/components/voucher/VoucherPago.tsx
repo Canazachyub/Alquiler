@@ -135,10 +135,10 @@ export const VoucherPago = forwardRef<HTMLDivElement, VoucherPagoProps>(
           <span
             className={`inline-block px-3 py-1 rounded border text-[10px] font-bold ${
               pago.estado === 'pagado'
-                ? 'border-green-500 text-green-700'
+                ? 'border-success-500 text-success-700'
                 : pago.estado === 'pendiente'
-                ? 'border-yellow-500 text-yellow-700'
-                : 'border-red-500 text-red-700'
+                ? 'border-warning-500 text-warning-700'
+                : 'border-danger-500 text-danger-700'
             }`}
           >
             {pago.estado === 'pagado' ? 'PAGADO' : pago.estado === 'pendiente' ? 'PENDIENTE' : 'ANULADO'}

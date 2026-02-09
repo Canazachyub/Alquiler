@@ -37,14 +37,12 @@ export function Habitaciones() {
 
   // Filtrar habitaciones
   const filteredHabitaciones = habitaciones?.filter((hab) => {
-    // Filtro por búsqueda
     const searchLower = searchTerm.toLowerCase();
     const matchesSearch =
       !searchTerm ||
       hab.codigo.toLowerCase().includes(searchLower) ||
       hab.nombreInquilino?.toLowerCase().includes(searchLower);
 
-    // Filtro por estado
     let matchesFilter = true;
     if (filter === 'paid') {
       matchesFilter = hab.estado === 'occupied' && hab.alquilerPagado === true;
@@ -57,7 +55,6 @@ export function Habitaciones() {
     return matchesSearch && matchesFilter;
   });
 
-  // Calcular estadísticas
   const stats = {
     total: habitaciones?.length || 0,
     ocupadas: habitaciones?.filter((h) => h.estado === 'occupied').length || 0,
@@ -102,84 +99,83 @@ export function Habitaciones() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Habitaciones</h1>
-          <p className="text-gray-500">Gestiona el estado de las habitaciones</p>
+      <div className="flex items-center justify-between gap-2">
+        <div className="min-w-0">
+          <h1 className="text-xl md:text-2xl font-bold">Habitaciones</h1>
+          <p className="text-gray-500 text-sm mt-0.5 hidden sm:block">Gestiona el estado de las habitaciones</p>
         </div>
         <div className="flex gap-2">
           <button onClick={() => refetch()} className="btn btn-outline">
-            <RefreshCw className="w-4 h-4 mr-2" />
-            Actualizar
+            <RefreshCw className="w-4 h-4" />
           </button>
-          <button onClick={handleCreate} className="btn btn-primary">
-            <Plus className="w-4 h-4 mr-2" />
-            Nueva Habitación
+          <button onClick={handleCreate} className="btn btn-primary whitespace-nowrap">
+            <Plus className="w-4 h-4 md:mr-2" />
+            <span className="hidden sm:inline">Nueva Hab.</span>
           </button>
         </div>
       </div>
 
       {/* Panel de resumen */}
-      <div className="card p-5 bg-gradient-to-r from-primary-600 to-primary-700 text-white">
-        <h2 className="text-lg font-semibold mb-4">Resumen de Cobros del Mes</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="bg-white/20 rounded-lg p-3">
-            <p className="text-sm opacity-80">Total por Cobrar</p>
-            <p className="text-2xl font-bold">{formatCurrency(stats.totalPorCobrar)}</p>
+      <div className="card p-4 md:p-6 bg-gradient-to-br from-primary-600 via-primary-600 to-primary-800 text-white border-0">
+        <h2 className="text-xs font-semibold uppercase tracking-wider text-white/70 mb-3 md:mb-4">
+          Resumen de Cobros del Mes
+        </h2>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+          <div className="bg-white/15 backdrop-blur-sm rounded-xl p-3 md:p-4">
+            <p className="text-xs text-white/70 font-medium">Total por Cobrar</p>
+            <p className="text-lg md:text-2xl font-bold mt-1">{formatCurrency(stats.totalPorCobrar)}</p>
           </div>
-          <div className="bg-white/20 rounded-lg p-3">
-            <p className="text-sm opacity-80">Con Deuda</p>
-            <p className="text-2xl font-bold">{stats.conDeuda}</p>
+          <div className="bg-white/15 backdrop-blur-sm rounded-xl p-3 md:p-4">
+            <p className="text-xs text-white/70 font-medium">Con Deuda</p>
+            <p className="text-lg md:text-2xl font-bold mt-1">{stats.conDeuda}</p>
           </div>
-          <div className="bg-white/20 rounded-lg p-3">
-            <p className="text-sm opacity-80">Al Día</p>
-            <p className="text-2xl font-bold">{stats.pagadas}</p>
+          <div className="bg-white/15 backdrop-blur-sm rounded-xl p-3 md:p-4">
+            <p className="text-xs text-white/70 font-medium">Al Día</p>
+            <p className="text-lg md:text-2xl font-bold mt-1">{stats.pagadas}</p>
           </div>
-          <div className="bg-white/20 rounded-lg p-3">
-            <p className="text-sm opacity-80">Vacantes</p>
-            <p className="text-2xl font-bold">{stats.vacantes}</p>
+          <div className="bg-white/15 backdrop-blur-sm rounded-xl p-3 md:p-4">
+            <p className="text-xs text-white/70 font-medium">Vacantes</p>
+            <p className="text-lg md:text-2xl font-bold mt-1">{stats.vacantes}</p>
           </div>
         </div>
       </div>
 
       {/* Filtros */}
-      <div className="card p-4">
-        <div className="flex flex-wrap items-center gap-4">
-          {/* Botones de filtro */}
-          <div className="flex gap-2">
+      <div className="card p-3 md:p-4">
+        <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 md:gap-4">
+          <div className="flex gap-1.5 md:gap-2 overflow-x-auto">
             <button
               onClick={() => setFilter('all')}
-              className={`btn btn-sm ${filter === 'all' ? 'btn-primary' : 'btn-outline'}`}
+              className={`btn btn-sm whitespace-nowrap ${filter === 'all' ? 'btn-primary' : 'btn-outline'}`}
             >
               Todas ({stats.total})
             </button>
             <button
               onClick={() => setFilter('debt')}
-              className={`btn btn-sm ${filter === 'debt' ? 'btn-danger' : 'btn-outline'}`}
+              className={`btn btn-sm whitespace-nowrap ${filter === 'debt' ? 'btn-danger' : 'btn-outline'}`}
             >
-              Con Deuda ({stats.conDeuda})
+              Deuda ({stats.conDeuda})
             </button>
             <button
               onClick={() => setFilter('paid')}
-              className={`btn btn-sm ${filter === 'paid' ? 'btn-success' : 'btn-outline'}`}
+              className={`btn btn-sm whitespace-nowrap ${filter === 'paid' ? 'btn-success' : 'btn-outline'}`}
             >
               Al Día ({stats.pagadas})
             </button>
             <button
               onClick={() => setFilter('vacant')}
-              className={`btn btn-sm ${filter === 'vacant' ? 'bg-gray-500 text-white' : 'btn-outline'}`}
+              className={`btn btn-sm whitespace-nowrap ${filter === 'vacant' ? 'bg-gray-600 text-white hover:bg-gray-700' : 'btn-outline'}`}
             >
               Vacantes ({stats.vacantes})
             </button>
           </div>
 
-          {/* Búsqueda */}
-          <div className="flex-1 min-w-64">
+          <div className="flex-1 min-w-0">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input
                 type="text"
-                placeholder="Buscar por código o inquilino..."
+                placeholder="Buscar habitación o inquilino..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="input pl-10"
@@ -208,7 +204,7 @@ export function Habitaciones() {
           }
         />
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-4">
           {filteredHabitaciones?.map((hab) => (
             <RoomCard
               key={hab.id}

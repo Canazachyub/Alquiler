@@ -11,10 +11,10 @@ const icons = {
 };
 
 const styles = {
-  success: 'bg-green-50 border-green-200 text-green-800',
-  error: 'bg-red-50 border-red-200 text-red-800',
-  warning: 'bg-yellow-50 border-yellow-200 text-yellow-800',
-  info: 'bg-blue-50 border-blue-200 text-blue-800',
+  success: 'bg-success-50 border-success-100 text-success-700',
+  error: 'bg-danger-50 border-danger-100 text-danger-700',
+  warning: 'bg-warning-50 border-warning-100 text-warning-700',
+  info: 'bg-primary-50 border-primary-100 text-primary-700',
 };
 
 export function Notifications() {

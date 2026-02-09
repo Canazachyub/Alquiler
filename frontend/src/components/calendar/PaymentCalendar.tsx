@@ -108,8 +108,8 @@ export function PaymentCalendar({
       {/* Indicadores */}
       <div className="p-3 bg-gray-50 border-b flex items-center justify-center gap-4 text-sm">
         <div className="flex items-center gap-1.5">
-          <div className="w-4 h-4 rounded bg-green-100 border border-green-300"></div>
-          <span className="text-green-700 font-medium">Pagado ({totalPagadas})</span>
+          <div className="w-4 h-4 rounded bg-success-100 border border-success-500"></div>
+          <span className="text-success-700 font-medium">Pagado ({totalPagadas})</span>
         </div>
         <div className="flex items-center gap-1.5">
           <div className="w-4 h-4 rounded bg-pink-100 border border-pink-300"></div>
@@ -153,14 +153,14 @@ export function PaymentCalendar({
                 return 'bg-pink-100 hover:bg-pink-200';
               }
               // Solo pagados: fondo verde
-              return 'bg-green-100 hover:bg-green-200';
+              return 'bg-success-50 hover:bg-success-100';
             };
 
             const getTextColor = () => {
               if (!dayStatus.hasPayments) return isToday ? 'text-primary-600' : 'text-gray-700';
               if (dayStatus.pendientes > 0 && dayStatus.pagadas > 0) return 'text-amber-800';
               if (dayStatus.pendientes > 0) return 'text-pink-800';
-              return 'text-green-800';
+              return 'text-success-700';
             };
 
             return (
@@ -181,7 +181,7 @@ export function PaymentCalendar({
                 {dayStatus.hasPayments && (
                   <div className="flex items-center gap-0.5 mt-0.5">
                     {dayStatus.pagadas > 0 && (
-                      <span className="text-[10px] font-bold text-green-600 bg-green-200 px-1 rounded">
+                      <span className="text-[10px] font-bold text-success-600 bg-success-100 px-1 rounded">
                         {dayStatus.pagadas}
                       </span>
                     )}
@@ -215,12 +215,12 @@ export function PaymentCalendar({
                   key={habitacion.id}
                   className={`flex items-center justify-between p-2.5 rounded-lg border ${
                     pagado
-                      ? 'bg-green-50 border-green-200'
+                      ? 'bg-success-50 border-success-100'
                       : 'bg-pink-50 border-pink-200'
                   }`}
                 >
                   <div className="flex items-center gap-2">
-                    <User className={`w-4 h-4 ${pagado ? 'text-green-600' : 'text-pink-600'}`} />
+                    <User className={`w-4 h-4 ${pagado ? 'text-success-600' : 'text-pink-600'}`} />
                     <div>
                       <p className="text-sm font-medium">
                         Hab. {habitacion.codigo}
@@ -233,7 +233,7 @@ export function PaymentCalendar({
                   <span
                     className={`text-xs font-bold px-2.5 py-1 rounded-full ${
                       pagado
-                        ? 'bg-green-200 text-green-800'
+                        ? 'bg-success-100 text-success-700'
                         : 'bg-pink-200 text-pink-800'
                     }`}
                   >

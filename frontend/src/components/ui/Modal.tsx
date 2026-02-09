@@ -12,14 +12,13 @@ interface ModalProps {
 }
 
 const sizes = {
-  sm: 'max-w-md',
-  md: 'max-w-lg',
-  lg: 'max-w-2xl',
-  xl: 'max-w-4xl',
+  sm: 'max-w-[95vw] md:max-w-md',
+  md: 'max-w-[95vw] md:max-w-lg',
+  lg: 'max-w-[95vw] md:max-w-2xl',
+  xl: 'max-w-[95vw] md:max-w-4xl',
 };
 
 export function Modal({ isOpen, onClose, title, children, size = 'md', footer }: ModalProps) {
-  // Cerrar con Escape
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
@@ -42,34 +41,34 @@ export function Modal({ isOpen, onClose, title, children, size = 'md', footer }:
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/50 animate-in fade-in"
+        className="absolute inset-0 bg-black/40 backdrop-blur-[2px] animate-in fade-in"
         onClick={onClose}
       />
 
       {/* Modal */}
       <div
         className={cn(
-          'relative bg-white rounded-lg shadow-xl w-full mx-4 animate-in zoom-in-95',
+          'relative bg-white rounded-xl shadow-xl w-full mx-4 animate-in zoom-in-95 border border-gray-100',
           sizes[size]
         )}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b">
-          <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+          <h2 className="text-base font-bold text-gray-900 tracking-tight">{title}</h2>
           <button
             onClick={onClose}
-            className="p-1 rounded-lg hover:bg-gray-100 transition-colors"
+            className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors"
           >
-            <X className="w-5 h-5 text-gray-500" />
+            <X className="w-4 h-4 text-gray-400" />
           </button>
         </div>
 
         {/* Body */}
-        <div className="p-4 max-h-[70vh] overflow-y-auto">{children}</div>
+        <div className="p-4 md:p-5 max-h-[80vh] md:max-h-[70vh] overflow-y-auto">{children}</div>
 
         {/* Footer */}
         {footer && (
-          <div className="flex items-center justify-end gap-2 p-4 border-t bg-gray-50">
+          <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-gray-100 bg-slate-50/50 rounded-b-xl">
             {footer}
           </div>
         )}

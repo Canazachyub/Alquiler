@@ -114,7 +114,7 @@ export function Reportes() {
       </div>
 
       {/* Resumen del mes */}
-      <div className="bg-primary-600 text-white py-3 px-4 rounded-lg text-center font-medium">
+      <div className="bg-gradient-to-r from-primary-600 to-primary-700 text-white py-3 px-4 rounded-xl text-center font-semibold tracking-wide shadow-sm">
         Reporte de {formatMonthYear(mesActual, anioActual)}
       </div>
 
@@ -124,12 +124,12 @@ export function Reportes() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-500">Ingresos</p>
-              <p className="text-2xl font-bold text-green-600">
+              <p className="text-2xl font-bold text-success-600">
                 {formatCurrency(stats?.ingresosMes || 0)}
               </p>
             </div>
-            <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
-              <TrendingUp className="w-6 h-6 text-green-600" />
+            <div className="w-12 h-12 rounded-xl bg-success-100 flex items-center justify-center">
+              <TrendingUp className="w-6 h-6 text-success-600" />
             </div>
           </div>
         </div>
@@ -138,12 +138,12 @@ export function Reportes() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-500">Gastos</p>
-              <p className="text-2xl font-bold text-red-600">
+              <p className="text-2xl font-bold text-danger-600">
                 {formatCurrency(stats?.gastosMes || 0)}
               </p>
             </div>
-            <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
-              <TrendingDown className="w-6 h-6 text-red-600" />
+            <div className="w-12 h-12 rounded-xl bg-danger-100 flex items-center justify-center">
+              <TrendingDown className="w-6 h-6 text-danger-600" />
             </div>
           </div>
         </div>
@@ -154,14 +154,14 @@ export function Reportes() {
               <p className="text-sm text-gray-500">Balance</p>
               <p
                 className={`text-2xl font-bold ${
-                  (stats?.balance || 0) >= 0 ? 'text-green-600' : 'text-red-600'
+                  (stats?.balance || 0) >= 0 ? 'text-success-600' : 'text-danger-600'
                 }`}
               >
                 {formatCurrency(stats?.balance || 0)}
               </p>
             </div>
-            <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
-              <DollarSign className="w-6 h-6 text-blue-600" />
+            <div className="w-12 h-12 rounded-xl bg-primary-100 flex items-center justify-center">
+              <DollarSign className="w-6 h-6 text-primary-600" />
             </div>
           </div>
         </div>
@@ -174,7 +174,7 @@ export function Reportes() {
                 {(stats?.tasaOcupacion || 0).toFixed(1)}%
               </p>
             </div>
-            <div className="w-12 h-12 rounded-full bg-primary-100 flex items-center justify-center">
+            <div className="w-12 h-12 rounded-xl bg-primary-100 flex items-center justify-center">
               <Home className="w-6 h-6 text-primary-600" />
             </div>
           </div>
@@ -188,7 +188,7 @@ export function Reportes() {
           <p className="text-gray-500 mt-1">Total Habitaciones</p>
         </div>
         <div className="card p-5 text-center">
-          <div className="text-4xl font-bold text-green-600">{stats?.habitacionesOcupadas || 0}</div>
+          <div className="text-4xl font-bold text-success-600">{stats?.habitacionesOcupadas || 0}</div>
           <p className="text-gray-500 mt-1">Ocupadas</p>
         </div>
         <div className="card p-5 text-center">
@@ -207,15 +207,15 @@ export function Reportes() {
         {/* Leyenda */}
         <div className="flex items-center gap-6 mb-4">
           <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded bg-green-500"></div>
+            <div className="w-4 h-4 rounded bg-success-500"></div>
             <span className="text-sm text-gray-600">Ingresos</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded bg-red-500"></div>
+            <div className="w-4 h-4 rounded bg-danger-500"></div>
             <span className="text-sm text-gray-600">Gastos</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded bg-blue-500"></div>
+            <div className="w-4 h-4 rounded bg-primary-500"></div>
             <span className="text-sm text-gray-600">Balance</span>
           </div>
         </div>
@@ -232,14 +232,14 @@ export function Reportes() {
                   <div className="flex gap-1 h-6">
                     {/* Barra de ingresos */}
                     <div
-                      className="bg-green-500 rounded-sm transition-all duration-300"
+                      className="bg-success-500 rounded-sm transition-all duration-300"
                       style={{
                         width: `${maxValue > 0 ? (mes.ingresos / maxValue) * 100 : 0}%`,
                       }}
                     />
                     {/* Barra de gastos */}
                     <div
-                      className="bg-red-500 rounded-sm transition-all duration-300"
+                      className="bg-danger-500 rounded-sm transition-all duration-300"
                       style={{
                         width: `${maxValue > 0 ? (mes.gastos / maxValue) * 100 : 0}%`,
                       }}
@@ -248,7 +248,7 @@ export function Reportes() {
                 </div>
                 <div className="text-right w-32">
                   <span
-                    className={`font-medium ${mes.balance >= 0 ? 'text-green-600' : 'text-red-600'}`}
+                    className={`font-medium ${mes.balance >= 0 ? 'text-success-600' : 'text-danger-600'}`}
                   >
                     {formatCurrency(mes.balance)}
                   </span>
@@ -279,11 +279,11 @@ export function Reportes() {
                 <td className="font-medium">
                   {getMonthName(mes.mes)} {mes.anio}
                 </td>
-                <td className="text-right text-green-600">{formatCurrency(mes.ingresos)}</td>
-                <td className="text-right text-red-600">{formatCurrency(mes.gastos)}</td>
+                <td className="text-right text-success-600">{formatCurrency(mes.ingresos)}</td>
+                <td className="text-right text-danger-600">{formatCurrency(mes.gastos)}</td>
                 <td
                   className={`text-right font-medium ${
-                    mes.balance >= 0 ? 'text-green-600' : 'text-red-600'
+                    mes.balance >= 0 ? 'text-success-600' : 'text-danger-600'
                   }`}
                 >
                   {formatCurrency(mes.balance)}
@@ -294,17 +294,17 @@ export function Reportes() {
           <tfoot className="bg-gray-50">
             <tr>
               <td className="font-bold">TOTAL</td>
-              <td className="text-right font-bold text-green-600">
+              <td className="text-right font-bold text-success-600">
                 {formatCurrency(historico?.reduce((sum, m) => sum + m.ingresos, 0) || 0)}
               </td>
-              <td className="text-right font-bold text-red-600">
+              <td className="text-right font-bold text-danger-600">
                 {formatCurrency(historico?.reduce((sum, m) => sum + m.gastos, 0) || 0)}
               </td>
               <td
                 className={`text-right font-bold ${
                   (historico?.reduce((sum, m) => sum + m.balance, 0) || 0) >= 0
-                    ? 'text-green-600'
-                    : 'text-red-600'
+                    ? 'text-success-600'
+                    : 'text-danger-600'
                 }`}
               >
                 {formatCurrency(historico?.reduce((sum, m) => sum + m.balance, 0) || 0)}
