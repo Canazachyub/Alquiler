@@ -359,9 +359,27 @@ export async function generateContratoPDF(data: ContratoData): Promise<void> {
   doc.setLineWidth(0.8);
   doc.rect(leftColX, yLeft, 45, 14);
   doc.setFontSize(12);
-  doc.setFont('helvetica', 'normal');
-  doc.setTextColor(lightGray[0], lightGray[1], lightGray[2]);
-  doc.text('____/____/________', leftColX + 5, yLeft + 9);
+
+  // Mostrar fecha de ingreso si existe
+  let fechaPagoText = '____/____/________';
+  if (inquilino.fechaIngreso) {
+    const fecha = new Date(inquilino.fechaIngreso);
+    if (!isNaN(fecha.getTime())) {
+      const dia = String(fecha.getDate()).padStart(2, '0');
+      const mes = String(fecha.getMonth() + 1).padStart(2, '0');
+      const anio = fecha.getFullYear();
+      fechaPagoText = `${dia}/${mes}/${anio}`;
+    }
+  }
+
+  if (fechaPagoText === '____/____/________') {
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(lightGray[0], lightGray[1], lightGray[2]);
+  } else {
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(darkGray[0], darkGray[1], darkGray[2]);
+  }
+  doc.text(fechaPagoText, leftColX + 5, yLeft + 9);
 
   // ========== COLUMNA DERECHA - REGLAS ==========
   doc.setFontSize(8);
