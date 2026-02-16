@@ -62,12 +62,16 @@ class BaseRepository {
     return this.headers.map((header) => {
       const headerLower = header.toLowerCase();
       const actualKey = objLowerKeys.get(headerLower);
-      const value = actualKey ? obj[actualKey] : undefined;
+      let value = actualKey ? obj[actualKey] : undefined;
 
       // Convertir strings de fecha a Date
-      if (typeof value === 'string' && header.toLowerCase().includes('fecha')) {
+      if (typeof value === 'string' && headerLower.includes('fecha')) {
         return new Date(value);
       }
+
+      // Convertir strings booleanas a boolean real para Google Sheets
+      if (value === 'true') value = true;
+      if (value === 'false') value = false;
 
       return value ?? '';
     });

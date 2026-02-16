@@ -9,17 +9,26 @@ function doGet(e: GoogleAppsScript.Events.DoGet): GoogleAppsScript.Content.TextO
   try {
     const params = e.parameter;
 
-    // Construir request desde query params
+    // Para POST/PUT, los datos vienen como JSON string en el parametro 'data'
+    // Para GET, los filtros vienen como parametros individuales en la URL
+    let requestData: Record<string, unknown>;
+    if (params.data) {
+      try {
+        requestData = JSON.parse(params.data as string);
+      } catch {
+        requestData = params as Record<string, unknown>;
+      }
+    } else {
+      requestData = params as Record<string, unknown>;
+    }
+
     const request: ApiRequest = {
       action: (params.action as 'GET' | 'POST' | 'PUT' | 'DELETE') || 'GET',
       endpoint: params.endpoint || '/',
-      data: params,
+      data: requestData,
     };
 
-    const response = handleRequest(request);
-
-    // Agregar headers CORS
-    return response;
+    return handleRequest(request);
   } catch (error) {
     console.error('Error en doGet:', error);
     return errorResponse(String(error));
