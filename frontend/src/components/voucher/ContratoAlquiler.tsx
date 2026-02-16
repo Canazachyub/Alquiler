@@ -256,11 +256,12 @@ export async function generateContratoPDF(data: ContratoData): Promise<void> {
 
   // ---- COLUMNA IZQUIERDA: DATOS DEL INQUILINO ----
 
-  // Marco de la seccion datos (empieza antes del header para darle espacio)
-  const datosBoxY = yL - 5;
-
+  // Header FUERA de la caja (arriba)
   yL = sectionHeader('DATOS DEL INQUILINO', yL);
-  yL += 1;
+
+  // Marco empieza DESPUES del header
+  const datosBoxY = yL - 2;
+  yL += 2;
 
   // Campo: Celular
   yL = fieldRow('Celular:', String(inquilino.telefono || ''), yL, colLeftX + 1, colLeftW - 2);
@@ -360,10 +361,12 @@ export async function generateContratoPDF(data: ContratoData): Promise<void> {
   doc.roundedRect(colLeftX - 2, datosBoxY, colLeftW + 4, yL - datosBoxY + 4, 2, 2, 'S');
 
   // ---- COLUMNA DERECHA: REGLAS ----
-  const reglasBoxY = yR - 5;
-
+  // Header FUERA de la caja (arriba)
   yR = sectionHeader('REGLAS DEL INQUILINO', yR);
-  yR += 1;
+
+  // Marco empieza DESPUES del header
+  const reglasBoxY = yR - 2;
+  yR += 2;
 
   const reglas = [
     'En esta vivienda esta totalmente prohibido tomar bebidas alcoholicas o cualquier sustancia toxica.',
@@ -404,10 +407,13 @@ export async function generateContratoPDF(data: ContratoData): Promise<void> {
   // ================================================================
   // FIRMA Y HUELLA DACTILAR
   // ================================================================
-  const firmaY = Math.max(yL, yR) + 18;
+  const separatorY = Math.max(yL, yR) + 8;
 
   // Linea separadora antes de firmas
-  hLine(firmaY - 10, margin, pageWidth - margin, accent);
+  hLine(separatorY, margin, pageWidth - margin, accent);
+
+  // Todo el contenido de firma/huella va DEBAJO de la linea
+  const firmaY = separatorY + 25;
 
   // Firma del inquilino - centrado izquierda
   const firmaLineX1 = margin + 10;
@@ -425,11 +431,11 @@ export async function generateContratoPDF(data: ContratoData): Promise<void> {
   doc.text(nombreCompleto.toUpperCase(), (firmaLineX1 + firmaLineX2) / 2, firmaY + 8, { align: 'center' });
   doc.text(`DNI: ${dniText}`, (firmaLineX1 + firmaLineX2) / 2, firmaY + 12, { align: 'center' });
 
-  // Huella dactilar - derecha
+  // Huella dactilar - derecha, DEBAJO de la linea separadora
   const huellaW = 26;
   const huellaH = 30;
   const huellaX = pageWidth - margin - huellaW - 5;
-  const huellaY = firmaY - 25;
+  const huellaY = separatorY + 4;
   doc.setDrawColor(borderColor[0], borderColor[1], borderColor[2]);
   doc.setLineWidth(0.5);
   doc.roundedRect(huellaX, huellaY, huellaW, huellaH, 2, 2, 'S');
