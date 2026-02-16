@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { Plus, Search, ChevronLeft, ChevronRight, Calendar, CreditCard, Printer, FileDown } from 'lucide-react';
+import { Plus, Search, ChevronLeft, ChevronRight, Calendar, CreditCard, Printer, FileDown, Zap } from 'lucide-react';
 import { PagoForm } from '@/components/forms';
 import { Modal, LoadingPage, EmptyState } from '@/components/ui';
 import { VoucherPago, printVoucher, generateVoucherPDF } from '@/components/voucher';
+import { printThermalVoucher, isThermalPrinterAvailable, connectThermalPrinter, checkThermalPrinter } from '@/utils/thermalPrint';
 import {
   usePagosByMes,
   useResumenPagosMes,
@@ -26,6 +27,10 @@ export function Pagos() {
   const [voucherPago, setVoucherPago] = useState<Pago | null>(null);
   const [isVoucherModalOpen, setIsVoucherModalOpen] = useState(false);
   const [preselectedHabitacionId, setPreselectedHabitacionId] = useState<string | null>(null);
+  const [thermalAvailable, setThermalAvailable] = useState(false);
+  const [thermalPrinting, setThermalPrinting] = useState(false);
+  const [thermalConnected, setThermalConnected] = useState(false);
+  const [thermalConnecting, setThermalConnecting] = useState(false);
 
   const { mesActual, anioActual, edificioSeleccionado, setMesAnio } = useConfigStore();
   const { notify } = useNotifications();
@@ -111,8 +116,50 @@ export function Pagos() {
     setIsVoucherModalOpen(true);
   };
 
+  // Check if thermal printer server is running
+  useEffect(() => {
+    if (isVoucherModalOpen) {
+      isThermalPrinterAvailable().then(setThermalAvailable);
+      checkThermalPrinter()
+        .then((s) => setThermalConnected(s.printer_connected))
+        .catch(() => setThermalConnected(false));
+    }
+  }, [isVoucherModalOpen]);
+
+  const handleThermalConnect = async () => {
+    setThermalConnecting(true);
+    try {
+      await connectThermalPrinter();
+      setThermalConnected(true);
+      notify.success('Impresora termica conectada');
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : 'Error al conectar';
+      notify.error(msg);
+    } finally {
+      setThermalConnecting(false);
+    }
+  };
+
   const handlePrintVoucher = () => {
     printVoucher('voucher-pago');
+  };
+
+  const handleThermalPrint = async () => {
+    if (!voucherPago || thermalPrinting) return;
+    setThermalPrinting(true);
+    try {
+      await printThermalVoucher({
+        pago: voucherPago,
+        inquilino: getInquilinoForPago(voucherPago),
+        habitacion: getHabitacionForPago(voucherPago),
+      });
+      notify.success('Voucher impreso en impresora termica');
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : 'Error al imprimir';
+      notify.error(msg);
+    } finally {
+      setThermalPrinting(false);
+    }
   };
 
   const handleGeneratePDF = () => {
@@ -369,13 +416,33 @@ export function Pagos() {
               />
             </div>
           )}
-          <div className="flex justify-center gap-3 pt-4 border-t">
+          <div className="flex flex-wrap justify-center gap-3 pt-4 border-t">
             <button
               onClick={() => setIsVoucherModalOpen(false)}
               className="btn btn-outline"
             >
               Cerrar
             </button>
+            {thermalAvailable && !thermalConnected && (
+              <button
+                onClick={handleThermalConnect}
+                disabled={thermalConnecting}
+                className="btn bg-gray-600 hover:bg-gray-700 text-white"
+              >
+                <Zap className="w-4 h-4 mr-2" />
+                {thermalConnecting ? 'Conectando...' : 'Conectar Impresora'}
+              </button>
+            )}
+            {thermalAvailable && thermalConnected && (
+              <button
+                onClick={handleThermalPrint}
+                disabled={thermalPrinting}
+                className="btn bg-orange-500 hover:bg-orange-600 text-white"
+              >
+                <Zap className="w-4 h-4 mr-2" />
+                {thermalPrinting ? 'Imprimiendo...' : 'Imp. Termica'}
+              </button>
+            )}
             <button
               onClick={handlePrintVoucher}
               className="btn btn-outline"

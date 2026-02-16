@@ -16,7 +16,7 @@ interface ContratoData {
 }
 
 /**
- * Genera el PDF del contrato de alquiler con mejor diseño
+ * Genera el PDF del contrato de alquiler - Diseño profesional y formal
  */
 export async function generateContratoPDF(data: ContratoData): Promise<void> {
   const { inquilino, habitacion, edificio } = data;
@@ -39,10 +39,7 @@ export async function generateContratoPDF(data: ContratoData): Promise<void> {
     qrDataUrl = await QRCode.toDataURL(consultaUrl, {
       width: 200,
       margin: 1,
-      color: {
-        dark: '#323232',
-        light: '#ffffff'
-      }
+      color: { dark: '#37306B', light: '#ffffff' }
     });
   } catch (err) {
     console.error('Error generating QR:', err);
@@ -50,326 +47,271 @@ export async function generateContratoPDF(data: ContratoData): Promise<void> {
 
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
-  const margin = 15;
+  const margin = 18;
   const contentWidth = pageWidth - (margin * 2);
-  let y = 20;
+  let y = 0;
 
-  // Colores
-  const primaryColor = [41, 128, 185]; // Azul
-  const darkGray = [50, 50, 50];
-  const lightGray = [150, 150, 150];
+  // Colores del sistema de diseño
+  const accent: [number, number, number] = [55, 48, 107];   // indigo oscuro
+  const accentLight: [number, number, number] = [99, 91, 160]; // indigo claro
+  const dark: [number, number, number] = [33, 37, 41];
+  const mid: [number, number, number] = [108, 117, 125];
+  const lightBg: [number, number, number] = [245, 245, 250];
+  const borderColor: [number, number, number] = [210, 210, 220];
+  const white: [number, number, number] = [255, 255, 255];
 
-  // ========== HEADER ==========
-  // Borde superior decorativo
-  doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-  doc.rect(0, 0, pageWidth, 5, 'F');
+  // Helper: linea solida fina
+  const hLine = (yPos: number, x1 = margin, x2 = pageWidth - margin, color = borderColor) => {
+    doc.setDrawColor(color[0], color[1], color[2]);
+    doc.setLineWidth(0.4);
+    doc.line(x1, yPos, x2, yPos);
+  };
 
-  y = 15;
+  // Helper: encabezado de seccion con linea
+  const sectionHeader = (title: string, yPos: number): number => {
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(accent[0], accent[1], accent[2]);
+    doc.text(title, margin, yPos);
+    const tw = doc.getTextWidth(title);
+    doc.setDrawColor(accent[0], accent[1], accent[2]);
+    doc.setLineWidth(0.6);
+    doc.line(margin, yPos + 1.5, margin + tw, yPos + 1.5);
+    return yPos + 7;
+  };
 
-  // Logo - Cuadrado con icono de casa
-  doc.setDrawColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-  doc.setLineWidth(1.5);
-  doc.roundedRect(margin, y, 18, 18, 3, 3, 'S');
+  // Helper: campo con etiqueta y valor en fila
+  const fieldRow = (label: string, value: string, yPos: number, xStart = margin, maxWidth = contentWidth): number => {
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(mid[0], mid[1], mid[2]);
+    doc.text(label, xStart, yPos);
+    const labelW = doc.getTextWidth(label + ' ');
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(dark[0], dark[1], dark[2]);
+    doc.text(String(value || '________'), xStart + labelW, yPos);
+    // linea punteada bajo el valor
+    doc.setDrawColor(borderColor[0], borderColor[1], borderColor[2]);
+    doc.setLineWidth(0.3);
+    doc.setLineDashPattern([1, 1], 0);
+    doc.line(xStart + labelW, yPos + 1, xStart + maxWidth * 0.45, yPos + 1);
+    doc.setLineDashPattern([], 0);
+    return yPos + 6;
+  };
 
-  // Icono de casa dentro del logo
-  doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-  // Techo
-  doc.triangle(margin + 9, y + 4, margin + 3, y + 10, margin + 15, y + 10, 'F');
-  // Cuerpo de la casa
-  doc.rect(margin + 5, y + 10, 8, 6, 'F');
-  // Puerta
-  doc.setFillColor(255, 255, 255);
-  doc.rect(margin + 7.5, y + 12, 3, 4, 'F');
+  // Helper: checkbox
+  const checkbox = (label: string, checked: boolean, xPos: number, yPos: number): number => {
+    doc.setDrawColor(accent[0], accent[1], accent[2]);
+    doc.setLineWidth(0.5);
+    doc.roundedRect(xPos, yPos - 3.5, 4.5, 4.5, 0.5, 0.5, 'S');
+    if (checked) {
+      doc.setFillColor(accent[0], accent[1], accent[2]);
+      doc.roundedRect(xPos + 0.5, yPos - 3, 3.5, 3.5, 0.3, 0.3, 'F');
+      doc.setFontSize(7);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(white[0], white[1], white[2]);
+      doc.text('✓', xPos + 1, yPos - 0.3);
+    }
+    doc.setFontSize(8.5);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(dark[0], dark[1], dark[2]);
+    doc.text(label, xPos + 6.5, yPos);
+    return yPos + 7;
+  };
 
-  // Titulo
-  doc.setFontSize(20);
+  // ================================================================
+  // BORDE SUPERIOR DECORATIVO
+  // ================================================================
+  doc.setFillColor(accent[0], accent[1], accent[2]);
+  doc.rect(0, 0, pageWidth, 4, 'F');
+
+  // Franja secundaria mas fina
+  doc.setFillColor(accentLight[0], accentLight[1], accentLight[2]);
+  doc.rect(0, 4, pageWidth, 1.5, 'F');
+
+  y = 12;
+
+  // ================================================================
+  // MARCO EXTERIOR DEL DOCUMENTO
+  // ================================================================
+  doc.setDrawColor(borderColor[0], borderColor[1], borderColor[2]);
+  doc.setLineWidth(0.6);
+  doc.roundedRect(margin - 4, y - 3, contentWidth + 8, pageHeight - y - 12, 2, 2, 'S');
+
+  // Marco interior decorativo (doble linea)
+  doc.setDrawColor(230, 230, 235);
+  doc.setLineWidth(0.3);
+  doc.roundedRect(margin - 2, y - 1, contentWidth + 4, pageHeight - y - 16, 1.5, 1.5, 'S');
+
+  // ================================================================
+  // HEADER
+  // ================================================================
+  // Titulo principal
+  doc.setFontSize(18);
   doc.setFont('helvetica', 'bold');
-  doc.setTextColor(darkGray[0], darkGray[1], darkGray[2]);
-  doc.text('CONTRATO DE ALQUILER', margin + 23, y + 7);
+  doc.setTextColor(accent[0], accent[1], accent[2]);
+  doc.text('CONTRATO DE ALQUILER', margin, y + 5);
 
-  // Nombre edificio
+  // Subtitulo con nombre del edificio
   const nombreEdificio = String(edificio?.nombre || '');
   if (nombreEdificio) {
     doc.setFontSize(10);
     doc.setFont('helvetica', 'bold');
-    doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-    doc.text(nombreEdificio.toUpperCase(), margin + 23, y + 13);
+    doc.setTextColor(dark[0], dark[1], dark[2]);
+    doc.text(nombreEdificio.toUpperCase(), margin, y + 11);
   }
 
   // Direccion y telefono
-  doc.setFontSize(9);
+  const dirY = nombreEdificio ? y + 15 : y + 11;
+  doc.setFontSize(8);
   doc.setFont('helvetica', 'normal');
-  doc.setTextColor(lightGray[0], lightGray[1], lightGray[2]);
+  doc.setTextColor(mid[0], mid[1], mid[2]);
   const direccion = String(edificio?.direccion || 'Jr. Candelaria A16');
   const telefono = String(edificio?.telefono || '051-601731');
-  doc.text(direccion, margin + 23, nombreEdificio ? y + 17 : y + 13);
-  doc.text(telefono, margin + 23, nombreEdificio ? y + 21 : y + 17);
+  doc.text(`${direccion}  |  Tel: ${telefono}`, margin, dirY);
 
-  // QR Code real
-  const qrX = pageWidth - margin - 22;
+  // QR Code a la derecha
+  const qrSize = 22;
+  const qrX = pageWidth - margin - qrSize;
   const qrY = y;
 
   if (qrDataUrl) {
-    // Agregar imagen QR real
-    doc.addImage(qrDataUrl, 'PNG', qrX, qrY, 22, 22);
+    // Marco del QR
+    doc.setDrawColor(borderColor[0], borderColor[1], borderColor[2]);
+    doc.setLineWidth(0.4);
+    doc.roundedRect(qrX - 1.5, qrY - 1.5, qrSize + 3, qrSize + 3, 1, 1, 'S');
+    doc.addImage(qrDataUrl, 'PNG', qrX, qrY, qrSize, qrSize);
   } else {
-    // Fallback: patron QR simple si no se pudo generar
-    doc.setDrawColor(darkGray[0], darkGray[1], darkGray[2]);
-    doc.setLineWidth(0.5);
-    doc.rect(qrX, qrY, 22, 22);
-    doc.setFillColor(darkGray[0], darkGray[1], darkGray[2]);
-    doc.rect(qrX + 2, qrY + 2, 5, 5, 'F');
-    doc.rect(qrX + 15, qrY + 2, 5, 5, 'F');
-    doc.rect(qrX + 2, qrY + 15, 5, 5, 'F');
+    doc.setDrawColor(mid[0], mid[1], mid[2]);
+    doc.setLineWidth(0.4);
+    doc.roundedRect(qrX, qrY, qrSize, qrSize, 1, 1, 'S');
+    doc.setFontSize(6);
+    doc.setTextColor(mid[0], mid[1], mid[2]);
+    doc.text('QR', qrX + qrSize / 2, qrY + qrSize / 2, { align: 'center' });
   }
 
   // Etiqueta bajo el QR
-  doc.setFontSize(5);
-  doc.setTextColor(lightGray[0], lightGray[1], lightGray[2]);
-  doc.text('Escanea para consultar', qrX - 1, qrY + 24);
-  doc.text('estado de pago', qrX + 2, qrY + 27);
+  doc.setFontSize(5.5);
+  doc.setTextColor(mid[0], mid[1], mid[2]);
+  doc.text('Consulta estado de pago', qrX + qrSize / 2, qrY + qrSize + 3, { align: 'center' });
 
-  y += 30;
+  y = dirY + 6;
+  hLine(y, margin, pageWidth - margin, accent);
+  y += 8;
 
-  // Linea separadora
-  doc.setDrawColor(220, 220, 220);
-  doc.setLineWidth(0.5);
-  doc.line(margin, y, pageWidth - margin, y);
-
-  y += 10;
-
-  // ========== IDENTIFICACION DEL INQUILINO ==========
-  doc.setFontSize(11);
-  doc.setTextColor(darkGray[0], darkGray[1], darkGray[2]);
-  doc.setFont('helvetica', 'normal');
-
+  // ================================================================
+  // DECLARACION DEL INQUILINO
+  // ================================================================
   const nombreCompleto = `${inquilino.nombre || ''} ${inquilino.apellido || ''}`.trim() || '________________';
+  const dniText = String(inquilino.dni || '') || '________';
 
-  // YO ______ IDENTIFICADO(A)
-  doc.text('YO', margin, y);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-  doc.text(nombreCompleto.toUpperCase(), margin + 8, y);
+  doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
-  doc.setTextColor(darkGray[0], darkGray[1], darkGray[2]);
-  // Linea bajo el nombre
-  const nombreWidth = doc.getTextWidth(nombreCompleto.toUpperCase());
-  doc.setDrawColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-  doc.line(margin + 8, y + 1, margin + 8 + Math.max(nombreWidth, 70), y + 1);
-  doc.text('IDENTIFICADO(A)', pageWidth - margin - 32, y);
+  doc.setTextColor(dark[0], dark[1], dark[2]);
 
-  y += 8;
-
-  // CON DNI ______ EN CONDICION DE INQUILINO ACEPTO
-  doc.text('CON DNI', margin, y);
+  // Texto de declaracion en parrafo
+  const decl1 = `YO,`;
+  doc.text(decl1, margin, y);
   doc.setFont('helvetica', 'bold');
-  doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-  doc.text(String(inquilino.dni || '') || '________', margin + 18, y);
+  doc.setTextColor(accent[0], accent[1], accent[2]);
+  doc.text(` ${nombreCompleto.toUpperCase()}`, margin + doc.getTextWidth(decl1), y);
+  const nameEndX = margin + doc.getTextWidth(decl1) + doc.getTextWidth(` ${nombreCompleto.toUpperCase()}`);
   doc.setFont('helvetica', 'normal');
-  doc.setTextColor(darkGray[0], darkGray[1], darkGray[2]);
-  doc.line(margin + 18, y + 1, margin + 40, y + 1);
-  doc.text('EN CONDICION DE INQUILINO ACEPTO', margin + 45, y);
+  doc.setTextColor(dark[0], dark[1], dark[2]);
+  doc.text(', IDENTIFICADO(A)', nameEndX, y);
 
-  y += 8;
-
-  // LAS SIGUIENTES CONDICIONES:
-  doc.text('LAS SIGUIENTES CONDICIONES:', margin, y);
-
-  // Linea separadora
-  y += 4;
-  doc.setDrawColor(220, 220, 220);
-  doc.line(margin, y, pageWidth - margin, y);
-
-  y += 8;
-
-  // ========== SECCION DE DOS COLUMNAS ==========
-  const leftColX = margin;
-  const rightColX = 85;
-  let yLeft = y;
-  let yRight = y;
-
-  // ========== COLUMNA IZQUIERDA - DATOS DEL INQUILINO ==========
-  doc.setFontSize(12);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(darkGray[0], darkGray[1], darkGray[2]);
-  doc.text('DATOS DEL INQUILINO', leftColX, yLeft);
-
-  yLeft += 10;
-
-  // Funcion para dibujar icono de telefono
-  const drawPhoneIcon = (x: number, y: number, size: number) => {
-    doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-    // Cuerpo del telefono (rectangulo redondeado)
-    doc.roundedRect(x + size * 0.25, y + size * 0.1, size * 0.5, size * 0.8, size * 0.1, size * 0.1, 'F');
-    // Pantalla (blanco)
-    doc.setFillColor(255, 255, 255);
-    doc.rect(x + size * 0.3, y + size * 0.2, size * 0.4, size * 0.5, 'F');
-    // Boton inferior
-    doc.circle(x + size * 0.5, y + size * 0.8, size * 0.06, 'F');
-  };
-
-  // Funcion para dibujar icono de correo
-  const drawEmailIcon = (x: number, y: number, size: number) => {
-    doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-    // Sobre (rectangulo)
-    doc.rect(x + size * 0.1, y + size * 0.25, size * 0.8, size * 0.5, 'F');
-    // Triangulo del sobre (blanco)
-    doc.setFillColor(255, 255, 255);
-    doc.triangle(
-      x + size * 0.1, y + size * 0.25,
-      x + size * 0.5, y + size * 0.55,
-      x + size * 0.9, y + size * 0.25,
-      'F'
-    );
-  };
-
-  // Funcion para dibujar icono de llave/habitacion
-  const drawKeyIcon = (x: number, y: number, size: number) => {
-    doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-    // Cabeza de la llave (circulo)
-    doc.circle(x + size * 0.3, y + size * 0.35, size * 0.2, 'F');
-    // Agujero de la llave (blanco)
-    doc.setFillColor(255, 255, 255);
-    doc.circle(x + size * 0.3, y + size * 0.35, size * 0.08, 'F');
-    // Cuerpo de la llave
-    doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-    doc.rect(x + size * 0.45, y + size * 0.3, size * 0.45, size * 0.1, 'F');
-    // Dientes de la llave
-    doc.rect(x + size * 0.7, y + size * 0.4, size * 0.08, size * 0.15, 'F');
-    doc.rect(x + size * 0.82, y + size * 0.4, size * 0.08, size * 0.1, 'F');
-  };
-
-  // Funcion helper para campos con icono
-  const drawField = (label: string, value: string, iconType: 'phone' | 'email' | 'key', yPos: number) => {
-    doc.setFontSize(9);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(darkGray[0], darkGray[1], darkGray[2]);
-    doc.text(label, leftColX, yPos);
-
-    // Cuadro con icono
-    doc.setDrawColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-    doc.setLineWidth(0.8);
-    doc.roundedRect(leftColX, yPos + 3, 10, 10, 1, 1, 'S');
-
-    // Dibujar icono segun tipo
-    if (iconType === 'phone') {
-      drawPhoneIcon(leftColX, yPos + 3, 10);
-    } else if (iconType === 'email') {
-      drawEmailIcon(leftColX, yPos + 3, 10);
-    } else if (iconType === 'key') {
-      drawKeyIcon(leftColX, yPos + 3, 10);
-    }
-
-    // Valor
-    doc.setFontSize(11);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(darkGray[0], darkGray[1], darkGray[2]);
-    doc.text(String(value || '') || '________________', leftColX + 14, yPos + 10);
-
-    // Linea bajo el valor
-    doc.setDrawColor(220, 220, 220);
-    doc.line(leftColX + 14, yPos + 11, leftColX + 55, yPos + 11);
-
-    return yPos + 18;
-  };
-
-  // CELULAR
-  yLeft = drawField('CELULAR:', String(inquilino.telefono || ''), 'phone', yLeft);
-
-  // CELULAR APODERADO
-  yLeft = drawField('CELULAR APODERADO:', String(inquilino.telefonoEmergencia || ''), 'phone', yLeft);
-
-  // CORREO
-  yLeft = drawField('CORREO:', String(inquilino.email || ''), 'email', yLeft);
-
-  // NUMERO DE HABITACION
-  doc.setFontSize(9);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(darkGray[0], darkGray[1], darkGray[2]);
-  doc.text('NUMERO DE HABITACION:', leftColX, yLeft);
-
-  yLeft += 3;
-  // Cuadro con icono de llave
-  doc.setDrawColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-  doc.setLineWidth(0.8);
-  doc.roundedRect(leftColX, yLeft, 10, 10, 1, 1, 'S');
-  drawKeyIcon(leftColX, yLeft, 10);
-
-  // Cuadro grande con codigo de habitacion
-  doc.setFillColor(245, 245, 245);
-  doc.roundedRect(leftColX + 14, yLeft - 1, 20, 12, 2, 2, 'FD');
-  doc.setFontSize(16);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-  doc.text(habitacion.codigo || '___', leftColX + 17, yLeft + 7);
-
-  yLeft += 18;
-
-  // GARANTIA
-  doc.setFontSize(9);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(darkGray[0], darkGray[1], darkGray[2]);
-  doc.text('GARANTIA', leftColX + 5, yLeft);
-  // Checkbox
-  doc.setDrawColor(darkGray[0], darkGray[1], darkGray[2]);
+  // Subrayado del nombre
+  doc.setDrawColor(accent[0], accent[1], accent[2]);
   doc.setLineWidth(0.5);
-  doc.rect(leftColX + 28, yLeft - 4, 6, 6);
-  if (garantia) {
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-    doc.text('X', leftColX + 29.5, yLeft);
-  }
+  doc.line(margin + doc.getTextWidth(decl1) + 1, y + 1, nameEndX, y + 1);
 
-  yLeft += 10;
+  y += 7;
 
-  // LLAVES
-  doc.setFontSize(10);
+  doc.text('CON DNI N° ', margin, y);
   doc.setFont('helvetica', 'bold');
-  doc.setTextColor(darkGray[0], darkGray[1], darkGray[2]);
-  doc.text('LLAVES', leftColX, yLeft);
+  doc.setTextColor(accent[0], accent[1], accent[2]);
+  const dniStartX = margin + doc.getTextWidth('CON DNI N° ');
+  doc.text(dniText, dniStartX, y);
+  doc.setDrawColor(accent[0], accent[1], accent[2]);
+  doc.line(dniStartX, y + 1, dniStartX + 22, y + 1);
 
-  yLeft += 7;
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(dark[0], dark[1], dark[2]);
+  doc.text(', EN CONDICION DE INQUILINO, ACEPTO LAS SIGUIENTES CONDICIONES:', dniStartX + 23, y);
+
+  y += 6;
+  hLine(y);
+  y += 8;
+
+  // ================================================================
+  // DOS COLUMNAS: DATOS + REGLAS
+  // ================================================================
+  const colLeftX = margin;
+  const colGap = 8;
+  const colLeftW = 63;
+  const colRightX = margin + colLeftW + colGap;
+  const colRightW = contentWidth - colLeftW - colGap;
+  let yL = y;
+  let yR = y;
+
+  // ---- COLUMNA IZQUIERDA: DATOS DEL INQUILINO ----
+
+  // Marco de la seccion datos (empieza antes del header para darle espacio)
+  const datosBoxY = yL - 5;
+
+  yL = sectionHeader('DATOS DEL INQUILINO', yL);
+  yL += 1;
+
+  // Campo: Celular
+  yL = fieldRow('Celular:', String(inquilino.telefono || ''), yL, colLeftX + 1, colLeftW - 2);
+
+  // Campo: Celular apoderado
+  yL = fieldRow('Cel. Apoderado:', String(inquilino.telefonoEmergencia || ''), yL, colLeftX + 1, colLeftW - 2);
+
+  // Campo: Correo
+  yL = fieldRow('Correo:', String(inquilino.email || ''), yL, colLeftX + 1, colLeftW - 2);
+
+  yL += 2;
+
+  // Campo: Habitacion con caja destacada
   doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
+  doc.setTextColor(mid[0], mid[1], mid[2]);
+  doc.text('Habitacion N°:', colLeftX + 1, yL);
 
-  // HABITACION checkbox
-  doc.text('HABITACION:', leftColX + 5, yLeft);
-  doc.rect(leftColX + 30, yLeft - 4, 6, 6);
-  if (llaveHabitacion) {
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-    doc.text('X', leftColX + 31.5, yLeft);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(darkGray[0], darkGray[1], darkGray[2]);
-  }
-
-  yLeft += 7;
-  // PUERTA DE CALLE checkbox
-  doc.text('PUERTA DE CALLE:', leftColX + 5, yLeft);
-  doc.rect(leftColX + 38, yLeft - 4, 6, 6);
-  if (llavePuertaCalle) {
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-    doc.text('X', leftColX + 39.5, yLeft);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(darkGray[0], darkGray[1], darkGray[2]);
-  }
-
-  yLeft += 12;
-
-  // FECHA DE PAGO
-  doc.setFontSize(10);
+  // Caja con el codigo
+  const habBoxX = colLeftX + 1 + doc.getTextWidth('Habitacion N°: ') + 1;
+  doc.setFillColor(lightBg[0], lightBg[1], lightBg[2]);
+  doc.setDrawColor(accent[0], accent[1], accent[2]);
+  doc.setLineWidth(0.6);
+  doc.roundedRect(habBoxX, yL - 4, 16, 7, 1.5, 1.5, 'FD');
+  doc.setFontSize(11);
   doc.setFont('helvetica', 'bold');
-  doc.text('FECHA DE PAGO:', leftColX, yLeft);
+  doc.setTextColor(accent[0], accent[1], accent[2]);
+  doc.text(habitacion.codigo || '___', habBoxX + 8, yL + 0.5, { align: 'center' });
 
-  yLeft += 5;
-  // Cuadro para fecha
-  doc.setDrawColor(darkGray[0], darkGray[1], darkGray[2]);
-  doc.setLineWidth(0.8);
-  doc.rect(leftColX, yLeft, 45, 14);
-  doc.setFontSize(12);
+  yL += 10;
 
-  // Mostrar fecha de ingreso si existe
+  // Seccion ENTREGA
+  yL = sectionHeader('ENTREGA', yL);
+
+  // Checkbox garantia
+  yL = checkbox('Garantia entregada', garantia, colLeftX + 1, yL);
+
+  // Checkbox llaves
+  yL = checkbox('Llave de habitacion', llaveHabitacion, colLeftX + 1, yL);
+  yL = checkbox('Llave puerta de calle', llavePuertaCalle, colLeftX + 1, yL);
+
+  yL += 3;
+
+  // Fecha de ingreso
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(mid[0], mid[1], mid[2]);
+  doc.text('Fecha de ingreso:', colLeftX + 1, yL);
+  yL += 5;
+
+  // Caja de fecha
   let fechaPagoText = '____/____/________';
   if (inquilino.fechaIngreso) {
     const fecha = new Date(inquilino.fechaIngreso);
@@ -381,113 +323,148 @@ export async function generateContratoPDF(data: ContratoData): Promise<void> {
     }
   }
 
+  doc.setFillColor(lightBg[0], lightBg[1], lightBg[2]);
+  doc.setDrawColor(borderColor[0], borderColor[1], borderColor[2]);
+  doc.setLineWidth(0.4);
+  doc.roundedRect(colLeftX + 1, yL - 3, 42, 9, 1.5, 1.5, 'FD');
+
+  doc.setFontSize(10);
   if (fechaPagoText === '____/____/________') {
     doc.setFont('helvetica', 'normal');
-    doc.setTextColor(lightGray[0], lightGray[1], lightGray[2]);
+    doc.setTextColor(mid[0], mid[1], mid[2]);
   } else {
     doc.setFont('helvetica', 'bold');
-    doc.setTextColor(darkGray[0], darkGray[1], darkGray[2]);
+    doc.setTextColor(dark[0], dark[1], dark[2]);
   }
-  doc.text(fechaPagoText, leftColX + 5, yLeft + 9);
+  doc.text(fechaPagoText, colLeftX + 5, yL + 3);
 
-  // ========== COLUMNA DERECHA - REGLAS ==========
-  doc.setFontSize(8);
-  doc.setFont('helvetica', 'normal');
-  doc.setTextColor(darkGray[0], darkGray[1], darkGray[2]);
+  yL += 14;
 
-  const reglas = [
-    { num: '1', text: 'EN ESTA VIVIENDA ESTA TOTALMENTE PROHIBIDO TOMAR BEBIDAS ALCOHOLICAS O CUALQUIER SUSTANCIA TOXICA.' },
-    { num: '2', text: 'LA PUERTA PRINCIPAL SE CIERRA A PARTIR DE LA 10:50 PM COMO LAPSO MAXIMO.' },
-    { num: '3', text: 'QUEDA PARCIALMENTE IMPEDIDO HACER USO DE ARTEFACTOS ELECTRICOS QUE REQUIERAN UNA MAYOR POTENCIA DE USO.' },
-    { num: '4', text: 'NO DANARE LAS PAREDES (CASO CONTRARIO DEJARE COMO EL DUENO ME BRINDO LA HABITACION).' },
-    { num: '5', text: 'PAGARE PUNTUALMENTE LA PENSION DE ALQUILER (PASADA LA FECHA DE PAGO ADICIONARE $1 POR DIA QUE TRANSCURRA).' },
-    { num: '6', text: 'MANTENDRE LIMPIO EL PASADIZOS Y LOS SERVICIOS HIGIENICOS.' },
-    { num: '7', text: 'TODO VISITANTE DEL INQUILINO DEBE HACERSE CONOCER AL DUENO.' }
-  ];
+  // Monto de alquiler
+  yL = sectionHeader('MONTO DE ALQUILER', yL);
 
-  reglas.forEach((regla) => {
-    // Numero de regla en circulo
-    doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-    doc.circle(rightColX + 3, yRight + 1, 3, 'F');
-    doc.setFontSize(7);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(255, 255, 255);
-    doc.text(regla.num, rightColX + 2, yRight + 2.5);
-
-    // Texto de la regla
-    doc.setFontSize(8);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(darkGray[0], darkGray[1], darkGray[2]);
-    const lines = doc.splitTextToSize(regla.text, contentWidth - 75);
-    lines.forEach((line: string, idx: number) => {
-      doc.text(line, rightColX + 8, yRight + (idx * 4) + 2);
-    });
-    yRight += (lines.length * 4) + 6;
-  });
-
-  // ========== MONTO DE ALQUILER ==========
-  yLeft += 3;
-  doc.setFontSize(10);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(darkGray[0], darkGray[1], darkGray[2]);
-  doc.text('MONTO DE ALQUILER:', leftColX, yLeft);
-
-  yLeft += 5;
-  // Cuadro con monto
-  doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-  doc.roundedRect(leftColX, yLeft, 50, 12, 2, 2, 'F');
+  // Caja destacada con monto (con padding interno)
+  doc.setFillColor(accent[0], accent[1], accent[2]);
+  doc.roundedRect(colLeftX + 1, yL - 2, colLeftW - 2, 12, 2, 2, 'F');
   doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
-  doc.setTextColor(255, 255, 255);
+  doc.setTextColor(white[0], white[1], white[2]);
   const montoText = `S/ ${habitacion.montoAlquiler || '___'}`;
-  doc.text(montoText, leftColX + 25, yLeft + 8, { align: 'center' });
+  doc.text(montoText, colLeftX + colLeftW / 2, yL + 6, { align: 'center' });
 
-  // ========== FIRMA Y HUELLA ==========
-  const firmaY = Math.max(yLeft + 25, yRight + 15);
+  yL += 15;
 
-  // Firma
-  doc.setDrawColor(darkGray[0], darkGray[1], darkGray[2]);
+  // Marco alrededor de toda la columna izquierda (con padding)
+  doc.setDrawColor(borderColor[0], borderColor[1], borderColor[2]);
+  doc.setLineWidth(0.4);
+  doc.roundedRect(colLeftX - 2, datosBoxY, colLeftW + 4, yL - datosBoxY + 4, 2, 2, 'S');
+
+  // ---- COLUMNA DERECHA: REGLAS ----
+  const reglasBoxY = yR - 5;
+
+  yR = sectionHeader('REGLAS DEL INQUILINO', yR);
+  yR += 1;
+
+  const reglas = [
+    'En esta vivienda esta totalmente prohibido tomar bebidas alcoholicas o cualquier sustancia toxica.',
+    'La puerta principal se cierra a partir de las 10:50 PM como lapso maximo.',
+    'Queda parcialmente impedido hacer uso de artefactos electricos que requieran una mayor potencia de uso.',
+    'No danare las paredes (caso contrario dejare como el dueno me brindo la habitacion).',
+    'Pagare puntualmente la pension de alquiler (pasada la fecha de pago adicionare S/1 por dia que transcurra).',
+    'Mantendre limpio los pasadizos y los servicios higienicos.',
+    'Todo visitante del inquilino debe hacerse conocer al dueno.'
+  ];
+
+  reglas.forEach((regla, idx) => {
+    // Numero de regla (con padding izquierdo +2)
+    doc.setFillColor(accent[0], accent[1], accent[2]);
+    doc.circle(colRightX + 4, yR + 0.5, 3, 'F');
+    doc.setFontSize(7);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(white[0], white[1], white[2]);
+    doc.text(String(idx + 1), colRightX + 3, yR + 2);
+
+    // Texto de la regla (con padding derecho -4)
+    doc.setFontSize(7.5);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(dark[0], dark[1], dark[2]);
+    const lines = doc.splitTextToSize(regla, colRightW - 14);
+    lines.forEach((line: string, lineIdx: number) => {
+      doc.text(line, colRightX + 10, yR + (lineIdx * 3.8) + 1.5);
+    });
+    yR += (lines.length * 3.8) + 5;
+  });
+
+  // Marco alrededor de la columna derecha (alineado con caja izquierda)
+  const reglasBoxH = Math.max(yR - reglasBoxY + 4, yL - datosBoxY + 4);
+  doc.setDrawColor(borderColor[0], borderColor[1], borderColor[2]);
+  doc.setLineWidth(0.4);
+  doc.roundedRect(colRightX - 2, reglasBoxY, colRightW + 4, reglasBoxH, 2, 2, 'S');
+
+  // ================================================================
+  // FIRMA Y HUELLA DACTILAR
+  // ================================================================
+  const firmaY = Math.max(yL, yR) + 18;
+
+  // Linea separadora antes de firmas
+  hLine(firmaY - 10, margin, pageWidth - margin, accent);
+
+  // Firma del inquilino - centrado izquierda
+  const firmaLineX1 = margin + 10;
+  const firmaLineX2 = margin + 70;
+  doc.setDrawColor(dark[0], dark[1], dark[2]);
   doc.setLineWidth(0.5);
-  doc.line(margin + 20, firmaY, margin + 75, firmaY);
-  doc.setFontSize(9);
+  doc.line(firmaLineX1, firmaY, firmaLineX2, firmaY);
+  doc.setFontSize(8);
   doc.setFont('helvetica', 'bold');
-  doc.setTextColor(darkGray[0], darkGray[1], darkGray[2]);
-  doc.text('FIRMA DEL INQUILINO', margin + 25, firmaY + 5);
-
-  // Huella dactilar
-  const huellaX = pageWidth - margin - 40;
-  doc.setDrawColor(darkGray[0], darkGray[1], darkGray[2]);
-  doc.setLineWidth(0.5);
-  doc.roundedRect(huellaX, firmaY - 20, 30, 25, 2, 2, 'S');
+  doc.setTextColor(dark[0], dark[1], dark[2]);
+  doc.text('FIRMA DEL INQUILINO', (firmaLineX1 + firmaLineX2) / 2, firmaY + 4, { align: 'center' });
   doc.setFontSize(7);
   doc.setFont('helvetica', 'normal');
-  doc.setTextColor(lightGray[0], lightGray[1], lightGray[2]);
-  doc.text('HUELLA', huellaX + 15, firmaY - 1, { align: 'center' });
-  doc.text('DACTILAR', huellaX + 15, firmaY + 3, { align: 'center' });
+  doc.setTextColor(mid[0], mid[1], mid[2]);
+  doc.text(nombreCompleto.toUpperCase(), (firmaLineX1 + firmaLineX2) / 2, firmaY + 8, { align: 'center' });
+  doc.text(`DNI: ${dniText}`, (firmaLineX1 + firmaLineX2) / 2, firmaY + 12, { align: 'center' });
 
-  // ========== DECORACION INFERIOR ==========
-  // Olas decorativas con gradiente
-  const waveStartY = pageHeight - 30;
+  // Huella dactilar - derecha
+  const huellaW = 26;
+  const huellaH = 30;
+  const huellaX = pageWidth - margin - huellaW - 5;
+  const huellaY = firmaY - 25;
+  doc.setDrawColor(borderColor[0], borderColor[1], borderColor[2]);
+  doc.setLineWidth(0.5);
+  doc.roundedRect(huellaX, huellaY, huellaW, huellaH, 2, 2, 'S');
 
-  for (let i = 0; i < 6; i++) {
-    const alpha = 0.15 + (i * 0.15);
-    const r = Math.round(primaryColor[0] + (255 - primaryColor[0]) * (1 - alpha));
-    const g = Math.round(primaryColor[1] + (255 - primaryColor[1]) * (1 - alpha));
-    const b = Math.round(primaryColor[2] + (255 - primaryColor[2]) * (1 - alpha));
-
-    doc.setFillColor(r, g, b);
-    doc.setDrawColor(r, g, b);
-
-    // Dibujar onda
-    const waveY = waveStartY + (i * 4);
-    doc.rect(0, waveY, pageWidth, pageHeight - waveY, 'F');
+  // Lineas guia para la huella
+  doc.setDrawColor(230, 230, 235);
+  doc.setLineWidth(0.2);
+  for (let i = 1; i < 4; i++) {
+    doc.line(huellaX + 4, huellaY + (huellaH * i / 4), huellaX + huellaW - 4, huellaY + (huellaH * i / 4));
   }
 
-  // Borde inferior
-  doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-  doc.rect(0, pageHeight - 5, pageWidth, 5, 'F');
+  doc.setFontSize(7);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(mid[0], mid[1], mid[2]);
+  doc.text('HUELLA', huellaX + huellaW / 2, huellaY + huellaH + 4, { align: 'center' });
+  doc.text('DACTILAR', huellaX + huellaW / 2, huellaY + huellaH + 7.5, { align: 'center' });
 
-  // ========== GUARDAR PDF ==========
+  // ================================================================
+  // FOOTER
+  // ================================================================
+  // Franja inferior decorativa
+  doc.setFillColor(accentLight[0], accentLight[1], accentLight[2]);
+  doc.rect(0, pageHeight - 5.5, pageWidth, 1.5, 'F');
+  doc.setFillColor(accent[0], accent[1], accent[2]);
+  doc.rect(0, pageHeight - 4, pageWidth, 4, 'F');
+
+  // Texto del footer
+  doc.setFontSize(6);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(mid[0], mid[1], mid[2]);
+  doc.text('Documento generado electronicamente | Este contrato tiene validez legal', pageWidth / 2, pageHeight - 8, { align: 'center' });
+
+  // ================================================================
+  // GUARDAR PDF
+  // ================================================================
   const fileName = `Contrato_${inquilino.nombre || 'Inquilino'}_${inquilino.apellido || ''}_${habitacion.codigo || 'HAB'}.pdf`;
   doc.save(fileName);
 }

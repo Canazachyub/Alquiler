@@ -181,7 +181,7 @@ export const VoucherPago = forwardRef<HTMLDivElement, VoucherPagoProps>(
 VoucherPago.displayName = 'VoucherPago';
 
 /**
- * Genera un PDF estilo voucher de impresora termica
+ * Genera un PDF voucher profesional y formal
  */
 export function generateVoucherPDF(params: GeneratePDFParams): void {
   const { pago, inquilino, habitacion, negocio } = params;
@@ -192,215 +192,265 @@ export function generateVoucherPDF(params: GeneratePDFParams): void {
   };
 
   const conceptoLabel: Record<string, string> = {
-    alquiler: 'ALQUILER',
-    internet: 'INTERNET',
-    servicios: 'SERVICIOS',
-    otro: 'OTRO',
+    alquiler: 'ALQUILER DE HABITACION',
+    internet: 'SERVICIO DE INTERNET',
+    servicios: 'SERVICIOS BASICOS',
+    otro: 'OTRO CONCEPTO',
   };
 
   const metodoPagoLabel: Record<string, string> = {
     efectivo: 'EFECTIVO',
     yape: 'YAPE',
     plin: 'PLIN',
-    transferencia: 'TRANSFERENCIA',
+    transferencia: 'TRANSFERENCIA BANCARIA',
   };
 
-  // Crear PDF con ancho de 80mm (tipico de impresora termica)
+  // PDF 80mm ancho, altura dinamica
   const doc = new jsPDF({
     orientation: 'portrait',
     unit: 'mm',
-    format: [80, 200],
+    format: [80, 220],
   });
 
   const pageWidth = 80;
-  const marginLeft = 5;
-  const marginRight = 5;
-  let y = 10;
+  const ml = 6; // margin left
+  const mr = 6; // margin right
+  const cw = pageWidth - ml - mr; // content width
+  let y = 6;
 
-  // Configurar fuente
-  doc.setFont('courier', 'normal');
+  // Colores
+  const dark: [number, number, number] = [33, 37, 41];
+  const mid: [number, number, number] = [108, 117, 125];
+  const accent: [number, number, number] = [55, 48, 107]; // indigo oscuro
+  const light: [number, number, number] = [173, 181, 189];
 
-  // ========== HEADER ==========
-  doc.setFontSize(12);
-  doc.setFont('courier', 'bold');
+  // Helper: linea punteada
+  const dashedLine = (yPos: number) => {
+    doc.setDrawColor(200, 200, 200);
+    doc.setLineWidth(0.3);
+    doc.setLineDashPattern([1.5, 1], 0);
+    doc.line(ml, yPos, pageWidth - mr, yPos);
+    doc.setLineDashPattern([], 0);
+  };
+
+  // Helper: fila label-valor (con padding para cajas)
+  const drawRow = (label: string, value: string, yPos: number, bold = false) => {
+    doc.setFontSize(7.5);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(mid[0], mid[1], mid[2]);
+    doc.text(label, ml + 3, yPos);
+    doc.setFont('helvetica', bold ? 'bold' : 'normal');
+    doc.setTextColor(dark[0], dark[1], dark[2]);
+    doc.text(value, pageWidth - mr - 3, yPos, { align: 'right' });
+    return yPos + 5;
+  };
+
+  // ========== BORDE SUPERIOR DECORATIVO ==========
+  doc.setFillColor(accent[0], accent[1], accent[2]);
+  doc.rect(0, 0, pageWidth, 2.5, 'F');
+
+  y = 8;
+
+  // ========== HEADER EMPRESA ==========
+  doc.setFontSize(11);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(accent[0], accent[1], accent[2]);
   doc.text(empresa.nombre, pageWidth / 2, y, { align: 'center' });
-  y += 5;
+  y += 4;
 
-  doc.setFontSize(8);
-  doc.setFont('courier', 'normal');
-  doc.setTextColor(100);
+  doc.setFontSize(7);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(mid[0], mid[1], mid[2]);
   doc.text(empresa.direccion, pageWidth / 2, y, { align: 'center' });
-  y += 8;
+  if (empresa.telefono) {
+    y += 3;
+    doc.text(`Tel: ${empresa.telefono}`, pageWidth / 2, y, { align: 'center' });
+  }
+  if (empresa.ruc) {
+    y += 3;
+    doc.text(`RUC: ${empresa.ruc}`, pageWidth / 2, y, { align: 'center' });
+  }
+  y += 5;
 
-  // Linea separadora
-  doc.setDrawColor(150);
-  doc.setLineDashPattern([1, 1], 0);
-  doc.line(marginLeft, y, pageWidth - marginRight, y);
-  y += 6;
+  dashedLine(y);
+  y += 5;
 
-  // ========== TITULO ==========
-  doc.setTextColor(0);
+  // ========== TITULO COMPROBANTE ==========
+  // Caja con fondo para el titulo
+  doc.setFillColor(accent[0], accent[1], accent[2]);
+  doc.roundedRect(ml, y - 3, cw, 10, 1.5, 1.5, 'F');
   doc.setFontSize(10);
-  doc.setFont('courier', 'bold');
-  doc.text('COMPROBANTE DE PAGO', pageWidth / 2, y, { align: 'center' });
-  y += 4;
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(255, 255, 255);
+  doc.text('COMPROBANTE DE PAGO', pageWidth / 2, y + 2.5, { align: 'center' });
+  y += 11;
 
+  // Numero de comprobante
   doc.setFontSize(7);
-  doc.setFont('courier', 'normal');
-  doc.setTextColor(100);
-  doc.text(`N° ${pago.id}`, pageWidth / 2, y, { align: 'center' });
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(mid[0], mid[1], mid[2]);
+  doc.text(`Comprobante N°: ${pago.id}`, pageWidth / 2, y, { align: 'center' });
   y += 6;
 
-  // Linea separadora
-  doc.setDrawColor(150);
-  doc.line(marginLeft, y, pageWidth - marginRight, y);
-  y += 6;
-
-  // ========== INFO CLIENTE ==========
-  doc.setTextColor(0);
-  doc.setFontSize(8);
-
-  // Fecha
-  doc.setFont('courier', 'normal');
-  doc.setTextColor(100);
-  doc.text('FECHA:', marginLeft, y);
-  doc.setTextColor(0);
-  doc.text(formatDate(pago.fecha) || '-', pageWidth - marginRight, y, { align: 'right' });
+  dashedLine(y);
   y += 5;
 
-  // Cliente
-  doc.setTextColor(100);
-  doc.text('CLIENTE:', marginLeft, y);
-  doc.setTextColor(0);
+  // ========== DATOS DEL CLIENTE ==========
+  // Encabezado de seccion
+  doc.setFontSize(7);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(accent[0], accent[1], accent[2]);
+  doc.text('DATOS DEL CLIENTE', ml + 1, y);
+  y += 5;
+
+  // Marco alrededor de datos del cliente
+  const clienteBoxY = y - 3;
   const clienteName = inquilino ? `${inquilino.nombre} ${inquilino.apellido}` : '-';
-  doc.text(clienteName, pageWidth - marginRight, y, { align: 'right' });
+
+  y = drawRow('Fecha:', formatDate(pago.fecha) || '-', y);
+  y = drawRow('Cliente:', clienteName, y, true);
+  if (inquilino?.dni) {
+    y = drawRow('DNI:', String(inquilino.dni), y);
+  }
+  y = drawRow('Habitacion:', habitacion?.codigo || String(pago.habitacionId || '-'), y, true);
+
+  // Dibujar marco con padding
+  doc.setDrawColor(220, 220, 220);
+  doc.setLineWidth(0.3);
+  doc.roundedRect(ml, clienteBoxY, cw, y - clienteBoxY + 2, 1, 1, 'S');
   y += 5;
 
-  // Habitacion
-  doc.setTextColor(100);
-  doc.text('HABITACION:', marginLeft, y);
-  doc.setTextColor(0);
-  doc.text(habitacion?.codigo || '-', pageWidth - marginRight, y, { align: 'right' });
-  y += 6;
+  dashedLine(y);
+  y += 5;
 
-  // Linea separadora
-  doc.setDrawColor(150);
-  doc.line(marginLeft, y, pageWidth - marginRight, y);
-  y += 6;
-
-  // ========== DETALLE ==========
+  // ========== DETALLE DEL PAGO ==========
   doc.setFontSize(7);
-  doc.setTextColor(100);
-  doc.text('DETALLE:', marginLeft, y);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(accent[0], accent[1], accent[2]);
+  doc.text('DETALLE', ml + 1, y);
   y += 5;
 
+  // Marco del detalle
+  const detalleBoxY = y - 3;
+
+  // Concepto
+  doc.setFontSize(8.5);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(dark[0], dark[1], dark[2]);
+  doc.text(conceptoLabel[pago.concepto] || pago.concepto.toUpperCase(), ml + 3, y + 1);
+  y += 5;
+
+  // Periodo
+  doc.setFontSize(7);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(mid[0], mid[1], mid[2]);
+  doc.text(`Periodo: ${getMonthName(pago.mes)} ${pago.anio}`, ml + 3, y + 1);
+
+  // Monto a la derecha
   doc.setFontSize(9);
-  doc.setTextColor(0);
-  doc.setFont('courier', 'bold');
-  doc.text(conceptoLabel[pago.concepto] || pago.concepto.toUpperCase(), marginLeft, y);
-  doc.text(formatCurrency(pago.monto), pageWidth - marginRight, y, { align: 'right' });
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(dark[0], dark[1], dark[2]);
+  doc.text(formatCurrency(pago.monto), pageWidth - mr - 3, y, { align: 'right' });
+  y += 5;
+
+  // Marco del detalle
+  doc.setDrawColor(220, 220, 220);
+  doc.setLineWidth(0.3);
+  doc.roundedRect(ml, detalleBoxY, cw, y - detalleBoxY + 2, 1, 1, 'S');
   y += 4;
 
-  doc.setFontSize(7);
-  doc.setFont('courier', 'normal');
-  doc.setTextColor(100);
-  doc.text(`${getMonthName(pago.mes)} ${pago.anio}`, marginLeft, y);
-  y += 8;
-
-  // Linea separadora doble
-  doc.setDrawColor(50);
-  doc.setLineDashPattern([], 0);
+  // ========== LINEA DOBLE TOTAL ==========
+  doc.setDrawColor(dark[0], dark[1], dark[2]);
   doc.setLineWidth(0.5);
-  doc.line(marginLeft, y, pageWidth - marginRight, y);
-  y += 1;
-  doc.line(marginLeft, y, pageWidth - marginRight, y);
+  doc.line(ml, y, pageWidth - mr, y);
+  y += 1.2;
   doc.setLineWidth(0.2);
-  y += 6;
+  doc.line(ml, y, pageWidth - mr, y);
+  y += 5;
 
   // ========== TOTAL ==========
-  doc.setTextColor(0);
-  doc.setFontSize(10);
-  doc.setFont('courier', 'bold');
-  doc.text('TOTAL:', marginLeft, y);
+  // Caja de total con fondo y padding
+  const totalBoxY = y - 2;
+  const totalBoxH = 14;
+  doc.setFillColor(245, 245, 248);
+  doc.roundedRect(ml, totalBoxY, cw, totalBoxH, 1.5, 1.5, 'F');
+  doc.setDrawColor(accent[0], accent[1], accent[2]);
+  doc.setLineWidth(0.5);
+  doc.roundedRect(ml, totalBoxY, cw, totalBoxH, 1.5, 1.5, 'S');
+
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(dark[0], dark[1], dark[2]);
+  doc.text('TOTAL A PAGAR', ml + 4, totalBoxY + 6);
 
   doc.setFontSize(14);
-  doc.text(formatCurrency(pago.monto), pageWidth - marginRight, y, { align: 'right' });
-  y += 8;
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(accent[0], accent[1], accent[2]);
+  doc.text(formatCurrency(pago.monto), pageWidth - mr - 4, totalBoxY + 7, { align: 'right' });
+  y = totalBoxY + totalBoxH + 3;
 
-  // Metodo de pago
-  doc.setFontSize(7);
-  doc.setFont('courier', 'normal');
-  doc.setTextColor(100);
-  doc.text('METODO PAGO:', marginLeft, y);
-  doc.setTextColor(0);
-  doc.text(metodoPagoLabel[pago.metodoPago] || pago.metodoPago?.toUpperCase() || 'EFECTIVO', pageWidth - marginRight, y, { align: 'right' });
-  y += 6;
+  // ========== METODO DE PAGO ==========
+  y = drawRow('Metodo de pago:', metodoPagoLabel[pago.metodoPago] || pago.metodoPago?.toUpperCase() || 'EFECTIVO', y, true);
+  y += 3;
 
-  // Linea separadora
-  doc.setDrawColor(150);
-  doc.setLineDashPattern([1, 1], 0);
-  doc.line(marginLeft, y, pageWidth - marginRight, y);
-  y += 6;
+  dashedLine(y);
+  y += 5;
 
   // ========== ESTADO ==========
-  doc.setTextColor(0);
-  doc.setFontSize(8);
-  doc.setFont('courier', 'bold');
-
   const estadoText = pago.estado === 'pagado' ? 'PAGADO' : pago.estado === 'pendiente' ? 'PENDIENTE' : 'ANULADO';
-  const estadoColor: [number, number, number] = pago.estado === 'pagado' ? [34, 139, 34] : pago.estado === 'pendiente' ? [218, 165, 32] : [220, 20, 60];
+  const estadoBg: [number, number, number] = pago.estado === 'pagado' ? [16, 122, 87] : pago.estado === 'pendiente' ? [180, 130, 20] : [190, 30, 45];
+  const estadoTextColor: [number, number, number] = [255, 255, 255];
 
-  // Dibujar recuadro del estado
-  const estadoWidth = doc.getTextWidth(estadoText) + 8;
-  const estadoX = (pageWidth - estadoWidth) / 2;
+  // Badge del estado centrado con padding
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'bold');
+  const estadoW = doc.getTextWidth(estadoText) + 12;
+  const estadoBoxX = (pageWidth - estadoW) / 2;
+  doc.setFillColor(estadoBg[0], estadoBg[1], estadoBg[2]);
+  doc.roundedRect(estadoBoxX, y - 2, estadoW, 8, 2, 2, 'F');
+  doc.setTextColor(estadoTextColor[0], estadoTextColor[1], estadoTextColor[2]);
+  doc.text(estadoText, pageWidth / 2, y + 3, { align: 'center' });
+  y += 11;
 
-  doc.setDrawColor(estadoColor[0], estadoColor[1], estadoColor[2]);
-  doc.setLineDashPattern([], 0);
-  doc.roundedRect(estadoX, y - 4, estadoWidth, 7, 1, 1, 'S');
-
-  doc.setTextColor(estadoColor[0], estadoColor[1], estadoColor[2]);
-  doc.text(estadoText, pageWidth / 2, y, { align: 'center' });
-  y += 10;
-
-  // Linea separadora
-  doc.setDrawColor(150);
-  doc.setLineDashPattern([1, 1], 0);
-  doc.line(marginLeft, y, pageWidth - marginRight, y);
-  y += 6;
+  dashedLine(y);
+  y += 5;
 
   // ========== FOOTER ==========
-  doc.setTextColor(0);
   doc.setFontSize(8);
-  doc.setFont('courier', 'bold');
-  doc.text('GRACIAS POR SU PAGO', pageWidth / 2, y, { align: 'center' });
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(dark[0], dark[1], dark[2]);
+  doc.text('Gracias por su pago', pageWidth / 2, y, { align: 'center' });
   y += 4;
 
   doc.setFontSize(6);
-  doc.setFont('courier', 'normal');
-  doc.setTextColor(120);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(light[0], light[1], light[2]);
   doc.text('Documento generado electronicamente', pageWidth / 2, y, { align: 'center' });
   y += 3;
-
   doc.text(new Date().toLocaleString('es-PE'), pageWidth / 2, y, { align: 'center' });
-  y += 8;
+  y += 6;
 
   // ========== CODIGO DE BARRAS SIMULADO ==========
-  doc.setFillColor('0');
-  const barcodeWidth = 50;
+  doc.setFillColor(dark[0], dark[1], dark[2]);
+  const barcodeWidth = 46;
   const barcodeX = (pageWidth - barcodeWidth) / 2;
 
-  // Generar barras consistentes basadas en el ID
   let seed = pago.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-  for (let i = 0; i < 40; i++) {
+  for (let i = 0; i < 35; i++) {
     seed = (seed * 9301 + 49297) % 233280;
-    const barWidth = (seed / 233280) > 0.5 ? 1.5 : 0.8;
-    doc.rect(barcodeX + i * 1.2, y, barWidth, 8, 'F');
+    const barW = (seed / 233280) > 0.5 ? 1.3 : 0.7;
+    doc.rect(barcodeX + i * 1.3, y, barW, 7, 'F');
   }
-  y += 10;
+  y += 9;
 
-  doc.setFontSize(6);
-  doc.setTextColor(150);
+  doc.setFontSize(5.5);
+  doc.setTextColor(light[0], light[1], light[2]);
   doc.text(pago.id, pageWidth / 2, y, { align: 'center' });
+  y += 4;
+
+  // ========== BORDE INFERIOR DECORATIVO ==========
+  doc.setFillColor(accent[0], accent[1], accent[2]);
+  doc.rect(0, y, pageWidth, 2.5, 'F');
 
   // Guardar el PDF
   doc.save(`voucher_${pago.id}.pdf`);
