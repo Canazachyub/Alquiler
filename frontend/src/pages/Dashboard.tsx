@@ -56,13 +56,51 @@ export function Dashboard() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-xl md:text-2xl font-bold">Dashboard</h1>
-        <p className="text-gray-500 text-sm mt-0.5">
+        <h1 className="page-title">Dashboard</h1>
+        <p className="page-subtitle">
           Resumen de {getMonthName(mesActual)} {anioActual}
         </p>
       </div>
 
-      {/* Stats Grid */}
+      {/* Fila 1 — 3 KPIs prominentes */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-5">
+        <StatCard
+          prominent
+          title="Tasa de Ocupación"
+          value={formatPercentage(stats.tasaOcupacion)}
+          icon={Building2}
+          variant={
+            stats.tasaOcupacion >= 80
+              ? 'success'
+              : stats.tasaOcupacion >= 50
+              ? 'warning'
+              : 'danger'
+          }
+          subtitle={`${stats.habitacionesOcupadas} de ${stats.totalHabitaciones} habitaciones`}
+        />
+        <StatCard
+          prominent
+          title="Ingresos del mes"
+          value={formatCurrency(stats.ingresosMes)}
+          icon={TrendingUp}
+          variant="success"
+          subtitle={`Balance: ${formatCurrency(stats.balance)}`}
+        />
+        <StatCard
+          prominent
+          title="Pagos Pendientes"
+          value={stats.habitacionesPendientes}
+          icon={AlertCircle}
+          variant={stats.habitacionesPendientes > 0 ? 'danger' : 'success'}
+          subtitle={
+            stats.habitacionesPendientes > 0
+              ? 'Revisa Habitaciones'
+              : 'Al día este mes'
+          }
+        />
+      </div>
+
+      {/* Fila 2 — 4 KPIs secundarios */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
         <StatCard
           title="Total Habitaciones"
@@ -71,59 +109,37 @@ export function Dashboard() {
           subtitle={`${stats.habitacionesOcupadas} ocupadas`}
         />
         <StatCard
-          title="Tasa de Ocupación"
-          value={formatPercentage(stats.tasaOcupacion)}
-          icon={Building2}
-          variant={stats.tasaOcupacion >= 80 ? 'success' : stats.tasaOcupacion >= 50 ? 'warning' : 'danger'}
-        />
-        <StatCard
-          title="Ingresos del Mes"
-          value={formatCurrency(stats.ingresosMes)}
-          icon={TrendingUp}
-          variant="success"
-        />
-        <StatCard
-          title="Gastos del Mes"
-          value={formatCurrency(stats.gastosMes)}
-          icon={TrendingDown}
-          variant="danger"
-        />
-      </div>
-
-      {/* Segunda fila de stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4">
-        <StatCard
-          title="Balance"
-          value={formatCurrency(stats.balance)}
-          icon={DollarSign}
-          variant={stats.balance >= 0 ? 'success' : 'danger'}
-        />
-        <StatCard
           title="Habitaciones Pagadas"
           value={`${stats.habitacionesPagadas}/${stats.habitacionesOcupadas}`}
           icon={Users}
           variant="success"
         />
         <StatCard
-          title="Pagos Pendientes"
-          value={stats.habitacionesPendientes}
-          icon={AlertCircle}
-          variant={stats.habitacionesPendientes > 0 ? 'danger' : 'success'}
+          title="Gastos del mes"
+          value={formatCurrency(stats.gastosMes)}
+          icon={TrendingDown}
+          variant="danger"
+        />
+        <StatCard
+          title="Balance"
+          value={formatCurrency(stats.balance)}
+          icon={DollarSign}
+          variant={stats.balance >= 0 ? 'success' : 'danger'}
         />
       </div>
 
       {/* Gráfico y Calendario */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
         {/* Gráfico de tendencias */}
-        <div className="lg:col-span-2 card p-4 md:p-6">
-          <h2 className="text-sm md:text-base font-semibold text-gray-800 mb-4">
+        <div className="lg:col-span-2 card p-6">
+          <h2 className="text-base font-semibold text-slate-900 mb-4">
             Ingresos vs Gastos (6 meses)
           </h2>
           {chartData.length > 0 ? (
             <div className="h-60 md:h-80">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                   <XAxis dataKey="mes" tick={{ fontSize: 12, fill: '#64748b' }} />
                   <YAxis tick={{ fontSize: 12, fill: '#64748b' }} />
                   <Tooltip
@@ -132,12 +148,13 @@ export function Dashboard() {
                       borderRadius: '8px',
                       border: '1px solid #e2e8f0',
                       boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.07)',
-                      fontSize: '13px',
+                      fontSize: '12px',
+                      color: '#1e293b',
                     }}
                   />
-                  <Legend wrapperStyle={{ fontSize: '13px' }} />
-                  <Bar dataKey="ingresos" name="Ingresos" fill="#10b981" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="gastos" name="Gastos" fill="#ef4444" radius={[4, 4, 0, 0]} />
+                  <Legend wrapperStyle={{ fontSize: '12px', color: '#475569' }} />
+                  <Bar dataKey="ingresos" name="Ingresos" fill="#059669" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="gastos" name="Gastos" fill="#dc2626" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -163,16 +180,16 @@ export function Dashboard() {
 
       {/* Alertas rápidas */}
       {stats.habitacionesPendientes > 0 && (
-        <div className="card p-4 bg-danger-50/50 border-danger-200/40">
+        <div className="card p-4 bg-red-50 border-red-200">
           <div className="flex items-start gap-3">
-            <div className="p-2 rounded-lg bg-danger-100">
-              <AlertCircle className="w-4 h-4 text-danger-600" />
+            <div className="p-2 rounded-lg bg-red-100">
+              <AlertCircle className="w-4 h-4 text-red-600" />
             </div>
             <div>
-              <p className="font-semibold text-danger-800 text-sm">
+              <p className="font-semibold text-red-800 text-sm">
                 {stats.habitacionesPendientes} habitación(es) con pagos pendientes
               </p>
-              <p className="text-xs text-danger-600 mt-0.5">
+              <p className="text-xs text-red-600 mt-0.5">
                 Revisa la sección de habitaciones para ver el detalle
               </p>
             </div>

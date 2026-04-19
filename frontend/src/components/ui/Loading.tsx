@@ -17,7 +17,7 @@ export function Loading({ size = 'md', text, fullScreen = false }: LoadingProps)
   const content = (
     <div className="flex flex-col items-center justify-center gap-3">
       <Loader2 className={cn('animate-spin text-primary-600', sizes[size])} />
-      {text && <p className="text-sm text-gray-500">{text}</p>}
+      {text && <p className="text-sm text-slate-500">{text}</p>}
     </div>
   );
 

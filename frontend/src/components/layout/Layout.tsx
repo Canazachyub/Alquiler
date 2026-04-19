@@ -19,7 +19,7 @@ export function Layout() {
         )}
       >
         <Header />
-        <main className="p-3 md:p-6 lg:p-8">
+        <main className="p-4 md:p-6 lg:p-8 max-w-[1600px] mx-auto">
           <Outlet />
         </main>
       </div>

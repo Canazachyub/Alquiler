@@ -3,6 +3,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Plus, Search, ChevronLeft, ChevronRight, Calendar, CreditCard, Printer, FileDown, Zap } from 'lucide-react';
 import { PagoForm } from '@/components/forms';
 import { Modal, LoadingPage, EmptyState } from '@/components/ui';
+import { Fab } from '@/components/ui/Fab';
 import { VoucherPago, printVoucher, generateVoucherPDF } from '@/components/voucher';
 import { printThermalVoucher, isThermalPrinterAvailable, connectThermalPrinter, checkThermalPrinter } from '@/utils/thermalPrint';
 import {
@@ -99,7 +100,7 @@ export function Pagos() {
   const handleSubmit = async (data: PagoInput) => {
     try {
       const nuevoPago = await createMutation.mutateAsync(data);
-      notify.success('Pago registrado correctamente');
+      notify.success('Pago registrado');
       setIsModalOpen(false);
       // Mostrar voucher despues de registrar el pago
       if (nuevoPago) {
@@ -107,7 +108,7 @@ export function Pagos() {
         setIsVoucherModalOpen(true);
       }
     } catch (error) {
-      notify.error('Error al registrar el pago');
+      notify.error('No se pudo guardar. Intenta de nuevo.');
     }
   };
 
@@ -191,12 +192,14 @@ export function Pagos() {
       {/* Header */}
       <div className="flex items-center justify-between gap-2">
         <div className="min-w-0">
-          <h1 className="text-xl md:text-2xl font-bold">Pagos</h1>
-          <p className="text-gray-500 text-sm mt-0.5 hidden sm:block">Registro y seguimiento de pagos</p>
+          <h1 className="page-title">Pagos</h1>
+          <p className="page-subtitle">
+            {formatCurrency(resumen?.totalRecaudado || 0)} · {getMonthName(mesActual)} {anioActual}
+          </p>
         </div>
-        <button onClick={handleCreate} className="btn btn-primary whitespace-nowrap">
-          <Plus className="w-4 h-4 md:mr-2" />
-          <span className="hidden sm:inline">Registrar Pago</span>
+        <button onClick={handleCreate} className="btn btn-primary whitespace-nowrap hidden md:inline-flex">
+          <Plus className="w-4 h-4" />
+          <span>Registrar Pago</span>
         </button>
       </div>
 
@@ -214,7 +217,7 @@ export function Pagos() {
             </button>
 
             <div className="flex items-center gap-1 md:gap-2">
-              <Calendar className="w-4 h-4 text-gray-400 hidden md:block" />
+              <Calendar className="w-4 h-4 text-slate-400 hidden md:block" />
               <select
                 value={mesActual}
                 onChange={(e) => setMesAnio(Number(e.target.value), anioActual)}
@@ -255,24 +258,24 @@ export function Pagos() {
 
         {/* Resumen del mes */}
         {resumen && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mt-3 md:mt-4 pt-3 md:pt-4 border-t border-gray-100">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mt-3 md:mt-4 pt-3 md:pt-4 border-t border-slate-200">
             <div>
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Total Recaudado</p>
-              <p className="text-lg md:text-xl font-bold text-success-700 mt-1">
+              <p className="text-xs font-semibold text-slate-500 normal-case">Total Recaudado</p>
+              <p className="text-lg md:text-xl font-bold text-emerald-700 mt-1 tabular-nums">
                 {formatCurrency(resumen.totalRecaudado)}
               </p>
             </div>
             <div>
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Pagos</p>
-              <p className="text-lg md:text-xl font-bold text-primary-700 mt-1">{resumen.totalPagos}</p>
+              <p className="text-xs font-semibold text-slate-500 normal-case">Pagos</p>
+              <p className="text-lg md:text-xl font-bold text-primary-700 mt-1 tabular-nums">{resumen.totalPagos}</p>
             </div>
             <div>
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Pagadas</p>
-              <p className="text-lg md:text-xl font-bold text-success-700 mt-1">{resumen.habitacionesPagadas}</p>
+              <p className="text-xs font-semibold text-slate-500 normal-case">Pagadas</p>
+              <p className="text-lg md:text-xl font-bold text-emerald-700 mt-1 tabular-nums">{resumen.habitacionesPagadas}</p>
             </div>
             <div>
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Pendientes</p>
-              <p className="text-lg md:text-xl font-bold text-danger-700 mt-1">{resumen.habitacionesPendientes}</p>
+              <p className="text-xs font-semibold text-slate-500 normal-case">Pendientes</p>
+              <p className="text-lg md:text-xl font-bold text-red-700 mt-1 tabular-nums">{resumen.habitacionesPendientes}</p>
             </div>
           </div>
         )}
@@ -284,7 +287,7 @@ export function Pagos() {
           {/* Búsqueda */}
           <div className="flex-1 min-w-0">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <input
                 type="text"
                 placeholder="Buscar..."
@@ -319,12 +322,11 @@ export function Pagos() {
       {filteredPagos?.length === 0 ? (
         <EmptyState
           icon={CreditCard}
-          title="No hay pagos registrados"
-          description={`No hay pagos para ${getMonthName(mesActual)} ${anioActual}`}
+          title="Aún no hay pagos"
           action={
             <button onClick={handleCreate} className="btn btn-primary">
-              <Plus className="w-4 h-4 mr-2" />
-              Registrar Pago
+              <Plus className="w-4 h-4" />
+              Registrar pago
             </button>
           }
         />
@@ -337,7 +339,7 @@ export function Pagos() {
                 <th>Hab.</th>
                 <th>Concepto</th>
                 <th>Monto</th>
-                <th className="hidden md:table-cell">Metodo</th>
+                <th className="hidden md:table-cell">Método</th>
                 <th>Estado</th>
                 <th>Acc.</th>
               </tr>
@@ -345,12 +347,12 @@ export function Pagos() {
             <tbody>
               {filteredPagos?.map((pago) => (
                 <tr key={pago.id}>
-                  <td className="hidden sm:table-cell">{formatDate(pago.fecha)}</td>
+                  <td className="hidden sm:table-cell tabular-nums">{formatDate(pago.fecha)}</td>
                   <td>
                     <span className="font-medium">{pago.habitacion?.codigo || pago.habitacionId}</span>
                   </td>
                   <td className="capitalize">{pago.concepto}</td>
-                  <td className="font-medium">{formatCurrency(pago.monto)}</td>
+                  <td className="font-medium tabular-nums">{formatCurrency(pago.monto)}</td>
                   <td className="capitalize hidden md:table-cell">{pago.metodoPago}</td>
                   <td>
                     <span
@@ -368,10 +370,10 @@ export function Pagos() {
                   <td>
                     <button
                       onClick={() => handleViewVoucher(pago)}
-                      className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                      className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
                       title="Ver Voucher"
                     >
-                      <Printer className="w-4 h-4 text-gray-600" />
+                      <Printer className="w-4 h-4 text-slate-500" />
                     </button>
                   </td>
                 </tr>
@@ -380,6 +382,9 @@ export function Pagos() {
           </table>
         </div>
       )}
+
+      {/* FAB móvil */}
+      <Fab onClick={handleCreate} label="Registrar pago" />
 
       {/* Modal de registro de pago */}
       <Modal
@@ -416,7 +421,7 @@ export function Pagos() {
               />
             </div>
           )}
-          <div className="flex flex-wrap justify-center gap-3 pt-4 border-t">
+          <div className="flex flex-wrap justify-center gap-3 pt-4 border-t border-slate-200">
             <button
               onClick={() => setIsVoucherModalOpen(false)}
               className="btn btn-outline"
@@ -427,9 +432,9 @@ export function Pagos() {
               <button
                 onClick={handleThermalConnect}
                 disabled={thermalConnecting}
-                className="btn bg-gray-600 hover:bg-gray-700 text-white"
+                className="btn bg-slate-600 hover:bg-slate-700 text-white"
               >
-                <Zap className="w-4 h-4 mr-2" />
+                <Zap className="w-4 h-4" />
                 {thermalConnecting ? 'Conectando...' : 'Conectar Impresora'}
               </button>
             )}
@@ -439,22 +444,22 @@ export function Pagos() {
                 disabled={thermalPrinting}
                 className="btn bg-orange-500 hover:bg-orange-600 text-white"
               >
-                <Zap className="w-4 h-4 mr-2" />
-                {thermalPrinting ? 'Imprimiendo...' : 'Imp. Termica'}
+                <Zap className="w-4 h-4" />
+                {thermalPrinting ? 'Imprimiendo...' : 'Imp. Térmica'}
               </button>
             )}
             <button
               onClick={handlePrintVoucher}
               className="btn btn-outline"
             >
-              <Printer className="w-4 h-4 mr-2" />
+              <Printer className="w-4 h-4" />
               Imprimir
             </button>
             <button
               onClick={handleGeneratePDF}
               className="btn btn-primary"
             >
-              <FileDown className="w-4 h-4 mr-2" />
+              <FileDown className="w-4 h-4" />
               Generar PDF
             </button>
           </div>

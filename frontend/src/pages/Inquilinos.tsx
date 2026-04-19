@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Plus, Search, Edit, Trash2, User, Phone, Mail, Home, FileText } from 'lucide-react';
 import { InquilinoForm } from '@/components/forms';
 import { Modal, ConfirmDialog, LoadingPage, EmptyState } from '@/components/ui';
+import { Fab } from '@/components/ui/Fab';
 import { generateContratoPDF } from '@/components/voucher';
 import {
   useInquilinos,
@@ -11,7 +12,8 @@ import {
   useHabitaciones,
 } from '@/hooks';
 import { useNotifications } from '@/store';
-import { formatDate, formatPhone } from '@/utils/formatters';
+import { cn } from '@/utils/cn';
+import { formatDate, formatPhone, formatDNI } from '@/utils/formatters';
 import type { Inquilino, InquilinoInput, Habitacion } from '@/types';
 
 export function Inquilinos() {
@@ -30,20 +32,24 @@ export function Inquilinos() {
   const deleteMutation = useDeleteInquilino();
   const { notify } = useNotifications();
 
-  // Filtrar inquilinos
+  // Filtrar inquilinos (coerción a string para tolerar numbers desde Google Sheets)
   const filteredInquilinos = inquilinos?.filter((inq) => {
     const searchLower = searchTerm.toLowerCase();
     const matchesSearch =
       !searchTerm ||
-      inq.nombre.toLowerCase().includes(searchLower) ||
-      inq.apellido.toLowerCase().includes(searchLower) ||
-      inq.dni.includes(searchTerm) ||
-      inq.telefono.includes(searchTerm);
+      String(inq.nombre || '').toLowerCase().includes(searchLower) ||
+      String(inq.apellido || '').toLowerCase().includes(searchLower) ||
+      String(inq.dni || '').includes(searchTerm) ||
+      String(inq.telefono || '').includes(searchTerm);
 
     const matchesStatus = showInactivos || inq.estado === 'activo';
 
     return matchesSearch && matchesStatus;
   });
+
+  // Totales para subtitle
+  const totalActivos = inquilinos?.filter((i) => i.estado === 'activo').length || 0;
+  const totalRegistrados = inquilinos?.length || 0;
 
   const handleCreate = () => {
     setSelectedInquilino(null);
@@ -95,7 +101,7 @@ export function Inquilinos() {
         }
       }
     } catch (error) {
-      notify.error('Error al guardar');
+      notify.error('No se pudo guardar. Intenta de nuevo.');
     }
   };
 
@@ -123,7 +129,7 @@ export function Inquilinos() {
       notify.success('Inquilino eliminado');
       setDeletingInquilino(null);
     } catch (error) {
-      notify.error('Error al eliminar');
+      notify.error('No se pudo eliminar. Intenta de nuevo.');
     }
   };
 
@@ -136,12 +142,16 @@ export function Inquilinos() {
       {/* Header */}
       <div className="flex items-center justify-between gap-2">
         <div className="min-w-0">
-          <h1 className="text-xl md:text-2xl font-bold">Inquilinos</h1>
-          <p className="text-gray-500 text-sm mt-0.5 hidden sm:block">Gestiona los inquilinos de tus propiedades</p>
+          <h1 className="page-title">Inquilinos</h1>
+          <p className="page-subtitle">
+            {totalRegistrados > 0
+              ? `${totalActivos} activos · ${totalRegistrados} registrados`
+              : 'Sin registros todavía'}
+          </p>
         </div>
-        <button onClick={handleCreate} className="btn btn-primary whitespace-nowrap">
-          <Plus className="w-4 h-4 md:mr-2" />
-          <span className="hidden sm:inline">Nuevo Inquilino</span>
+        <button onClick={handleCreate} className="btn btn-primary whitespace-nowrap hidden md:inline-flex">
+          <Plus className="w-4 h-4" />
+          <span>Nuevo Inquilino</span>
         </button>
       </div>
 
@@ -151,7 +161,7 @@ export function Inquilinos() {
           {/* Búsqueda */}
           <div className="flex-1 min-w-0">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <input
                 type="text"
                 placeholder="Buscar por nombre, DNI o teléfono..."
@@ -163,14 +173,17 @@ export function Inquilinos() {
           </div>
 
           {/* Toggle inactivos */}
-          <label className="flex items-center gap-2 cursor-pointer">
+          <label className="flex items-center gap-2 cursor-pointer select-none">
             <input
               type="checkbox"
               checked={showInactivos}
               onChange={(e) => setShowInactivos(e.target.checked)}
-              className="w-4 h-4 rounded border-gray-300"
+              className="sr-only"
             />
-            <span className="text-sm text-gray-600">Mostrar inactivos</span>
+            <div className={cn('w-9 h-5 rounded-full relative transition-colors', showInactivos ? 'bg-primary-600' : 'bg-slate-300')}>
+              <div className={cn('absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-all', showInactivos ? 'left-[18px]' : 'left-0.5')} />
+            </div>
+            <span className="text-sm text-slate-600">Mostrar inactivos</span>
           </label>
         </div>
       </div>
@@ -179,12 +192,11 @@ export function Inquilinos() {
       {filteredInquilinos?.length === 0 ? (
         <EmptyState
           icon={User}
-          title="No hay inquilinos"
-          description="Registra tu primer inquilino para empezar"
+          title="Aún no hay inquilinos"
           action={
             <button onClick={handleCreate} className="btn btn-primary">
-              <Plus className="w-4 h-4 mr-2" />
-              Nuevo Inquilino
+              <Plus className="w-4 h-4" />
+              Registrar inquilino
             </button>
           }
         />
@@ -210,22 +222,22 @@ export function Inquilinos() {
                         <User className="w-4 h-4 text-primary-600" />
                       </div>
                       <div>
-                        <p className="font-semibold text-gray-900 text-sm">
+                        <p className="font-semibold text-slate-900 text-sm">
                           {inq.nombre} {inq.apellido}
                         </p>
-                        <p className="text-xs text-gray-500">DNI: {inq.dni}</p>
+                        <p className="text-xs text-slate-500 tabular-nums">DNI: {inq.dni ? formatDNI(inq.dni) : '—'}</p>
                       </div>
                     </div>
                   </td>
                   <td className="hidden md:table-cell">
                     <div className="space-y-1">
-                      <div className="flex items-center gap-1 text-sm">
-                        <Phone className="w-3 h-3 text-gray-400" />
+                      <div className="flex items-center gap-1 text-sm tabular-nums">
+                        <Phone className="w-3 h-3 text-slate-400" />
                         {formatPhone(inq.telefono)}
                       </div>
                       {inq.email && (
-                        <div className="flex items-center gap-1 text-sm text-gray-500">
-                          <Mail className="w-3 h-3 text-gray-400" />
+                        <div className="flex items-center gap-1 text-sm text-slate-500">
+                          <Mail className="w-3 h-3 text-slate-400" />
                           {inq.email}
                         </div>
                       )}
@@ -233,11 +245,11 @@ export function Inquilinos() {
                   </td>
                   <td>
                     <div className="flex items-center gap-1">
-                      <Home className="w-4 h-4 text-gray-400" />
+                      <Home className="w-4 h-4 text-slate-400" />
                       <span>{inq.habitacion?.codigo || inq.habitacionId}</span>
                     </div>
                   </td>
-                  <td className="hidden sm:table-cell">{formatDate(inq.fechaIngreso)}</td>
+                  <td className="hidden sm:table-cell tabular-nums">{formatDate(inq.fechaIngreso)}</td>
                   <td>
                     <span
                       className={`badge ${
@@ -264,17 +276,17 @@ export function Inquilinos() {
                       </button>
                       <button
                         onClick={() => handleEdit(inq)}
-                        className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                        className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
                         title="Editar"
                       >
-                        <Edit className="w-4 h-4 text-gray-500" />
+                        <Edit className="w-4 h-4 text-slate-500" />
                       </button>
                       <button
                         onClick={() => handleDelete(inq)}
-                        className="p-2 hover:bg-danger-50 rounded-lg transition-colors"
+                        className="p-2 hover:bg-red-50 rounded-lg transition-colors"
                         title="Eliminar"
                       >
-                        <Trash2 className="w-4 h-4 text-danger-600" />
+                        <Trash2 className="w-4 h-4 text-red-600" />
                       </button>
                     </div>
                   </td>
@@ -284,6 +296,9 @@ export function Inquilinos() {
           </table>
         </div>
       )}
+
+      {/* FAB móvil */}
+      <Fab onClick={handleCreate} label="Nuevo inquilino" />
 
       {/* Modal de creación/edición */}
       <Modal
@@ -307,7 +322,7 @@ export function Inquilinos() {
         onClose={() => setDeletingInquilino(null)}
         onConfirm={confirmDelete}
         title="Eliminar Inquilino"
-        message={`¿Estás seguro de eliminar a "${deletingInquilino?.nombre} ${deletingInquilino?.apellido}"?`}
+        message={`¿Eliminar a ${deletingInquilino?.nombre ?? ''} ${deletingInquilino?.apellido ?? ''}? Esta acción no se puede deshacer.`}
         confirmText="Eliminar"
         isLoading={deleteMutation.isPending}
       />
@@ -320,18 +335,18 @@ export function Inquilinos() {
         size="md"
       >
         <div className="text-center py-4">
-          <div className="w-14 h-14 mx-auto mb-4 rounded-xl bg-success-50 flex items-center justify-center">
-            <FileText className="w-7 h-7 text-success-600" />
+          <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-emerald-50 flex items-center justify-center">
+            <FileText className="w-7 h-7 text-emerald-600" />
           </div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">
+          <h3 className="text-lg font-semibold text-slate-900 mb-2">
             {newInquilinoData?.inquilino.nombre} {newInquilinoData?.inquilino.apellido}
           </h3>
-          <p className="text-gray-500 mb-6">
-            El inquilino ha sido registrado exitosamente en la habitacion{' '}
+          <p className="text-slate-500 mb-6">
+            El inquilino ha sido registrado exitosamente en la habitación{' '}
             <span className="font-medium">{newInquilinoData?.habitacion.codigo}</span>.
           </p>
-          <p className="text-sm text-gray-600 mb-6">
-            Desea descargar el contrato de alquiler para imprimir?
+          <p className="text-sm text-slate-600 mb-6">
+            ¿Desea descargar el contrato de alquiler para imprimir?
           </p>
           <div className="flex justify-center gap-3">
             <button
@@ -344,7 +359,7 @@ export function Inquilinos() {
               onClick={handleDownloadContract}
               className="btn btn-primary"
             >
-              <FileText className="w-4 h-4 mr-2" />
+              <FileText className="w-4 h-4" />
               Descargar Contrato
             </button>
           </div>

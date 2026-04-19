@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Plus, Search, ChevronLeft, ChevronRight, Receipt, Trash2 } from 'lucide-react';
 import { GastoForm } from '@/components/forms';
 import { Modal, ConfirmDialog, LoadingPage, EmptyState } from '@/components/ui';
+import { Fab } from '@/components/ui/Fab';
 import {
   useGastosByMes,
   useResumenGastosPorCategoria,
@@ -68,6 +69,7 @@ export function Gastos() {
 
   // Calcular total
   const totalGastos = filteredGastos?.reduce((sum, g) => sum + g.monto, 0) || 0;
+  const totalMes = gastos?.reduce((sum, g) => sum + g.monto, 0) || 0;
 
   const handleCreate = () => {
     setIsModalOpen(true);
@@ -79,7 +81,7 @@ export function Gastos() {
       notify.success('Gasto registrado');
       setIsModalOpen(false);
     } catch (error) {
-      notify.error('Error al registrar el gasto');
+      notify.error('No se pudo guardar. Intenta de nuevo.');
     }
   };
 
@@ -90,7 +92,7 @@ export function Gastos() {
       notify.success('Gasto eliminado');
       setDeletingGasto(null);
     } catch (error) {
-      notify.error('Error al eliminar');
+      notify.error('No se pudo eliminar. Intenta de nuevo.');
     }
   };
 
@@ -106,12 +108,14 @@ export function Gastos() {
       {/* Header */}
       <div className="flex items-center justify-between gap-2">
         <div className="min-w-0">
-          <h1 className="text-xl md:text-2xl font-bold">Gastos</h1>
-          <p className="text-gray-500 text-sm mt-0.5 hidden sm:block">Control de gastos y egresos</p>
+          <h1 className="page-title">Gastos</h1>
+          <p className="page-subtitle">
+            {formatCurrency(totalMes)} · {getMonthName(mesActual)} {anioActual}
+          </p>
         </div>
-        <button onClick={handleCreate} className="btn btn-primary whitespace-nowrap">
-          <Plus className="w-4 h-4 md:mr-2" />
-          <span className="hidden sm:inline">Nuevo Gasto</span>
+        <button onClick={handleCreate} className="btn btn-primary whitespace-nowrap hidden md:inline-flex">
+          <Plus className="w-4 h-4" />
+          <span>Nuevo Gasto</span>
         </button>
       </div>
 
@@ -151,18 +155,18 @@ export function Gastos() {
             </button>
           </div>
 
-          <div className="text-lg font-bold text-danger-700">
+          <div className="text-lg font-bold text-red-700 tabular-nums">
             Total: {formatCurrency(totalGastos)}
           </div>
         </div>
 
         {/* Resumen por categoría */}
         {resumenCategoria && (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 md:gap-4 mt-3 md:mt-4 pt-3 md:pt-4 border-t border-gray-100">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 md:gap-4 mt-3 md:mt-4 pt-3 md:pt-4 border-t border-slate-200">
             {CATEGORIAS_GASTO.map((cat) => (
               <div key={cat.value}>
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{cat.label}</p>
-                <p className="text-base md:text-lg font-bold text-gray-900 mt-1">
+                <p className="text-xs font-semibold text-slate-500 normal-case">{cat.label}</p>
+                <p className="text-base md:text-lg font-bold text-slate-900 mt-1 tabular-nums">
                   {formatCurrency(resumenCategoria[cat.value] || 0)}
                 </p>
               </div>
@@ -176,7 +180,7 @@ export function Gastos() {
         <div className="flex flex-wrap items-center gap-3 md:gap-4">
           <div className="flex-1 min-w-0">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <input
                 type="text"
                 placeholder="Buscar..."
@@ -206,12 +210,11 @@ export function Gastos() {
       {filteredGastos?.length === 0 ? (
         <EmptyState
           icon={Receipt}
-          title="No hay gastos registrados"
-          description={`No hay gastos para ${getMonthName(mesActual)} ${anioActual}`}
+          title="Aún no hay gastos"
           action={
             <button onClick={handleCreate} className="btn btn-primary">
-              <Plus className="w-4 h-4 mr-2" />
-              Nuevo Gasto
+              <Plus className="w-4 h-4" />
+              Nuevo gasto
             </button>
           }
         />
@@ -231,23 +234,23 @@ export function Gastos() {
             <tbody>
               {filteredGastos?.map((gasto) => (
                 <tr key={gasto.id}>
-                  <td className="hidden sm:table-cell">{formatDate(gasto.fecha)}</td>
+                  <td className="hidden sm:table-cell tabular-nums">{formatDate(gasto.fecha)}</td>
                   <td>{gasto.concepto}</td>
                   <td className="hidden md:table-cell">
                     <span className="badge badge-info capitalize">{gasto.categoria}</span>
                   </td>
-                  <td className="font-semibold text-danger-700">
+                  <td className="font-semibold text-red-700 tabular-nums">
                     {formatCurrency(gasto.monto)}
                   </td>
-                  <td className="text-gray-500 hidden md:table-cell">
+                  <td className="text-slate-500 hidden md:table-cell">
                     {gasto.habitacion?.codigo || 'General'}
                   </td>
                   <td>
                     <button
                       onClick={() => setDeletingGasto(gasto)}
-                      className="p-2 hover:bg-danger-50 rounded-lg transition-colors"
+                      className="p-2 hover:bg-red-50 rounded-lg transition-colors"
                     >
-                      <Trash2 className="w-4 h-4 text-danger-600" />
+                      <Trash2 className="w-4 h-4 text-red-600" />
                     </button>
                   </td>
                 </tr>
@@ -256,6 +259,9 @@ export function Gastos() {
           </table>
         </div>
       )}
+
+      {/* FAB móvil */}
+      <Fab onClick={handleCreate} label="Nuevo gasto" />
 
       {/* Modal de registro */}
       <Modal
@@ -279,7 +285,7 @@ export function Gastos() {
         onClose={() => setDeletingGasto(null)}
         onConfirm={confirmDelete}
         title="Eliminar Gasto"
-        message={`¿Estás seguro de eliminar el gasto "${deletingGasto?.concepto}"?`}
+        message={`¿Eliminar el gasto "${deletingGasto?.concepto ?? ''}"? Esta acción no se puede deshacer.`}
         confirmText="Eliminar"
         isLoading={deleteMutation.isPending}
       />

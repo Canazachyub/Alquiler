@@ -63,48 +63,48 @@ export const VoucherPago = forwardRef<HTMLDivElement, VoucherPagoProps>(
         }}
       >
         {/* Header */}
-        <div className="text-center border-b border-dashed border-gray-400 pb-3 mb-3">
+        <div className="text-center border-b border-dashed border-slate-400 pb-3 mb-3">
           <div className="text-base font-bold tracking-wide">{empresa.nombre}</div>
-          <div className="text-[10px] text-gray-500">{empresa.direccion}</div>
+          <div className="text-[10px] text-slate-500">{empresa.direccion}</div>
         </div>
 
         {/* Titulo */}
         <div className="text-center mb-3">
           <div className="text-sm font-bold">COMPROBANTE DE PAGO</div>
-          <div className="text-[10px] text-gray-500">N° {pago.id}</div>
+          <div className="text-[10px] text-slate-500">N° {pago.id}</div>
         </div>
 
         {/* Linea separadora */}
-        <div className="border-b border-dashed border-gray-400 mb-3"></div>
+        <div className="border-b border-dashed border-slate-400 mb-3"></div>
 
         {/* Info del inquilino */}
         <div className="mb-3 space-y-1">
           <div className="flex justify-between">
-            <span className="text-gray-500">FECHA:</span>
+            <span className="text-slate-500">FECHA:</span>
             <span className="font-medium">{formatDate(pago.fecha)}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-gray-500">CLIENTE:</span>
+            <span className="text-slate-500">CLIENTE:</span>
             <span className="font-medium text-right">
               {inquilino ? `${inquilino.nombre} ${inquilino.apellido}` : '-'}
             </span>
           </div>
           <div className="flex justify-between">
-            <span className="text-gray-500">HABITACION:</span>
+            <span className="text-slate-500">HABITACION:</span>
             <span className="font-medium">{habitacion?.codigo || pago.habitacionId}</span>
           </div>
         </div>
 
         {/* Linea separadora */}
-        <div className="border-b border-dashed border-gray-400 mb-3"></div>
+        <div className="border-b border-dashed border-slate-400 mb-3"></div>
 
         {/* Detalle del pago */}
         <div className="mb-3">
-          <div className="text-[10px] text-gray-500 mb-2">DETALLE:</div>
+          <div className="text-[10px] text-slate-500 mb-2">DETALLE:</div>
           <div className="flex justify-between items-center py-1">
             <div>
               <div className="font-medium">{conceptoLabel[pago.concepto] || pago.concepto}</div>
-              <div className="text-[10px] text-gray-500">
+              <div className="text-[10px] text-slate-500">
                 {getMonthName(pago.mes)} {pago.anio}
               </div>
             </div>
@@ -113,7 +113,7 @@ export const VoucherPago = forwardRef<HTMLDivElement, VoucherPagoProps>(
         </div>
 
         {/* Linea separadora doble */}
-        <div className="border-b-2 border-double border-gray-600 mb-2"></div>
+        <div className="border-b-2 border-double border-slate-600 mb-2"></div>
 
         {/* Total */}
         <div className="flex justify-between items-center text-sm font-bold mb-3">
@@ -123,12 +123,12 @@ export const VoucherPago = forwardRef<HTMLDivElement, VoucherPagoProps>(
 
         {/* Metodo de pago */}
         <div className="flex justify-between text-[10px] mb-3">
-          <span className="text-gray-500">METODO PAGO:</span>
+          <span className="text-slate-500">METODO PAGO:</span>
           <span className="font-medium">{metodoPagoLabel[pago.metodoPago] || pago.metodoPago}</span>
         </div>
 
         {/* Linea separadora */}
-        <div className="border-b border-dashed border-gray-400 mb-3"></div>
+        <div className="border-b border-dashed border-slate-400 mb-3"></div>
 
         {/* Estado */}
         <div className="text-center mb-3">
@@ -146,12 +146,12 @@ export const VoucherPago = forwardRef<HTMLDivElement, VoucherPagoProps>(
         </div>
 
         {/* Footer */}
-        <div className="border-t border-dashed border-gray-400 pt-3 text-center">
+        <div className="border-t border-dashed border-slate-400 pt-3 text-center">
           <div className="text-[10px] font-medium">GRACIAS POR SU PAGO</div>
-          <div className="text-[9px] text-gray-400 mt-1">
+          <div className="text-[9px] text-slate-400 mt-1">
             Documento generado electronicamente
           </div>
-          <div className="text-[9px] text-gray-400">
+          <div className="text-[9px] text-slate-400">
             {new Date().toLocaleString('es-PE')}
           </div>
         </div>
@@ -171,7 +171,7 @@ export const VoucherPago = forwardRef<HTMLDivElement, VoucherPagoProps>(
               />
             ))}
           </div>
-          <div className="text-[8px] text-gray-400 mt-1">{pago.id}</div>
+          <div className="text-[8px] text-slate-400 mt-1">{pago.id}</div>
         </div>
       </div>
     );

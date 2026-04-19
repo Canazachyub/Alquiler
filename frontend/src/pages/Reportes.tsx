@@ -52,11 +52,11 @@ export function Reportes() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Reportes</h1>
-          <p className="text-gray-500">Analisis financiero y estadisticas</p>
+          <h1 className="page-title">Reportes</h1>
+          <p className="page-subtitle">{getMonthName(mesActual)} {anioActual}</p>
         </div>
         <button className="btn btn-outline">
-          <Download className="w-4 h-4 mr-2" />
+          <Download className="w-4 h-4" />
           Exportar
         </button>
       </div>
@@ -69,7 +69,7 @@ export function Reportes() {
           </button>
 
           <div className="flex items-center gap-2">
-            <Calendar className="w-4 h-4 text-gray-400" />
+            <Calendar className="w-4 h-4 text-slate-400" />
             <select
               value={mesActual}
               onChange={(e) => setMesAnio(Number(e.target.value), anioActual)}
@@ -99,7 +99,7 @@ export function Reportes() {
           </button>
 
           <div className="ml-auto flex items-center gap-2">
-            <span className="text-sm text-gray-500">Historico:</span>
+            <span className="text-sm text-slate-500">Histórico:</span>
             <select
               value={mesesHistorico}
               onChange={(e) => setMesesHistorico(Number(e.target.value))}
@@ -123,13 +123,13 @@ export function Reportes() {
         <div className="card p-5">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-500">Ingresos</p>
-              <p className="text-2xl font-bold text-success-600">
+              <p className="text-sm text-slate-500">Ingresos</p>
+              <p className="text-2xl font-bold text-emerald-600 tabular-nums">
                 {formatCurrency(stats?.ingresosMes || 0)}
               </p>
             </div>
-            <div className="w-12 h-12 rounded-xl bg-success-100 flex items-center justify-center">
-              <TrendingUp className="w-6 h-6 text-success-600" />
+            <div className="w-12 h-12 rounded-xl bg-emerald-100 flex items-center justify-center">
+              <TrendingUp className="w-6 h-6 text-emerald-600" />
             </div>
           </div>
         </div>
@@ -137,13 +137,13 @@ export function Reportes() {
         <div className="card p-5">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-500">Gastos</p>
-              <p className="text-2xl font-bold text-danger-600">
+              <p className="text-sm text-slate-500">Gastos</p>
+              <p className="text-2xl font-bold text-red-600 tabular-nums">
                 {formatCurrency(stats?.gastosMes || 0)}
               </p>
             </div>
-            <div className="w-12 h-12 rounded-xl bg-danger-100 flex items-center justify-center">
-              <TrendingDown className="w-6 h-6 text-danger-600" />
+            <div className="w-12 h-12 rounded-xl bg-red-100 flex items-center justify-center">
+              <TrendingDown className="w-6 h-6 text-red-600" />
             </div>
           </div>
         </div>
@@ -151,10 +151,10 @@ export function Reportes() {
         <div className="card p-5">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-500">Balance</p>
+              <p className="text-sm text-slate-500">Balance</p>
               <p
-                className={`text-2xl font-bold ${
-                  (stats?.balance || 0) >= 0 ? 'text-success-600' : 'text-danger-600'
+                className={`text-2xl font-bold tabular-nums ${
+                  (stats?.balance || 0) >= 0 ? 'text-emerald-600' : 'text-red-600'
                 }`}
               >
                 {formatCurrency(stats?.balance || 0)}
@@ -169,8 +169,8 @@ export function Reportes() {
         <div className="card p-5">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-500">Ocupacion</p>
-              <p className="text-2xl font-bold text-primary-600">
+              <p className="text-sm text-slate-500">Ocupación</p>
+              <p className="text-2xl font-bold text-primary-600 tabular-nums">
                 {(stats?.tasaOcupacion || 0).toFixed(1)}%
               </p>
             </div>
@@ -184,39 +184,39 @@ export function Reportes() {
       {/* Detalle de habitaciones */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="card p-5 text-center">
-          <div className="text-4xl font-bold text-primary-600">{stats?.totalHabitaciones || 0}</div>
-          <p className="text-gray-500 mt-1">Total Habitaciones</p>
+          <div className="text-4xl font-bold text-primary-600 tabular-nums">{stats?.totalHabitaciones || 0}</div>
+          <p className="text-slate-500 mt-1">Total Habitaciones</p>
         </div>
         <div className="card p-5 text-center">
-          <div className="text-4xl font-bold text-success-600">{stats?.habitacionesOcupadas || 0}</div>
-          <p className="text-gray-500 mt-1">Ocupadas</p>
+          <div className="text-4xl font-bold text-emerald-600 tabular-nums">{stats?.habitacionesOcupadas || 0}</div>
+          <p className="text-slate-500 mt-1">Ocupadas</p>
         </div>
         <div className="card p-5 text-center">
-          <div className="text-4xl font-bold text-gray-400">{stats?.habitacionesVacantes || 0}</div>
-          <p className="text-gray-500 mt-1">Vacantes</p>
+          <div className="text-4xl font-bold text-slate-400 tabular-nums">{stats?.habitacionesVacantes || 0}</div>
+          <p className="text-slate-500 mt-1">Vacantes</p>
         </div>
       </div>
 
       {/* Grafico de barras historico */}
       <div className="card p-5">
         <div className="flex items-center gap-2 mb-6">
-          <BarChart3 className="w-5 h-5 text-gray-500" />
-          <h2 className="text-lg font-semibold">Historico de Ingresos y Gastos</h2>
+          <BarChart3 className="w-5 h-5 text-slate-500" />
+          <h2 className="text-lg font-semibold">Histórico de Ingresos y Gastos</h2>
         </div>
 
         {/* Leyenda */}
         <div className="flex items-center gap-6 mb-4">
           <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded bg-success-500"></div>
-            <span className="text-sm text-gray-600">Ingresos</span>
+            <div className="w-4 h-4 rounded bg-emerald-500"></div>
+            <span className="text-sm text-slate-600">Ingresos</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded bg-danger-500"></div>
-            <span className="text-sm text-gray-600">Gastos</span>
+            <div className="w-4 h-4 rounded bg-red-500"></div>
+            <span className="text-sm text-slate-600">Gastos</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-4 h-4 rounded bg-primary-500"></div>
-            <span className="text-sm text-gray-600">Balance</span>
+            <span className="text-sm text-slate-600">Balance</span>
           </div>
         </div>
 
@@ -232,14 +232,14 @@ export function Reportes() {
                   <div className="flex gap-1 h-6">
                     {/* Barra de ingresos */}
                     <div
-                      className="bg-success-500 rounded-sm transition-all duration-300"
+                      className="bg-emerald-500 rounded-sm transition-all duration-300"
                       style={{
                         width: `${maxValue > 0 ? (mes.ingresos / maxValue) * 100 : 0}%`,
                       }}
                     />
                     {/* Barra de gastos */}
                     <div
-                      className="bg-danger-500 rounded-sm transition-all duration-300"
+                      className="bg-red-500 rounded-sm transition-all duration-300"
                       style={{
                         width: `${maxValue > 0 ? (mes.gastos / maxValue) * 100 : 0}%`,
                       }}
@@ -248,7 +248,7 @@ export function Reportes() {
                 </div>
                 <div className="text-right w-32">
                   <span
-                    className={`font-medium ${mes.balance >= 0 ? 'text-success-600' : 'text-danger-600'}`}
+                    className={`font-medium tabular-nums ${mes.balance >= 0 ? 'text-emerald-600' : 'text-red-600'}`}
                   >
                     {formatCurrency(mes.balance)}
                   </span>
@@ -261,7 +261,7 @@ export function Reportes() {
 
       {/* Tabla resumen */}
       <div className="card overflow-hidden">
-        <div className="p-4 border-b">
+        <div className="p-4 border-b border-slate-200">
           <h2 className="text-lg font-semibold">Detalle por Mes</h2>
         </div>
         <table className="table">
@@ -279,11 +279,11 @@ export function Reportes() {
                 <td className="font-medium">
                   {getMonthName(mes.mes)} {mes.anio}
                 </td>
-                <td className="text-right text-success-600">{formatCurrency(mes.ingresos)}</td>
-                <td className="text-right text-danger-600">{formatCurrency(mes.gastos)}</td>
+                <td className="text-right text-emerald-600 tabular-nums">{formatCurrency(mes.ingresos)}</td>
+                <td className="text-right text-red-600 tabular-nums">{formatCurrency(mes.gastos)}</td>
                 <td
-                  className={`text-right font-medium ${
-                    mes.balance >= 0 ? 'text-success-600' : 'text-danger-600'
+                  className={`text-right font-medium tabular-nums ${
+                    mes.balance >= 0 ? 'text-emerald-600' : 'text-red-600'
                   }`}
                 >
                   {formatCurrency(mes.balance)}
@@ -291,20 +291,20 @@ export function Reportes() {
               </tr>
             ))}
           </tbody>
-          <tfoot className="bg-gray-50">
+          <tfoot className="bg-slate-50">
             <tr>
               <td className="font-bold">TOTAL</td>
-              <td className="text-right font-bold text-success-600">
+              <td className="text-right font-bold text-emerald-600 tabular-nums">
                 {formatCurrency(historico?.reduce((sum, m) => sum + m.ingresos, 0) || 0)}
               </td>
-              <td className="text-right font-bold text-danger-600">
+              <td className="text-right font-bold text-red-600 tabular-nums">
                 {formatCurrency(historico?.reduce((sum, m) => sum + m.gastos, 0) || 0)}
               </td>
               <td
-                className={`text-right font-bold ${
+                className={`text-right font-bold tabular-nums ${
                   (historico?.reduce((sum, m) => sum + m.balance, 0) || 0) >= 0
-                    ? 'text-success-600'
-                    : 'text-danger-600'
+                    ? 'text-emerald-600'
+                    : 'text-red-600'
                 }`}
               >
                 {formatCurrency(historico?.reduce((sum, m) => sum + m.balance, 0) || 0)}

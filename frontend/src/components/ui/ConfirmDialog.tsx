@@ -1,4 +1,4 @@
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, Info } from 'lucide-react';
 import { Modal } from './Modal';
 
 interface ConfirmDialogProps {
@@ -26,9 +26,17 @@ export function ConfirmDialog({
 }: ConfirmDialogProps) {
   const buttonStyles = {
     danger: 'btn btn-danger',
-    warning: 'btn bg-warning-500 text-white hover:bg-warning-600',
+    warning: 'btn bg-amber-600 text-white hover:bg-amber-700',
     info: 'btn btn-primary',
   };
+
+  const iconStyles = {
+    danger: 'bg-red-100 text-red-600',
+    warning: 'bg-amber-100 text-amber-600',
+    info: 'bg-primary-100 text-primary-600',
+  };
+
+  const Icon = variant === 'info' ? Info : AlertTriangle;
 
   return (
     <Modal
@@ -57,12 +65,12 @@ export function ConfirmDialog({
     >
       <div className="flex gap-4">
         <div className="flex-shrink-0">
-          <div className="w-10 h-10 rounded-xl bg-danger-50 flex items-center justify-center">
-            <AlertTriangle className="w-5 h-5 text-danger-600" />
+          <div className={`w-10 h-10 rounded-full flex items-center justify-center ${iconStyles[variant]}`}>
+            <Icon className="w-5 h-5" />
           </div>
         </div>
         <div>
-          <p className="text-sm text-gray-600 leading-relaxed">{message}</p>
+          <p className="text-sm text-slate-600 leading-relaxed">{message}</p>
         </div>
       </div>
     </Modal>

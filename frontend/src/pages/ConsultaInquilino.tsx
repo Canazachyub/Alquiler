@@ -120,8 +120,8 @@ export function ConsultaInquilino() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-primary-50 to-primary-100 flex items-center justify-center p-4">
         <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full text-center">
-          <div className="animate-spin rounded-xl h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Consultando estado de pago...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
+          <p className="text-slate-600">Consultando estado de pago...</p>
         </div>
       </div>
     );
@@ -129,13 +129,13 @@ export function ConsultaInquilino() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-danger-50 to-danger-100 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-red-50 to-red-100 flex items-center justify-center p-4">
         <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full text-center">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-xl bg-danger-100 flex items-center justify-center">
-            <AlertCircle className="w-8 h-8 text-danger-600" />
+          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-red-100 flex items-center justify-center">
+            <AlertCircle className="w-8 h-8 text-red-600" />
           </div>
-          <h2 className="text-xl font-bold text-gray-900 mb-2">Error de Consulta</h2>
-          <p className="text-gray-600">{error}</p>
+          <h2 className="text-xl font-bold text-slate-900 mb-2">Error de Consulta</h2>
+          <p className="text-slate-600">{error}</p>
         </div>
       </div>
     );
@@ -149,37 +149,37 @@ export function ConsultaInquilino() {
   const algunPendiente = !estado.pagos.alquilerPagado || !estado.pagos.internetPagado;
 
   return (
-    <div className={`min-h-screen ${todoAlDia ? 'bg-gradient-to-br from-success-50 to-success-100' : 'bg-gradient-to-br from-warning-50 to-warning-100'} flex items-center justify-center p-4`}>
+    <div className={`min-h-screen ${todoAlDia ? 'bg-gradient-to-br from-emerald-50 to-emerald-100' : 'bg-gradient-to-br from-amber-50 to-amber-100'} flex items-center justify-center p-4`}>
       <div className="bg-white rounded-2xl shadow-xl p-6 max-w-md w-full">
         {/* Header */}
         <div className="text-center mb-6">
-          <div className={`w-20 h-20 mx-auto mb-4 rounded-xl ${todoAlDia ? 'bg-success-100' : 'bg-warning-100'} flex items-center justify-center`}>
+          <div className={`w-20 h-20 mx-auto mb-4 rounded-full ${todoAlDia ? 'bg-emerald-100' : 'bg-amber-100'} flex items-center justify-center`}>
             {todoAlDia ? (
-              <CheckCircle className="w-10 h-10 text-success-600" />
+              <CheckCircle className="w-10 h-10 text-emerald-600" />
             ) : (
-              <AlertCircle className="w-10 h-10 text-warning-600" />
+              <AlertCircle className="w-10 h-10 text-amber-600" />
             )}
           </div>
-          <h1 className={`text-2xl font-bold ${todoAlDia ? 'text-success-700' : 'text-warning-700'}`}>
-            {todoAlDia ? 'Al Dia' : 'Pagos Pendientes'}
+          <h1 className={`text-2xl font-bold ${todoAlDia ? 'text-emerald-700' : 'text-amber-700'}`}>
+            {todoAlDia ? 'Al Día' : 'Pagos Pendientes'}
           </h1>
-          <p className="text-gray-500 text-sm mt-1">
-            Estado de pago - {getMonthName(estado.mesActual)} {estado.anioActual}
+          <p className="text-slate-500 text-sm mt-1">
+            Estado de pago · {getMonthName(estado.mesActual)} {estado.anioActual}
           </p>
         </div>
 
         {/* Info Inquilino */}
         {estado.inquilino && (
-          <div className="bg-gray-50 rounded-xl p-4 mb-4">
+          <div className="bg-slate-50 rounded-2xl p-4 mb-4 border border-slate-200">
             <div className="flex items-center gap-3 mb-2">
-              <User className="w-5 h-5 text-gray-400" />
-              <span className="font-semibold text-gray-900">
+              <User className="w-5 h-5 text-slate-400" />
+              <span className="font-semibold text-slate-900">
                 {estado.inquilino.nombre} {estado.inquilino.apellido}
               </span>
             </div>
-            <div className="flex items-center gap-3 text-sm text-gray-600">
-              <Home className="w-4 h-4 text-gray-400" />
-              <span>Habitacion {estado.habitacion?.codigo}</span>
+            <div className="flex items-center gap-3 text-sm text-slate-600">
+              <Home className="w-4 h-4 text-slate-400" />
+              <span>Habitación {estado.habitacion?.codigo}</span>
             </div>
           </div>
         )}
@@ -187,45 +187,45 @@ export function ConsultaInquilino() {
         {/* Estado de Pagos */}
         <div className="space-y-3 mb-6">
           {/* Alquiler */}
-          <div className={`flex items-center justify-between p-4 rounded-xl border-2 ${estado.pagos.alquilerPagado ? 'border-success-100 bg-success-50' : 'border-danger-100 bg-danger-50'}`}>
+          <div className={`flex items-center justify-between p-4 rounded-2xl border-2 ${estado.pagos.alquilerPagado ? 'border-emerald-100 bg-emerald-50' : 'border-red-100 bg-red-50'}`}>
             <div className="flex items-center gap-3">
-              <CreditCard className={`w-5 h-5 ${estado.pagos.alquilerPagado ? 'text-success-600' : 'text-danger-600'}`} />
+              <CreditCard className={`w-5 h-5 ${estado.pagos.alquilerPagado ? 'text-emerald-600' : 'text-red-600'}`} />
               <div>
-                <p className="font-medium text-gray-900">Alquiler</p>
-                <p className="text-sm text-gray-500">{formatCurrency(estado.habitacion?.montoAlquiler || 0)}</p>
+                <p className="font-medium text-slate-900">Alquiler</p>
+                <p className="text-sm text-slate-500 tabular-nums">{formatCurrency(estado.habitacion?.montoAlquiler || 0)}</p>
               </div>
             </div>
             {estado.pagos.alquilerPagado ? (
               <div className="flex items-center gap-2">
-                <CheckCircle className="w-6 h-6 text-success-600" />
-                <span className="text-success-600 font-semibold">Pagado</span>
+                <CheckCircle className="w-6 h-6 text-emerald-600" />
+                <span className="text-emerald-600 font-semibold">Pagado</span>
               </div>
             ) : (
               <div className="flex items-center gap-2">
-                <XCircle className="w-6 h-6 text-danger-600" />
-                <span className="text-danger-600 font-semibold">Pendiente</span>
+                <XCircle className="w-6 h-6 text-red-600" />
+                <span className="text-red-600 font-semibold">Pendiente</span>
               </div>
             )}
           </div>
 
           {/* Internet */}
-          <div className={`flex items-center justify-between p-4 rounded-xl border-2 ${estado.pagos.internetPagado ? 'border-success-100 bg-success-50' : 'border-danger-100 bg-danger-50'}`}>
+          <div className={`flex items-center justify-between p-4 rounded-2xl border-2 ${estado.pagos.internetPagado ? 'border-emerald-100 bg-emerald-50' : 'border-red-100 bg-red-50'}`}>
             <div className="flex items-center gap-3">
-              <Calendar className={`w-5 h-5 ${estado.pagos.internetPagado ? 'text-success-600' : 'text-danger-600'}`} />
+              <Calendar className={`w-5 h-5 ${estado.pagos.internetPagado ? 'text-emerald-600' : 'text-red-600'}`} />
               <div>
-                <p className="font-medium text-gray-900">Internet</p>
-                <p className="text-sm text-gray-500">{formatCurrency(estado.habitacion?.montoInternet || 0)}</p>
+                <p className="font-medium text-slate-900">Internet</p>
+                <p className="text-sm text-slate-500 tabular-nums">{formatCurrency(estado.habitacion?.montoInternet || 0)}</p>
               </div>
             </div>
             {estado.pagos.internetPagado ? (
               <div className="flex items-center gap-2">
-                <CheckCircle className="w-6 h-6 text-success-600" />
-                <span className="text-success-600 font-semibold">Pagado</span>
+                <CheckCircle className="w-6 h-6 text-emerald-600" />
+                <span className="text-emerald-600 font-semibold">Pagado</span>
               </div>
             ) : (
               <div className="flex items-center gap-2">
-                <XCircle className="w-6 h-6 text-danger-600" />
-                <span className="text-danger-600 font-semibold">Pendiente</span>
+                <XCircle className="w-6 h-6 text-red-600" />
+                <span className="text-red-600 font-semibold">Pendiente</span>
               </div>
             )}
           </div>
@@ -233,9 +233,9 @@ export function ConsultaInquilino() {
 
         {/* Total Pendiente */}
         {algunPendiente && (
-          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4">
+          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-4">
             <p className="text-sm text-amber-700 font-medium">Total Pendiente:</p>
-            <p className="text-2xl font-bold text-amber-800">
+            <p className="text-2xl font-bold text-amber-800 tabular-nums">
               {formatCurrency(
                 (!estado.pagos.alquilerPagado ? (estado.habitacion?.montoAlquiler || 0) : 0) +
                 (!estado.pagos.internetPagado ? (estado.habitacion?.montoInternet || 0) : 0)
@@ -256,8 +256,8 @@ export function ConsultaInquilino() {
         )}
 
         {/* Footer */}
-        <div className="text-center text-xs text-gray-400 pt-4 border-t">
-          <p>Sistema de Alquiler - Puno/Juli</p>
+        <div className="text-center text-xs text-slate-400 pt-4 border-t border-slate-200">
+          <p>Sistema de Alquiler · Puno/Juli</p>
           <p>Consulta realizada el {new Date().toLocaleDateString('es-PE')}</p>
         </div>
       </div>

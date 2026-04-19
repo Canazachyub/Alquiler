@@ -3,6 +3,7 @@ import { Plus, Search, RefreshCw } from 'lucide-react';
 import { RoomCard } from '@/components/cards';
 import { HabitacionForm } from '@/components/forms';
 import { Modal, LoadingPage, EmptyState } from '@/components/ui';
+import { Fab } from '@/components/ui/Fab';
 import {
   useHabitacionesConEstadoPago,
   useCreateHabitacion,
@@ -11,6 +12,7 @@ import {
 } from '@/hooks';
 import { useConfigStore, useNotifications } from '@/store';
 import { formatCurrency } from '@/utils/formatters';
+import { cn } from '@/utils/cn';
 import type { HabitacionConDetalles, HabitacionInput } from '@/types';
 
 type FilterType = 'all' | 'paid' | 'debt' | 'vacant';
@@ -96,91 +98,75 @@ export function Habitaciones() {
     return <LoadingPage />;
   }
 
+  const segments: { key: FilterType; label: string; count: number }[] = [
+    { key: 'all', label: 'Todas', count: stats.total },
+    { key: 'debt', label: 'Con deuda', count: stats.conDeuda },
+    { key: 'paid', label: 'Al día', count: stats.pagadas },
+    { key: 'vacant', label: 'Vacantes', count: stats.vacantes },
+  ];
+
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between gap-2">
         <div className="min-w-0">
-          <h1 className="text-xl md:text-2xl font-bold">Habitaciones</h1>
-          <p className="text-gray-500 text-sm mt-0.5 hidden sm:block">Gestiona el estado de las habitaciones</p>
+          <h1 className="page-title">Habitaciones</h1>
+          <p className="page-subtitle hidden sm:block">
+            {stats.ocupadas} ocupadas · {stats.conDeuda} con deuda · {stats.vacantes} vacantes
+          </p>
         </div>
-        <div className="flex gap-2">
+        <div className="hidden md:flex gap-2">
           <button onClick={() => refetch()} className="btn btn-outline">
             <RefreshCw className="w-4 h-4" />
           </button>
-          <button onClick={handleCreate} className="btn btn-primary whitespace-nowrap">
-            <Plus className="w-4 h-4 md:mr-2" />
-            <span className="hidden sm:inline">Nueva Hab.</span>
+          <button onClick={handleCreate} className="btn btn-primary">
+            <Plus className="w-4 h-4" /> Nueva habitación
           </button>
         </div>
       </div>
 
-      {/* Panel de resumen */}
-      <div className="card p-4 md:p-6 bg-gradient-to-br from-primary-600 via-primary-600 to-primary-800 text-white border-0">
-        <h2 className="text-xs font-semibold uppercase tracking-wider text-white/70 mb-3 md:mb-4">
-          Resumen de Cobros del Mes
-        </h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-          <div className="bg-white/15 backdrop-blur-sm rounded-xl p-3 md:p-4">
-            <p className="text-xs text-white/70 font-medium">Total por Cobrar</p>
-            <p className="text-lg md:text-2xl font-bold mt-1">{formatCurrency(stats.totalPorCobrar)}</p>
-          </div>
-          <div className="bg-white/15 backdrop-blur-sm rounded-xl p-3 md:p-4">
-            <p className="text-xs text-white/70 font-medium">Con Deuda</p>
-            <p className="text-lg md:text-2xl font-bold mt-1">{stats.conDeuda}</p>
-          </div>
-          <div className="bg-white/15 backdrop-blur-sm rounded-xl p-3 md:p-4">
-            <p className="text-xs text-white/70 font-medium">Al Día</p>
-            <p className="text-lg md:text-2xl font-bold mt-1">{stats.pagadas}</p>
-          </div>
-          <div className="bg-white/15 backdrop-blur-sm rounded-xl p-3 md:p-4">
-            <p className="text-xs text-white/70 font-medium">Vacantes</p>
-            <p className="text-lg md:text-2xl font-bold mt-1">{stats.vacantes}</p>
-          </div>
-        </div>
+      {/* Segmented control de filtros */}
+      <div className="card p-2 flex items-center gap-1 overflow-x-auto">
+        {segments.map((seg) => (
+          <button
+            key={seg.key}
+            onClick={() => setFilter(seg.key)}
+            className={cn(
+              'flex items-center gap-2 px-3 md:px-4 h-9 rounded-lg text-sm font-medium whitespace-nowrap transition-all duration-150',
+              filter === seg.key
+                ? 'bg-primary-600 text-white shadow-sm'
+                : 'text-slate-600 hover:bg-slate-100'
+            )}
+          >
+            <span>{seg.label}</span>
+            <span
+              className={cn(
+                'px-1.5 py-0.5 rounded text-[11px] font-semibold tabular-nums',
+                filter === seg.key ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'
+              )}
+            >
+              {seg.count}
+            </span>
+          </button>
+        ))}
       </div>
 
-      {/* Filtros */}
-      <div className="card p-3 md:p-4">
-        <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 md:gap-4">
-          <div className="flex gap-1.5 md:gap-2 overflow-x-auto">
-            <button
-              onClick={() => setFilter('all')}
-              className={`btn btn-sm whitespace-nowrap ${filter === 'all' ? 'btn-primary' : 'btn-outline'}`}
-            >
-              Todas ({stats.total})
-            </button>
-            <button
-              onClick={() => setFilter('debt')}
-              className={`btn btn-sm whitespace-nowrap ${filter === 'debt' ? 'btn-danger' : 'btn-outline'}`}
-            >
-              Deuda ({stats.conDeuda})
-            </button>
-            <button
-              onClick={() => setFilter('paid')}
-              className={`btn btn-sm whitespace-nowrap ${filter === 'paid' ? 'btn-success' : 'btn-outline'}`}
-            >
-              Al Día ({stats.pagadas})
-            </button>
-            <button
-              onClick={() => setFilter('vacant')}
-              className={`btn btn-sm whitespace-nowrap ${filter === 'vacant' ? 'bg-gray-600 text-white hover:bg-gray-700' : 'btn-outline'}`}
-            >
-              Vacantes ({stats.vacantes})
-            </button>
-          </div>
-
-          <div className="flex-1 min-w-0">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Buscar habitación o inquilino..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="input pl-10"
-              />
-            </div>
+      {/* Search + KPI mini */}
+      <div className="flex flex-col md:flex-row gap-3">
+        <div className="flex-1 relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <input
+            type="text"
+            placeholder="Buscar habitación o inquilino..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="input pl-10"
+          />
+        </div>
+        <div className="card px-4 py-2.5 flex items-center gap-4 text-sm">
+          <div>
+            <p className="text-[11px] text-slate-500">Por cobrar</p>
+            <p className="font-semibold text-slate-900 tabular-nums">{formatCurrency(stats.totalPorCobrar)}</p>
           </div>
         </div>
       </div>
@@ -230,6 +216,9 @@ export function Habitaciones() {
           isLoading={createMutation.isPending || updateMutation.isPending}
         />
       </Modal>
+
+      {/* FAB móvil */}
+      <Fab onClick={handleCreate} icon={Plus} label="Nueva habitación" />
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { ChevronLeft, ChevronRight, User, Calendar } from 'lucide-react';
+import { cn } from '@/utils/cn';
 import { getMonthName } from '@/utils/formatters';
 import type { HabitacionConDetalles, Pago } from '@/types';
 
@@ -71,7 +72,7 @@ export function PaymentCalendar({
   const totalPagadas = habitacionesOcupadas.filter((h) => getPagoStatus(h.id)).length;
   const totalPendientes = totalOcupadas - totalPagadas;
 
-  const weekDays = ['Dom', 'Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab'];
+  const weekDays = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 
   // Obtener el dia actual
   const today = new Date();
@@ -83,37 +84,48 @@ export function PaymentCalendar({
   // Verificar si un dia tiene pagos pendientes o pagados
   const getDayStatus = (day: number) => {
     const habsDelDia = getHabitacionesByDay(day);
-    if (habsDelDia.length === 0) return { hasPayments: false, pagadas: 0, pendientes: 0 };
+    if (habsDelDia.length === 0) {
+      return { hasPayments: false, pagadas: 0, pendientes: 0, habs: habsDelDia };
+    }
 
     const pagadas = habsDelDia.filter((h) => getPagoStatus(h.id)).length;
     const pendientes = habsDelDia.length - pagadas;
-    return { hasPayments: true, pagadas, pendientes };
+    return { hasPayments: true, pagadas, pendientes, habs: habsDelDia };
   };
+
+  // Determinar día de la semana (0 = domingo, 6 = sábado)
+  const getWeekday = (day: number) => new Date(anio, mes - 1, day).getDay();
 
   return (
     <div className="card">
       {/* Header */}
-      <div className="p-4 border-b flex items-center justify-between">
-        <button onClick={() => navigateMonth(-1)} className="p-1 hover:bg-gray-100 rounded">
-          <ChevronLeft className="w-5 h-5 text-gray-600" />
+      <div className="p-4 border-b border-slate-200 flex items-center justify-between">
+        <button
+          onClick={() => navigateMonth(-1)}
+          className="w-8 h-8 rounded-lg hover:bg-slate-100 flex items-center justify-center"
+        >
+          <ChevronLeft className="w-5 h-5 text-slate-600" />
         </button>
-        <h3 className="font-semibold text-lg">
+        <h3 className="text-base font-semibold text-slate-900">
           {getMonthName(mes)} {anio}
         </h3>
-        <button onClick={() => navigateMonth(1)} className="p-1 hover:bg-gray-100 rounded">
-          <ChevronRight className="w-5 h-5 text-gray-600" />
+        <button
+          onClick={() => navigateMonth(1)}
+          className="w-8 h-8 rounded-lg hover:bg-slate-100 flex items-center justify-center"
+        >
+          <ChevronRight className="w-5 h-5 text-slate-600" />
         </button>
       </div>
 
       {/* Indicadores */}
-      <div className="p-3 bg-gray-50 border-b flex items-center justify-center gap-4 text-sm">
+      <div className="p-3 bg-slate-50 border-b border-slate-200 flex items-center justify-center gap-4 text-sm">
         <div className="flex items-center gap-1.5">
-          <div className="w-4 h-4 rounded bg-success-100 border border-success-500"></div>
-          <span className="text-success-700 font-medium">Pagado ({totalPagadas})</span>
+          <span className="w-2 h-2 rounded-full bg-emerald-500" />
+          <span className="text-slate-700 font-medium tabular-nums">Pagado ({totalPagadas})</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <div className="w-4 h-4 rounded bg-pink-100 border border-pink-300"></div>
-          <span className="text-pink-700 font-medium">Pendiente ({totalPendientes})</span>
+          <span className="w-2 h-2 rounded-full bg-red-500" />
+          <span className="text-slate-700 font-medium tabular-nums">Pendiente ({totalPendientes})</span>
         </div>
       </div>
 
@@ -122,7 +134,10 @@ export function PaymentCalendar({
         {/* Dias de la semana */}
         <div className="grid grid-cols-7 gap-1 mb-2">
           {weekDays.map((day) => (
-            <div key={day} className="text-center text-xs font-medium text-gray-500 py-1">
+            <div
+              key={day}
+              className="text-center text-[11px] font-semibold text-slate-500 normal-case py-1"
+            >
               {day}
             </div>
           ))}
@@ -140,54 +155,64 @@ export function PaymentCalendar({
             const isToday = isCurrentMonth && day === currentDay;
             const isSelected = day === selectedDay;
             const dayStatus = getDayStatus(day);
+            const weekday = getWeekday(day);
+            const isWeekend = weekday === 0 || weekday === 6;
 
-            // Determinar color de fondo segun estado
-            const getBgColor = () => {
-              if (!dayStatus.hasPayments) return '';
-              if (dayStatus.pendientes > 0 && dayStatus.pagadas > 0) {
-                // Tiene ambos: fondo amarillo/naranja
-                return 'bg-amber-100 hover:bg-amber-200';
-              }
-              if (dayStatus.pendientes > 0) {
-                // Solo pendientes: fondo rosa
-                return 'bg-pink-100 hover:bg-pink-200';
-              }
-              // Solo pagados: fondo verde
-              return 'bg-success-50 hover:bg-success-100';
-            };
+            // Fondo del día según estado de pagos
+            const bgClass = !dayStatus.hasPayments
+              ? isWeekend
+                ? 'bg-slate-50/60 hover:bg-slate-50'
+                : 'bg-white hover:bg-slate-50'
+              : dayStatus.pendientes > 0 && dayStatus.pagadas > 0
+                ? 'bg-amber-50 hover:bg-amber-100'
+                : dayStatus.pendientes > 0
+                  ? 'bg-red-50 hover:bg-red-100'
+                  : 'bg-emerald-50 hover:bg-emerald-100';
 
-            const getTextColor = () => {
-              if (!dayStatus.hasPayments) return isToday ? 'text-primary-600' : 'text-gray-700';
-              if (dayStatus.pendientes > 0 && dayStatus.pagadas > 0) return 'text-amber-800';
-              if (dayStatus.pendientes > 0) return 'text-pink-800';
-              return 'text-success-700';
-            };
+            const textColor = !dayStatus.hasPayments
+              ? 'text-slate-700'
+              : dayStatus.pendientes > 0 && dayStatus.pagadas > 0
+                ? 'text-amber-800'
+                : dayStatus.pendientes > 0
+                  ? 'text-red-700'
+                  : 'text-emerald-700';
+
+            const totalDots = dayStatus.habs.length;
+            const visibleDots = Math.min(totalDots, 5);
+            const overflow = totalDots - visibleDots;
 
             return (
               <button
                 key={day}
                 onClick={() => setSelectedDay(day === selectedDay ? null : day)}
-                className={`
-                  aspect-square rounded-lg text-sm font-medium transition-all
-                  flex flex-col items-center justify-center relative
-                  ${isToday ? 'ring-2 ring-primary-500 ring-offset-1' : ''}
-                  ${isSelected ? 'ring-2 ring-gray-400' : ''}
-                  ${dayStatus.hasPayments ? getBgColor() : 'hover:bg-gray-100'}
-                `}
+                className={cn(
+                  'aspect-square rounded-lg text-sm font-medium transition-all',
+                  'flex flex-col items-center justify-center relative',
+                  bgClass,
+                  isToday && 'ring-2 ring-primary-500 ring-inset',
+                  isSelected && !isToday && 'ring-2 ring-slate-400 ring-inset'
+                )}
               >
-                <span className={`font-semibold ${getTextColor()}`}>{day}</span>
+                <span className={cn('font-semibold tabular-nums', textColor)}>{day}</span>
 
-                {/* Contador de pagos del dia */}
+                {/* Dots de pagos */}
                 {dayStatus.hasPayments && (
                   <div className="flex items-center gap-0.5 mt-0.5">
-                    {dayStatus.pagadas > 0 && (
-                      <span className="text-[10px] font-bold text-success-600 bg-success-100 px-1 rounded">
-                        {dayStatus.pagadas}
-                      </span>
-                    )}
-                    {dayStatus.pendientes > 0 && (
-                      <span className="text-[10px] font-bold text-pink-600 bg-pink-200 px-1 rounded">
-                        {dayStatus.pendientes}
+                    {dayStatus.habs.slice(0, 5).map((h, idx) => {
+                      const pagado = getPagoStatus(h.id);
+                      return (
+                        <span
+                          key={`${h.id}-${idx}`}
+                          className={cn(
+                            'w-1 h-1 rounded-full',
+                            pagado ? 'bg-emerald-500' : 'bg-red-500'
+                          )}
+                        />
+                      );
+                    })}
+                    {overflow > 0 && (
+                      <span className="tabular-nums text-[10px] text-slate-500 ml-0.5">
+                        +{overflow}
                       </span>
                     )}
                   </div>
@@ -200,42 +225,40 @@ export function PaymentCalendar({
 
       {/* Detalle del dia seleccionado */}
       {selectedDay && (
-        <div className="border-t p-4">
-          <h4 className="font-medium text-sm text-gray-600 mb-3 flex items-center gap-2">
+        <div className="border-t border-slate-200 p-4 shadow-popover rounded-xl">
+          <h4 className="font-medium text-sm text-slate-600 mb-3 flex items-center gap-2">
             <Calendar className="w-4 h-4" />
             Pagos del dia {selectedDay}:
           </h4>
 
           {selectedDayData.length === 0 ? (
-            <p className="text-sm text-gray-500">No hay pagos programados para este dia</p>
+            <p className="text-sm text-slate-500">No hay pagos programados para este dia</p>
           ) : (
             <div className="space-y-2 max-h-48 overflow-y-auto">
               {selectedDayData.map(({ habitacion, pagado }) => (
                 <div
                   key={habitacion.id}
-                  className={`flex items-center justify-between p-2.5 rounded-lg border ${
-                    pagado
-                      ? 'bg-success-50 border-success-100'
-                      : 'bg-pink-50 border-pink-200'
-                  }`}
+                  className={cn(
+                    'flex items-center justify-between p-2.5 rounded-lg border',
+                    pagado ? 'bg-emerald-50 border-emerald-100' : 'bg-red-50 border-red-100'
+                  )}
                 >
                   <div className="flex items-center gap-2">
-                    <User className={`w-4 h-4 ${pagado ? 'text-success-600' : 'text-pink-600'}`} />
+                    <User className={cn('w-4 h-4', pagado ? 'text-emerald-600' : 'text-red-600')} />
                     <div>
-                      <p className="text-sm font-medium">
-                        Hab. {habitacion.codigo}
-                      </p>
-                      <p className="text-xs text-gray-500">
+                      <p className="text-sm font-medium text-slate-900">Hab. {habitacion.codigo}</p>
+                      <p className="text-xs text-slate-500">
                         {habitacion.nombreInquilino || 'Sin inquilino'}
                       </p>
                     </div>
                   </div>
                   <span
-                    className={`text-xs font-bold px-2.5 py-1 rounded-full ${
+                    className={cn(
+                      'text-xs font-semibold px-2.5 py-1 rounded-full',
                       pagado
-                        ? 'bg-success-100 text-success-700'
-                        : 'bg-pink-200 text-pink-800'
-                    }`}
+                        ? 'bg-emerald-100 text-emerald-700'
+                        : 'bg-red-100 text-red-700'
+                    )}
                   >
                     {pagado ? 'PAGADO' : 'PENDIENTE'}
                   </span>
@@ -248,15 +271,15 @@ export function PaymentCalendar({
 
       {/* Footer con lista de pendientes */}
       {totalPendientes > 0 && (
-        <div className="border-t p-3 bg-pink-50">
-          <p className="text-xs text-pink-700 font-medium mb-2">Pendientes de pago:</p>
+        <div className="border-t border-slate-200 p-3 bg-red-50">
+          <p className="text-xs text-red-700 font-medium mb-2">Pendientes de pago:</p>
           <div className="flex flex-wrap gap-1">
             {habitacionesOcupadas
               .filter((h) => !getPagoStatus(h.id))
               .map((h) => (
                 <span
                   key={h.id}
-                  className="text-xs bg-pink-100 text-pink-800 px-2 py-0.5 rounded cursor-pointer hover:bg-pink-200"
+                  className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded cursor-pointer hover:bg-red-200"
                   title={`${h.nombreInquilino} - Dia ${h.diaPago}`}
                   onClick={() => setSelectedDay(h.diaPago || null)}
                 >

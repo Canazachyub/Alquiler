@@ -15,6 +15,7 @@ import {
   useDeleteGastoFijo,
 } from '@/hooks';
 import { useNotifications, useConfigStore } from '@/store';
+import { cn } from '@/utils/cn';
 import type { Edificio, EdificioInput, GastoFijo, GastoFijoInput, Ciudad, TipoGastoFijo } from '@/types';
 import type { EdificioCompletoInput } from '@/api/edificios.api';
 import { useForm } from 'react-hook-form';
@@ -81,14 +82,14 @@ export function Edificios() {
     try {
       if (editingEdificio) {
         await updateMutation.mutateAsync({ id: editingEdificio.id, data });
-        notify.success('Edificio actualizado correctamente');
+        notify.success('Edificio actualizado');
       } else {
         await createMutation.mutateAsync(data);
-        notify.success('Edificio creado correctamente');
+        notify.success('Edificio creado');
       }
       setIsModalOpen(false);
     } catch (error) {
-      notify.error('Error al guardar el edificio');
+      notify.error('No se pudo guardar. Intenta de nuevo.');
     }
   };
 
@@ -98,7 +99,7 @@ export function Edificios() {
       notify.success(`Edificio creado con ${result.pisos.length} pisos y ${result.habitaciones.length} habitaciones`);
       setIsWizardOpen(false);
     } catch (error) {
-      notify.error('Error al crear el edificio');
+      notify.error('No se pudo guardar. Intenta de nuevo.');
     }
   };
 
@@ -106,13 +107,13 @@ export function Edificios() {
     if (!deletingEdificio) return;
     try {
       await deleteMutation.mutateAsync(deletingEdificio.id);
-      notify.success('Edificio eliminado correctamente');
+      notify.success('Edificio eliminado');
       setDeletingEdificio(null);
       if (selectedEdificio?.id === deletingEdificio.id) {
         setSelectedEdificio(null);
       }
     } catch (error) {
-      notify.error('Error al eliminar el edificio');
+      notify.error('No se pudo eliminar. Intenta de nuevo.');
     }
   };
 
@@ -142,7 +143,7 @@ export function Edificios() {
       }
       setIsGastoFijoModalOpen(false);
     } catch (error) {
-      notify.error('Error al guardar el gasto fijo');
+      notify.error('No se pudo guardar. Intenta de nuevo.');
     }
   };
 
@@ -153,7 +154,7 @@ export function Edificios() {
       notify.success('Gasto fijo eliminado');
       setDeletingGastoFijo(null);
     } catch (error) {
-      notify.error('Error al eliminar el gasto fijo');
+      notify.error('No se pudo eliminar. Intenta de nuevo.');
     }
   };
 
@@ -172,21 +173,28 @@ export function Edificios() {
     return <LoadingPage />;
   }
 
+  const totalEdificios = edificios?.length || 0;
+  const totalCiudades = new Set(edificios?.map((e) => e.ciudadId)).size;
+
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Edificios</h1>
-          <p className="text-gray-500">Gestiona los edificios y sus gastos fijos</p>
+          <h1 className="page-title">Edificios</h1>
+          <p className="page-subtitle">
+            {totalEdificios > 0
+              ? `${totalEdificios} edificios en ${totalCiudades} ciudades`
+              : 'Sin registros todavía'}
+          </p>
         </div>
         <div className="flex gap-2">
           <button onClick={handleCreateSimple} className="btn btn-outline">
-            <Plus className="w-4 h-4 mr-2" />
+            <Plus className="w-4 h-4" />
             Simple
           </button>
           <button onClick={handleCreate} className="btn btn-primary">
-            <Wand2 className="w-4 h-4 mr-2" />
+            <Wand2 className="w-4 h-4" />
             Nuevo con Asistente
           </button>
         </div>
@@ -198,12 +206,11 @@ export function Edificios() {
           {edificios?.length === 0 ? (
             <EmptyState
               icon={Building2}
-              title="No hay edificios"
-              description="Crea tu primer edificio para empezar a gestionar habitaciones"
+              title="Aún no hay edificios"
               action={
                 <button onClick={handleCreate} className="btn btn-primary">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Nuevo Edificio
+                  <Plus className="w-4 h-4" />
+                  Nuevo edificio
                 </button>
               }
             />
@@ -212,11 +219,12 @@ export function Edificios() {
               {edificios?.map((edificio) => (
                 <div
                   key={edificio.id}
-                  className={`card p-5 cursor-pointer transition-all ${
+                  className={cn(
+                    'card p-5 cursor-pointer transition-all',
                     selectedEdificio?.id === edificio.id
                       ? 'ring-2 ring-primary-500 bg-primary-50'
                       : 'hover:shadow-md'
-                  }`}
+                  )}
                   onClick={() => handleViewGastosFijos(edificio)}
                 >
                   <div className="flex items-start justify-between">
@@ -226,7 +234,7 @@ export function Edificios() {
                       </div>
                       <div>
                         <h3 className="font-semibold text-lg">{edificio.nombre}</h3>
-                        <div className="flex items-center gap-1 text-sm text-gray-500">
+                        <div className="flex items-center gap-1 text-sm text-slate-500">
                           <MapPin className="w-3 h-3" />
                           {getCiudadNombre(edificio.ciudadId)}
                         </div>
@@ -238,32 +246,32 @@ export function Edificios() {
                           e.stopPropagation();
                           handleEdit(edificio);
                         }}
-                        className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                        className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
                       >
-                        <Edit className="w-4 h-4 text-gray-500" />
+                        <Edit className="w-4 h-4 text-slate-500" />
                       </button>
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           handleDelete(edificio);
                         }}
-                        className="p-2 hover:bg-danger-50 rounded-lg transition-colors"
+                        className="p-2 hover:bg-red-50 rounded-lg transition-colors"
                       >
-                        <Trash2 className="w-4 h-4 text-danger-600" />
+                        <Trash2 className="w-4 h-4 text-red-600" />
                       </button>
                     </div>
                   </div>
 
                   {edificio.descripcion && (
-                    <p className="mt-3 text-sm text-gray-600 line-clamp-2">{edificio.descripcion}</p>
+                    <p className="mt-3 text-sm text-slate-600 line-clamp-2">{edificio.descripcion}</p>
                   )}
 
-                  <div className="mt-4 pt-4 border-t space-y-2">
-                    <p className="text-sm text-gray-600">{edificio.direccion}</p>
+                  <div className="mt-4 pt-4 border-t border-slate-200 space-y-2">
+                    <p className="text-sm text-slate-600">{edificio.direccion}</p>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-1 text-sm">
-                        <Layers className="w-4 h-4 text-gray-400" />
-                        <span>{edificio.totalPisos} pisos</span>
+                        <Layers className="w-4 h-4 text-slate-400" />
+                        <span className="tabular-nums">{edificio.totalPisos} pisos</span>
                       </div>
                       <span
                         className={`badge ${edificio.activo ? 'badge-success' : 'badge-danger'}`}
@@ -289,7 +297,7 @@ export function Edificios() {
                       <Receipt className="w-5 h-5 text-primary-600" />
                       Gastos Fijos
                     </h3>
-                    <p className="text-sm text-gray-500">{selectedEdificio.nombre}</p>
+                    <p className="text-sm text-slate-500">{selectedEdificio.nombre}</p>
                   </div>
                   <button onClick={handleAddGastoFijo} className="btn btn-primary btn-sm">
                     <Plus className="w-4 h-4" />
@@ -297,9 +305,9 @@ export function Edificios() {
                 </div>
 
                 {/* Total mensual */}
-                <div className="bg-gray-50 rounded-lg p-3 mb-4">
-                  <p className="text-sm text-gray-500">Total mensual</p>
-                  <p className="text-2xl font-bold text-primary-600">
+                <div className="bg-slate-50 rounded-xl p-3 mb-4 border border-slate-200">
+                  <p className="text-sm text-slate-500">Total mensual</p>
+                  <p className="text-2xl font-bold text-primary-600 tabular-nums">
                     {formatCurrency(totalGastosFijos)}
                   </p>
                 </div>
@@ -310,9 +318,10 @@ export function Edificios() {
                     {gastosFijos.map((gasto) => (
                       <div
                         key={gasto.id}
-                        className={`p-3 rounded-lg border ${
-                          gasto.activo ? 'bg-white' : 'bg-gray-50 opacity-60'
-                        }`}
+                        className={cn(
+                          'p-3 rounded-xl border border-slate-200',
+                          gasto.activo ? 'bg-white' : 'bg-slate-50 opacity-60'
+                        )}
                       >
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
@@ -325,14 +334,14 @@ export function Edificios() {
                               )}
                             </div>
                             {gasto.descripcion && (
-                              <p className="text-sm text-gray-500 mt-1">{gasto.descripcion}</p>
+                              <p className="text-sm text-slate-500 mt-1">{gasto.descripcion}</p>
                             )}
                             <div className="flex items-center gap-4 mt-2 text-sm">
-                              <span className="flex items-center gap-1 text-success-600 font-medium">
+                              <span className="flex items-center gap-1 text-emerald-600 font-medium tabular-nums">
                                 <DollarSign className="w-3 h-3" />
                                 {formatCurrency(gasto.monto)}
                               </span>
-                              <span className="flex items-center gap-1 text-gray-500">
+                              <span className="flex items-center gap-1 text-slate-500 tabular-nums">
                                 <Calendar className="w-3 h-3" />
                                 Vence el {gasto.diaVencimiento}
                               </span>
@@ -341,15 +350,15 @@ export function Edificios() {
                           <div className="flex gap-1">
                             <button
                               onClick={() => handleEditGastoFijo(gasto)}
-                              className="p-1.5 hover:bg-gray-100 rounded transition-colors"
+                              className="p-1.5 hover:bg-slate-100 rounded transition-colors"
                             >
-                              <Edit className="w-3.5 h-3.5 text-gray-500" />
+                              <Edit className="w-3.5 h-3.5 text-slate-500" />
                             </button>
                             <button
                               onClick={() => handleDeleteGastoFijo(gasto)}
-                              className="p-1.5 hover:bg-danger-50 rounded transition-colors"
+                              className="p-1.5 hover:bg-red-50 rounded transition-colors"
                             >
-                              <Trash2 className="w-3.5 h-3.5 text-danger-600" />
+                              <Trash2 className="w-3.5 h-3.5 text-red-600" />
                             </button>
                           </div>
                         </div>
@@ -357,21 +366,21 @@ export function Edificios() {
                     ))}
                   </div>
                 ) : (
-                  <div className="text-center py-8 text-gray-500">
+                  <div className="text-center py-8 text-slate-500">
                     <Receipt className="w-12 h-12 mx-auto mb-2 opacity-30" />
                     <p>No hay gastos fijos registrados</p>
                     <button
                       onClick={handleAddGastoFijo}
                       className="btn btn-outline btn-sm mt-3"
                     >
-                      <Plus className="w-4 h-4 mr-1" />
+                      <Plus className="w-4 h-4" />
                       Agregar gasto fijo
                     </button>
                   </div>
                 )}
               </>
             ) : (
-              <div className="text-center py-12 text-gray-500">
+              <div className="text-center py-12 text-slate-500">
                 <Building2 className="w-16 h-16 mx-auto mb-3 opacity-30" />
                 <p className="font-medium">Selecciona un edificio</p>
                 <p className="text-sm mt-1">
@@ -387,7 +396,7 @@ export function Edificios() {
       <Modal
         isOpen={isWizardOpen}
         onClose={() => setIsWizardOpen(false)}
-        title="Asistente de Creacion de Edificio"
+        title="Asistente de Creación de Edificio"
         size="lg"
       >
         <EdificioWizard
@@ -438,7 +447,7 @@ export function Edificios() {
         onClose={() => setDeletingEdificio(null)}
         onConfirm={confirmDelete}
         title="Eliminar Edificio"
-        message={`¿Estas seguro de eliminar el edificio "${deletingEdificio?.nombre}"? Se eliminaran todos los pisos, habitaciones y gastos fijos asociados.`}
+        message={`¿Eliminar el edificio "${deletingEdificio?.nombre ?? ''}"? Se eliminarán todos los pisos, habitaciones y gastos fijos asociados. Esta acción no se puede deshacer.`}
         confirmText="Eliminar"
         isLoading={deleteMutation.isPending}
       />
@@ -449,7 +458,7 @@ export function Edificios() {
         onClose={() => setDeletingGastoFijo(null)}
         onConfirm={confirmDeleteGastoFijo}
         title="Eliminar Gasto Fijo"
-        message={`¿Estas seguro de eliminar el gasto fijo "${getTipoGastoLabel(deletingGastoFijo?.tipo || 'otro')}"?`}
+        message={`¿Eliminar el gasto fijo "${getTipoGastoLabel(deletingGastoFijo?.tipo || 'otro')}"? Esta acción no se puede deshacer.`}
         confirmText="Eliminar"
         isLoading={deleteGastoFijoMutation.isPending}
       />
@@ -488,7 +497,7 @@ function EdificioForm({
         <label className="label">Ciudad *</label>
         <select
           {...register('ciudadId', { required: 'Seleccione una ciudad' })}
-          className="select"
+          className={cn('select', errors.ciudadId && 'input-error')}
         >
           <option value="">Seleccionar ciudad...</option>
           {ciudades.map((ciudad) => (
@@ -497,43 +506,37 @@ function EdificioForm({
             </option>
           ))}
         </select>
-        {errors.ciudadId && (
-          <p className="text-xs text-danger-600 mt-1 font-medium">{errors.ciudadId.message}</p>
-        )}
+        {errors.ciudadId && <p className="form-error">{errors.ciudadId.message}</p>}
       </div>
 
       <div>
         <label className="label">Nombre *</label>
         <input
           {...register('nombre', { required: 'Ingrese el nombre' })}
-          className="input"
+          className={cn('input', errors.nombre && 'input-error')}
           placeholder="Ej: Edificio Central"
         />
-        {errors.nombre && (
-          <p className="text-xs text-danger-600 mt-1 font-medium">{errors.nombre.message}</p>
-        )}
+        {errors.nombre && <p className="form-error">{errors.nombre.message}</p>}
       </div>
 
       <div>
-        <label className="label">Descripcion</label>
+        <label className="label">Descripción</label>
         <textarea
           {...register('descripcion')}
           className="input"
           rows={2}
-          placeholder="Descripcion breve del edificio..."
+          placeholder="Descripción breve del edificio..."
         />
       </div>
 
       <div>
-        <label className="label">Direccion *</label>
+        <label className="label">Dirección *</label>
         <input
           {...register('direccion', { required: 'Ingrese la direccion' })}
-          className="input"
+          className={cn('input', errors.direccion && 'input-error')}
           placeholder="Ej: Jr. Lima 123"
         />
-        {errors.direccion && (
-          <p className="text-xs text-danger-600 mt-1 font-medium">{errors.direccion.message}</p>
-        )}
+        {errors.direccion && <p className="form-error">{errors.direccion.message}</p>}
       </div>
 
       <div>
@@ -545,12 +548,10 @@ function EdificioForm({
             min: { value: 1, message: 'Minimo 1 piso' },
             valueAsNumber: true,
           })}
-          className="input"
+          className={cn('input tabular-nums', errors.totalPisos && 'input-error')}
           min={1}
         />
-        {errors.totalPisos && (
-          <p className="text-xs text-danger-600 mt-1 font-medium">{errors.totalPisos.message}</p>
-        )}
+        {errors.totalPisos && <p className="form-error">{errors.totalPisos.message}</p>}
       </div>
 
       <div className="flex items-center gap-2">
@@ -558,14 +559,14 @@ function EdificioForm({
           type="checkbox"
           {...register('activo')}
           id="activo"
-          className="w-4 h-4 rounded border-gray-300"
+          className="w-4 h-4 rounded border-slate-300"
         />
-        <label htmlFor="activo" className="text-sm text-gray-700">
+        <label htmlFor="activo" className="text-sm text-slate-700">
           Edificio activo
         </label>
       </div>
 
-      <div className="flex justify-end gap-2 pt-4 border-t">
+      <div className="flex justify-end gap-2 pt-5 border-t border-slate-200 mt-6">
         <button type="button" onClick={onCancel} className="btn btn-outline">
           Cancelar
         </button>
@@ -608,20 +609,18 @@ function GastoFijoForm({
 
       <div>
         <label className="label">Tipo de Gasto *</label>
-        <select {...register('tipo', { required: 'Seleccione el tipo' })} className="select">
+        <select {...register('tipo', { required: 'Seleccione el tipo' })} className={cn('select', errors.tipo && 'input-error')}>
           {TIPOS_GASTO_FIJO.map((tipo) => (
             <option key={tipo.value} value={tipo.value}>
               {tipo.label}
             </option>
           ))}
         </select>
-        {errors.tipo && (
-          <p className="text-xs text-danger-600 mt-1 font-medium">{errors.tipo.message}</p>
-        )}
+        {errors.tipo && <p className="form-error">{errors.tipo.message}</p>}
       </div>
 
       <div>
-        <label className="label">Descripcion</label>
+        <label className="label">Descripción</label>
         <input
           {...register('descripcion')}
           className="input"
@@ -639,16 +638,14 @@ function GastoFijoForm({
             min: { value: 0.01, message: 'El monto debe ser mayor a 0' },
             valueAsNumber: true,
           })}
-          className="input"
+          className={cn('input tabular-nums', errors.monto && 'input-error')}
           placeholder="0.00"
         />
-        {errors.monto && (
-          <p className="text-xs text-danger-600 mt-1 font-medium">{errors.monto.message}</p>
-        )}
+        {errors.monto && <p className="form-error">{errors.monto.message}</p>}
       </div>
 
       <div>
-        <label className="label">Dia de Vencimiento *</label>
+        <label className="label">Día de Vencimiento *</label>
         <input
           type="number"
           {...register('diaVencimiento', {
@@ -657,15 +654,13 @@ function GastoFijoForm({
             max: { value: 31, message: 'Maximo dia 31' },
             valueAsNumber: true,
           })}
-          className="input"
+          className={cn('input tabular-nums', errors.diaVencimiento && 'input-error')}
           min={1}
           max={31}
           placeholder="15"
         />
-        <p className="text-xs text-gray-500 mt-1">Dia del mes en que vence el pago (1-31)</p>
-        {errors.diaVencimiento && (
-          <p className="text-xs text-danger-600 mt-1 font-medium">{errors.diaVencimiento.message}</p>
-        )}
+        <p className="text-xs text-slate-500 mt-1">Día del mes en que vence el pago (1-31)</p>
+        {errors.diaVencimiento && <p className="form-error">{errors.diaVencimiento.message}</p>}
       </div>
 
       <div className="flex items-center gap-2">
@@ -673,14 +668,14 @@ function GastoFijoForm({
           type="checkbox"
           {...register('activo')}
           id="gasto-activo"
-          className="w-4 h-4 rounded border-gray-300"
+          className="w-4 h-4 rounded border-slate-300"
         />
-        <label htmlFor="gasto-activo" className="text-sm text-gray-700">
+        <label htmlFor="gasto-activo" className="text-sm text-slate-700">
           Gasto activo
         </label>
       </div>
 
-      <div className="flex justify-end gap-2 pt-4 border-t">
+      <div className="flex justify-end gap-2 pt-5 border-t border-slate-200 mt-6">
         <button type="button" onClick={onCancel} className="btn btn-outline">
           Cancelar
         </button>

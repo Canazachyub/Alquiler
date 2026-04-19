@@ -47,17 +47,16 @@ export async function generateContratoPDF(data: ContratoData): Promise<void> {
 
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
-  const margin = 18;
+  const margin = 12;
   const contentWidth = pageWidth - (margin * 2);
   let y = 0;
 
-  // Colores del sistema de diseño
-  const accent: [number, number, number] = [55, 48, 107];   // indigo oscuro
-  const accentLight: [number, number, number] = [99, 91, 160]; // indigo claro
-  const dark: [number, number, number] = [33, 37, 41];
-  const mid: [number, number, number] = [108, 117, 125];
-  const lightBg: [number, number, number] = [245, 245, 250];
-  const borderColor: [number, number, number] = [210, 210, 220];
+  // Colores del sistema de diseño (alineados con la app web)
+  const accent: [number, number, number] = [79, 70, 229];    // primary-600 indigo
+  const dark: [number, number, number] = [15, 23, 42];        // slate-900
+  const mid: [number, number, number] = [100, 116, 139];      // slate-500
+  const lightBg: [number, number, number] = [248, 250, 252];  // slate-50
+  const borderColor: [number, number, number] = [226, 232, 240]; // slate-200
   const white: [number, number, number] = [255, 255, 255];
 
   // Helper: linea solida fina
@@ -67,22 +66,22 @@ export async function generateContratoPDF(data: ContratoData): Promise<void> {
     doc.line(x1, yPos, x2, yPos);
   };
 
-  // Helper: encabezado de seccion con linea
-  const sectionHeader = (title: string, yPos: number): number => {
-    doc.setFontSize(10);
+  // Helper: encabezado de seccion con linea (respeta columna via xStart)
+  const sectionHeader = (title: string, yPos: number, xStart: number = margin): number => {
+    doc.setFontSize(11);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(accent[0], accent[1], accent[2]);
-    doc.text(title, margin, yPos);
+    doc.text(title, xStart, yPos);
     const tw = doc.getTextWidth(title);
     doc.setDrawColor(accent[0], accent[1], accent[2]);
     doc.setLineWidth(0.6);
-    doc.line(margin, yPos + 1.5, margin + tw, yPos + 1.5);
-    return yPos + 7;
+    doc.line(xStart, yPos + 2, xStart + tw, yPos + 2);
+    return yPos + 8.5;
   };
 
   // Helper: campo con etiqueta y valor en fila
   const fieldRow = (label: string, value: string, yPos: number, xStart = margin, maxWidth = contentWidth): number => {
-    doc.setFontSize(9);
+    doc.setFontSize(10.5);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(mid[0], mid[1], mid[2]);
     doc.text(label, xStart, yPos);
@@ -94,92 +93,74 @@ export async function generateContratoPDF(data: ContratoData): Promise<void> {
     doc.setDrawColor(borderColor[0], borderColor[1], borderColor[2]);
     doc.setLineWidth(0.3);
     doc.setLineDashPattern([1, 1], 0);
-    doc.line(xStart + labelW, yPos + 1, xStart + maxWidth * 0.45, yPos + 1);
+    doc.line(xStart + labelW, yPos + 1.2, xStart + maxWidth * 0.5, yPos + 1.2);
     doc.setLineDashPattern([], 0);
-    return yPos + 6;
+    return yPos + 7.5;
   };
 
-  // Helper: checkbox
+  // Helper: checkbox (check dibujado con lineas, helvetica std no soporta ✓)
   const checkbox = (label: string, checked: boolean, xPos: number, yPos: number): number => {
+    const boxSize = 5.5;
+    const boxY = yPos - 4.2;
     doc.setDrawColor(accent[0], accent[1], accent[2]);
     doc.setLineWidth(0.5);
-    doc.roundedRect(xPos, yPos - 3.5, 4.5, 4.5, 0.5, 0.5, 'S');
+    doc.roundedRect(xPos, boxY, boxSize, boxSize, 0.7, 0.7, 'S');
     if (checked) {
+      // Fondo indigo solido
       doc.setFillColor(accent[0], accent[1], accent[2]);
-      doc.roundedRect(xPos + 0.5, yPos - 3, 3.5, 3.5, 0.3, 0.3, 'F');
-      doc.setFontSize(7);
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(white[0], white[1], white[2]);
-      doc.text('✓', xPos + 1, yPos - 0.3);
+      doc.roundedRect(xPos, boxY, boxSize, boxSize, 0.7, 0.7, 'F');
+      // Check dibujado con 2 lineas (V corta + larga)
+      doc.setDrawColor(white[0], white[1], white[2]);
+      doc.setLineWidth(0.8);
+      doc.setLineCap('round');
+      doc.setLineJoin('round');
+      const cx = xPos;
+      const cy = boxY;
+      doc.line(cx + 1.1, cy + 2.9, cx + 2.3, cy + 4.0);
+      doc.line(cx + 2.3, cy + 4.0, cx + 4.4, cy + 1.7);
+      doc.setLineCap('butt');
+      doc.setLineJoin('miter');
     }
-    doc.setFontSize(8.5);
+    doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(dark[0], dark[1], dark[2]);
-    doc.text(label, xPos + 6.5, yPos);
-    return yPos + 7;
+    doc.text(label, xPos + 7.5, yPos);
+    return yPos + 8;
   };
 
   // ================================================================
-  // BORDE SUPERIOR DECORATIVO
+  // BANDA SUPERIOR MINIMAL
   // ================================================================
   doc.setFillColor(accent[0], accent[1], accent[2]);
-  doc.rect(0, 0, pageWidth, 4, 'F');
+  doc.rect(0, 0, pageWidth, 3, 'F');
 
-  // Franja secundaria mas fina
-  doc.setFillColor(accentLight[0], accentLight[1], accentLight[2]);
-  doc.rect(0, 4, pageWidth, 1.5, 'F');
+  y = 18;
 
-  y = 12;
-
-  // ================================================================
-  // MARCO EXTERIOR DEL DOCUMENTO
-  // ================================================================
+  // Marco exterior simple (una sola linea sutil)
   doc.setDrawColor(borderColor[0], borderColor[1], borderColor[2]);
-  doc.setLineWidth(0.6);
-  doc.roundedRect(margin - 4, y - 3, contentWidth + 8, pageHeight - y - 12, 2, 2, 'S');
-
-  // Marco interior decorativo (doble linea)
-  doc.setDrawColor(230, 230, 235);
-  doc.setLineWidth(0.3);
-  doc.roundedRect(margin - 2, y - 1, contentWidth + 4, pageHeight - y - 16, 1.5, 1.5, 'S');
+  doc.setLineWidth(0.4);
+  doc.roundedRect(margin - 3, y - 5, contentWidth + 6, pageHeight - y - 9, 2, 2, 'S');
 
   // ================================================================
   // HEADER
   // ================================================================
-  // Titulo principal
-  doc.setFontSize(18);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(accent[0], accent[1], accent[2]);
-  doc.text('CONTRATO DE ALQUILER', margin, y + 5);
+  // QR en tarjeta con fondo slate-50 a la derecha (se alinea con el titulo)
+  const qrSize = 20;
+  const qrBoxW = 26;
+  const qrBoxH = 30;
+  const qrBoxX = pageWidth - margin - qrBoxW;
+  const qrBoxY = y - 2;
 
-  // Subtitulo con nombre del edificio
-  const nombreEdificio = String(edificio?.nombre || '');
-  if (nombreEdificio) {
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(dark[0], dark[1], dark[2]);
-    doc.text(nombreEdificio.toUpperCase(), margin, y + 11);
-  }
+  // Caja contenedora
+  doc.setFillColor(lightBg[0], lightBg[1], lightBg[2]);
+  doc.setDrawColor(borderColor[0], borderColor[1], borderColor[2]);
+  doc.setLineWidth(0.3);
+  doc.roundedRect(qrBoxX, qrBoxY, qrBoxW, qrBoxH, 2, 2, 'FD');
 
-  // Direccion y telefono
-  const dirY = nombreEdificio ? y + 15 : y + 11;
-  doc.setFontSize(8);
-  doc.setFont('helvetica', 'normal');
-  doc.setTextColor(mid[0], mid[1], mid[2]);
-  const direccion = String(edificio?.direccion || 'Jr. Candelaria A16');
-  const telefono = String(edificio?.telefono || '051-601731');
-  doc.text(`${direccion}  |  Tel: ${telefono}`, margin, dirY);
-
-  // QR Code a la derecha
-  const qrSize = 22;
-  const qrX = pageWidth - margin - qrSize;
-  const qrY = y;
-
+  // QR centrado dentro de la caja
+  const qrX = qrBoxX + (qrBoxW - qrSize) / 2;
+  const qrY = qrBoxY + 3;
   if (qrDataUrl) {
-    // Marco del QR
-    doc.setDrawColor(borderColor[0], borderColor[1], borderColor[2]);
-    doc.setLineWidth(0.4);
-    doc.roundedRect(qrX - 1.5, qrY - 1.5, qrSize + 3, qrSize + 3, 1, 1, 'S');
     doc.addImage(qrDataUrl, 'PNG', qrX, qrY, qrSize, qrSize);
   } else {
     doc.setDrawColor(mid[0], mid[1], mid[2]);
@@ -190,14 +171,44 @@ export async function generateContratoPDF(data: ContratoData): Promise<void> {
     doc.text('QR', qrX + qrSize / 2, qrY + qrSize / 2, { align: 'center' });
   }
 
-  // Etiqueta bajo el QR
-  doc.setFontSize(5.5);
+  // Etiqueta bajo el QR, dentro de la caja
+  doc.setFontSize(6);
+  doc.setFont('helvetica', 'normal');
   doc.setTextColor(mid[0], mid[1], mid[2]);
-  doc.text('Consulta estado de pago', qrX + qrSize / 2, qrY + qrSize + 3, { align: 'center' });
+  doc.text('Consulta estado de pago', qrBoxX + qrBoxW / 2, qrY + qrSize + 3.5, { align: 'center' });
 
-  y = dirY + 6;
+  // Titulo principal (ancho maximo = espacio hasta la caja del QR con 6mm de aire)
+  const titleMaxWidth = qrBoxX - margin - 6;
+  doc.setFontSize(20);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(accent[0], accent[1], accent[2]);
+  const titleLines = doc.splitTextToSize('CONTRATO DE ALQUILER', titleMaxWidth);
+  doc.text(titleLines, margin, y + 6);
+
+  // Subtitulo con nombre del edificio
+  const nombreEdificio = String(edificio?.nombre || '');
+  let headerBottomY = y + 6 + (titleLines.length - 1) * 7;
+  if (nombreEdificio) {
+    doc.setFontSize(10.5);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(dark[0], dark[1], dark[2]);
+    doc.text(nombreEdificio.toUpperCase(), margin, headerBottomY + 6);
+    headerBottomY += 6;
+  }
+
+  // Direccion y telefono
+  const dirY = headerBottomY + 5.5;
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(mid[0], mid[1], mid[2]);
+  const direccion = String(edificio?.direccion || 'Jr. Candelaria A16');
+  const telefono = String(edificio?.telefono || '051-601731');
+  doc.text(`${direccion}  |  Tel: ${telefono}`, margin, dirY);
+
+  // La linea separadora debe quedar DEBAJO de la caja del QR y de la direccion
+  y = Math.max(dirY + 6, qrBoxY + qrBoxH + 5);
   hLine(y, margin, pageWidth - margin, accent);
-  y += 8;
+  y += 9;
 
   // ================================================================
   // DECLARACION DEL INQUILINO
@@ -205,7 +216,7 @@ export async function generateContratoPDF(data: ContratoData): Promise<void> {
   const nombreCompleto = `${inquilino.nombre || ''} ${inquilino.apellido || ''}`.trim() || '________________';
   const dniText = String(inquilino.dni || '') || '________';
 
-  doc.setFontSize(10);
+  doc.setFontSize(12);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(dark[0], dark[1], dark[2]);
 
@@ -223,32 +234,38 @@ export async function generateContratoPDF(data: ContratoData): Promise<void> {
   // Subrayado del nombre
   doc.setDrawColor(accent[0], accent[1], accent[2]);
   doc.setLineWidth(0.5);
-  doc.line(margin + doc.getTextWidth(decl1) + 1, y + 1, nameEndX, y + 1);
+  doc.line(margin + doc.getTextWidth(decl1) + 1, y + 1.3, nameEndX, y + 1.3);
 
-  y += 7;
+  y += 8.5;
 
+  doc.setFontSize(12);
   doc.text('CON DNI N° ', margin, y);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(accent[0], accent[1], accent[2]);
   const dniStartX = margin + doc.getTextWidth('CON DNI N° ');
   doc.text(dniText, dniStartX, y);
+  // Subrayado ajustado al ancho real del texto (sin guiones sobrantes)
+  const dniWidth = doc.getTextWidth(dniText);
   doc.setDrawColor(accent[0], accent[1], accent[2]);
-  doc.line(dniStartX, y + 1, dniStartX + 22, y + 1);
+  doc.line(dniStartX, y + 1.3, dniStartX + dniWidth, y + 1.3);
 
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(dark[0], dark[1], dark[2]);
-  doc.text(', EN CONDICION DE INQUILINO, ACEPTO LAS SIGUIENTES CONDICIONES:', dniStartX + 23, y);
+  doc.text(', EN CALIDAD DE INQUILINO,', dniStartX + dniWidth + 1, y);
 
-  y += 6;
+  y += 7.5;
+  doc.text('ACEPTO LAS SIGUIENTES CONDICIONES DE ALQUILER:', margin, y);
+
+  y += 5.5;
   hLine(y);
-  y += 8;
+  y += 9.5;
 
   // ================================================================
   // DOS COLUMNAS: DATOS + REGLAS
   // ================================================================
   const colLeftX = margin;
   const colGap = 8;
-  const colLeftW = 63;
+  const colLeftW = 72;
   const colRightX = margin + colLeftW + colGap;
   const colRightW = contentWidth - colLeftW - colGap;
   let yL = y;
@@ -257,7 +274,7 @@ export async function generateContratoPDF(data: ContratoData): Promise<void> {
   // ---- COLUMNA IZQUIERDA: DATOS DEL INQUILINO ----
 
   // Header FUERA de la caja (arriba)
-  yL = sectionHeader('DATOS DEL INQUILINO', yL);
+  yL = sectionHeader('DATOS DEL INQUILINO', yL, colLeftX + 1);
 
   // Marco empieza DESPUES del header
   const datosBoxY = yL - 2;
@@ -274,43 +291,43 @@ export async function generateContratoPDF(data: ContratoData): Promise<void> {
 
   yL += 2;
 
-  // Campo: Habitacion con caja destacada
-  doc.setFontSize(9);
+  // Campo: Habitación con caja destacada
+  doc.setFontSize(10.5);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(mid[0], mid[1], mid[2]);
-  doc.text('Habitacion N°:', colLeftX + 1, yL);
+  doc.text('Habitación N°:', colLeftX + 1, yL);
 
   // Caja con el codigo
-  const habBoxX = colLeftX + 1 + doc.getTextWidth('Habitacion N°: ') + 1;
+  const habBoxX = colLeftX + 1 + doc.getTextWidth('Habitación N°: ') + 1;
   doc.setFillColor(lightBg[0], lightBg[1], lightBg[2]);
   doc.setDrawColor(accent[0], accent[1], accent[2]);
   doc.setLineWidth(0.6);
-  doc.roundedRect(habBoxX, yL - 4, 16, 7, 1.5, 1.5, 'FD');
-  doc.setFontSize(11);
+  doc.roundedRect(habBoxX, yL - 5.5, 22, 9, 1.5, 1.5, 'FD');
+  doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(accent[0], accent[1], accent[2]);
-  doc.text(habitacion.codigo || '___', habBoxX + 8, yL + 0.5, { align: 'center' });
+  doc.text(habitacion.codigo || '___', habBoxX + 11, yL + 1, { align: 'center' });
 
-  yL += 10;
+  yL += 12;
 
   // Seccion ENTREGA
-  yL = sectionHeader('ENTREGA', yL);
+  yL = sectionHeader('ENTREGA', yL, colLeftX + 1);
 
-  // Checkbox garantia
-  yL = checkbox('Garantia entregada', garantia, colLeftX + 1, yL);
+  // Checkbox garantía
+  yL = checkbox('Garantía entregada', garantia, colLeftX + 1, yL);
 
   // Checkbox llaves
-  yL = checkbox('Llave de habitacion', llaveHabitacion, colLeftX + 1, yL);
+  yL = checkbox('Llave de habitación', llaveHabitacion, colLeftX + 1, yL);
   yL = checkbox('Llave puerta de calle', llavePuertaCalle, colLeftX + 1, yL);
 
-  yL += 3;
+  yL += 5;
 
   // Fecha de ingreso
-  doc.setFontSize(9);
+  doc.setFontSize(10.5);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(mid[0], mid[1], mid[2]);
   doc.text('Fecha de ingreso:', colLeftX + 1, yL);
-  yL += 5;
+  yL += 6;
 
   // Caja de fecha
   let fechaPagoText = '____/____/________';
@@ -327,9 +344,9 @@ export async function generateContratoPDF(data: ContratoData): Promise<void> {
   doc.setFillColor(lightBg[0], lightBg[1], lightBg[2]);
   doc.setDrawColor(borderColor[0], borderColor[1], borderColor[2]);
   doc.setLineWidth(0.4);
-  doc.roundedRect(colLeftX + 1, yL - 3, 42, 9, 1.5, 1.5, 'FD');
+  doc.roundedRect(colLeftX + 1, yL - 4.5, colLeftW - 2, 12, 1.5, 1.5, 'FD');
 
-  doc.setFontSize(10);
+  doc.setFontSize(12);
   if (fechaPagoText === '____/____/________') {
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(mid[0], mid[1], mid[2]);
@@ -337,23 +354,23 @@ export async function generateContratoPDF(data: ContratoData): Promise<void> {
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(dark[0], dark[1], dark[2]);
   }
-  doc.text(fechaPagoText, colLeftX + 5, yL + 3);
+  doc.text(fechaPagoText, colLeftX + colLeftW / 2, yL + 3.5, { align: 'center' });
 
-  yL += 14;
+  yL += 17;
 
   // Monto de alquiler
-  yL = sectionHeader('MONTO DE ALQUILER', yL);
+  yL = sectionHeader('MONTO DE ALQUILER', yL, colLeftX + 1);
 
-  // Caja destacada con monto (con padding interno)
+  // Caja destacada con monto (con padding interno generoso)
   doc.setFillColor(accent[0], accent[1], accent[2]);
-  doc.roundedRect(colLeftX + 1, yL - 2, colLeftW - 2, 12, 2, 2, 'F');
-  doc.setFontSize(14);
+  doc.roundedRect(colLeftX + 1, yL - 2, colLeftW - 2, 18, 2.5, 2.5, 'F');
+  doc.setFontSize(24);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(white[0], white[1], white[2]);
   const montoText = `S/ ${habitacion.montoAlquiler || '___'}`;
-  doc.text(montoText, colLeftX + colLeftW / 2, yL + 6, { align: 'center' });
+  doc.text(montoText, colLeftX + colLeftW / 2, yL + 9, { align: 'center' });
 
-  yL += 15;
+  yL += 21;
 
   // Marco alrededor de toda la columna izquierda (con padding)
   doc.setDrawColor(borderColor[0], borderColor[1], borderColor[2]);
@@ -362,40 +379,40 @@ export async function generateContratoPDF(data: ContratoData): Promise<void> {
 
   // ---- COLUMNA DERECHA: REGLAS ----
   // Header FUERA de la caja (arriba)
-  yR = sectionHeader('REGLAS DEL INQUILINO', yR);
+  yR = sectionHeader('REGLAS DEL INQUILINO', yR, colRightX + 1);
 
   // Marco empieza DESPUES del header
   const reglasBoxY = yR - 2;
   yR += 2;
 
   const reglas = [
-    'En esta vivienda esta totalmente prohibido tomar bebidas alcoholicas o cualquier sustancia toxica.',
-    'La puerta principal se cierra a partir de las 10:50 PM como lapso maximo.',
-    'Queda parcialmente impedido hacer uso de artefactos electricos que requieran una mayor potencia de uso.',
-    'No danare las paredes (caso contrario dejare como el dueno me brindo la habitacion).',
-    'Pagare puntualmente la pension de alquiler (pasada la fecha de pago adicionare S/1 por dia que transcurra).',
-    'Mantendre limpio los pasadizos y los servicios higienicos.',
-    'Todo visitante del inquilino debe hacerse conocer al dueno.'
+    'En esta vivienda está totalmente prohibido tomar bebidas alcohólicas o cualquier sustancia tóxica.',
+    'La puerta principal se cierra a partir de las 10:50 PM como lapso máximo.',
+    'Queda parcialmente impedido hacer uso de artefactos eléctricos que requieran una mayor potencia de uso.',
+    'No dañaré las paredes (caso contrario dejaré como el dueño me brindó la habitación).',
+    'Pagaré puntualmente la pensión de alquiler (pasada la fecha de pago adicionaré S/ 1 por día que transcurra).',
+    'Mantendré limpios los pasadizos y los servicios higiénicos.',
+    'Todo visitante del inquilino debe hacerse conocer al dueño.'
   ];
 
   reglas.forEach((regla, idx) => {
-    // Numero de regla (con padding izquierdo +2)
+    // Numero de regla
     doc.setFillColor(accent[0], accent[1], accent[2]);
-    doc.circle(colRightX + 4, yR + 0.5, 3, 'F');
-    doc.setFontSize(7);
+    doc.circle(colRightX + 5, yR + 1.2, 3.8, 'F');
+    doc.setFontSize(9);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(white[0], white[1], white[2]);
-    doc.text(String(idx + 1), colRightX + 3, yR + 2);
+    doc.text(String(idx + 1), colRightX + 5, yR + 2.8, { align: 'center' });
 
-    // Texto de la regla (con padding derecho -4)
-    doc.setFontSize(7.5);
+    // Texto de la regla
+    doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(dark[0], dark[1], dark[2]);
-    const lines = doc.splitTextToSize(regla, colRightW - 14);
+    const lines = doc.splitTextToSize(regla, colRightW - 18);
     lines.forEach((line: string, lineIdx: number) => {
-      doc.text(line, colRightX + 10, yR + (lineIdx * 3.8) + 1.5);
+      doc.text(line, colRightX + 12, yR + (lineIdx * 5) + 2.3);
     });
-    yR += (lines.length * 3.8) + 5;
+    yR += (lines.length * 5) + 6;
   });
 
   // Marco alrededor de la columna derecha (alineado con caja izquierda)
@@ -405,37 +422,21 @@ export async function generateContratoPDF(data: ContratoData): Promise<void> {
   doc.roundedRect(colRightX - 2, reglasBoxY, colRightW + 4, reglasBoxH, 2, 2, 'S');
 
   // ================================================================
-  // FIRMA Y HUELLA DACTILAR
+  // FIRMA Y HUELLA DACTILAR (anclados al pie de pagina)
   // ================================================================
-  const separatorY = Math.max(yL, yR) + 8;
+  // Separador se posiciona al final para aprovechar el espacio
+  // Margen generoso con el footer para que firma/DNI no toquen el marco
+  const footerTop = pageHeight - 14; // banda inferior + label
+  const huellaW = 32;
+  const huellaH = 36;
+  const separatorY = Math.max(Math.max(yL, yR) + 6, footerTop - huellaH - 22);
 
   // Linea separadora antes de firmas
   hLine(separatorY, margin, pageWidth - margin, accent);
 
-  // Todo el contenido de firma/huella va DEBAJO de la linea
-  const firmaY = separatorY + 25;
-
-  // Firma del inquilino - centrado izquierda
-  const firmaLineX1 = margin + 10;
-  const firmaLineX2 = margin + 70;
-  doc.setDrawColor(dark[0], dark[1], dark[2]);
-  doc.setLineWidth(0.5);
-  doc.line(firmaLineX1, firmaY, firmaLineX2, firmaY);
-  doc.setFontSize(8);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(dark[0], dark[1], dark[2]);
-  doc.text('FIRMA DEL INQUILINO', (firmaLineX1 + firmaLineX2) / 2, firmaY + 4, { align: 'center' });
-  doc.setFontSize(7);
-  doc.setFont('helvetica', 'normal');
-  doc.setTextColor(mid[0], mid[1], mid[2]);
-  doc.text(nombreCompleto.toUpperCase(), (firmaLineX1 + firmaLineX2) / 2, firmaY + 8, { align: 'center' });
-  doc.text(`DNI: ${dniText}`, (firmaLineX1 + firmaLineX2) / 2, firmaY + 12, { align: 'center' });
-
-  // Huella dactilar - derecha, DEBAJO de la linea separadora
-  const huellaW = 26;
-  const huellaH = 30;
-  const huellaX = pageWidth - margin - huellaW - 5;
-  const huellaY = separatorY + 4;
+  // Huella dactilar - derecha
+  const huellaX = pageWidth - margin - huellaW - 3;
+  const huellaY = separatorY + 5;
   doc.setDrawColor(borderColor[0], borderColor[1], borderColor[2]);
   doc.setLineWidth(0.5);
   doc.roundedRect(huellaX, huellaY, huellaW, huellaH, 2, 2, 'S');
@@ -447,26 +448,40 @@ export async function generateContratoPDF(data: ContratoData): Promise<void> {
     doc.line(huellaX + 4, huellaY + (huellaH * i / 4), huellaX + huellaW - 4, huellaY + (huellaH * i / 4));
   }
 
-  doc.setFontSize(7);
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(mid[0], mid[1], mid[2]);
+  doc.text('HUELLA DACTILAR', huellaX + huellaW / 2, huellaY + huellaH + 5, { align: 'center' });
+
+  // Firma del inquilino - centrado izquierda, subida para dar aire con el pie de pagina
+  const firmaY = huellaY + huellaH - 12;
+  const firmaLineX1 = margin + 8;
+  const firmaLineX2 = margin + 88;
+  doc.setDrawColor(dark[0], dark[1], dark[2]);
+  doc.setLineWidth(0.5);
+  doc.line(firmaLineX1, firmaY, firmaLineX2, firmaY);
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(dark[0], dark[1], dark[2]);
+  doc.text('FIRMA DEL INQUILINO', (firmaLineX1 + firmaLineX2) / 2, firmaY + 5, { align: 'center' });
+  doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(mid[0], mid[1], mid[2]);
-  doc.text('HUELLA', huellaX + huellaW / 2, huellaY + huellaH + 4, { align: 'center' });
-  doc.text('DACTILAR', huellaX + huellaW / 2, huellaY + huellaH + 7.5, { align: 'center' });
+  doc.text(nombreCompleto.toUpperCase(), (firmaLineX1 + firmaLineX2) / 2, firmaY + 10, { align: 'center' });
+  doc.text(`DNI: ${dniText}`, (firmaLineX1 + firmaLineX2) / 2, firmaY + 14.5, { align: 'center' });
 
   // ================================================================
   // FOOTER
   // ================================================================
-  // Franja inferior decorativa
-  doc.setFillColor(accentLight[0], accentLight[1], accentLight[2]);
-  doc.rect(0, pageHeight - 5.5, pageWidth, 1.5, 'F');
+  // Banda inferior minimal (una sola linea)
   doc.setFillColor(accent[0], accent[1], accent[2]);
-  doc.rect(0, pageHeight - 4, pageWidth, 4, 'F');
+  doc.rect(0, pageHeight - 3, pageWidth, 3, 'F');
 
   // Texto del footer
-  doc.setFontSize(6);
+  doc.setFontSize(7.5);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(mid[0], mid[1], mid[2]);
-  doc.text('Documento generado electronicamente | Este contrato tiene validez legal', pageWidth / 2, pageHeight - 8, { align: 'center' });
+  doc.text('Documento generado electrónicamente  |  Este contrato tiene validez legal', pageWidth / 2, pageHeight - 7, { align: 'center' });
 
   // ================================================================
   // GUARDAR PDF
@@ -499,7 +514,7 @@ export function ContratoAlquiler({ inquilino, habitacion, edificio, onDownload }
     <div className="bg-white p-6 rounded-lg shadow-lg max-w-2xl mx-auto">
       <div className="text-center mb-4">
         <h2 className="text-xl font-bold">Contrato De Alquiler</h2>
-        <p className="text-sm text-gray-500">{edificio?.direccion || 'Jr. Candelaria A16'}</p>
+        <p className="text-sm text-slate-500">{edificio?.direccion || 'Jr. Candelaria A16'}</p>
       </div>
 
       <div className="border-t pt-4 space-y-3 text-sm">

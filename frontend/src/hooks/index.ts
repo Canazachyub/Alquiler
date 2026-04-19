@@ -7,3 +7,4 @@ export * from './usePagos';
 export * from './useGastos';
 export * from './useGastosFijos';
 export * from './useReportes';
+export * from './useAlertas';

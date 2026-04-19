@@ -3,6 +3,7 @@ import { Plus, Edit, Trash2, MapPin } from 'lucide-react';
 import { Modal, ConfirmDialog, LoadingPage, EmptyState } from '@/components/ui';
 import { useCiudades, useCreateCiudad, useUpdateCiudad, useDeleteCiudad } from '@/hooks';
 import { useNotifications } from '@/store';
+import { cn } from '@/utils/cn';
 import type { Ciudad, CiudadInput } from '@/types';
 import { useForm } from 'react-hook-form';
 
@@ -35,14 +36,14 @@ export function Ciudades() {
     try {
       if (editingCiudad) {
         await updateMutation.mutateAsync({ id: editingCiudad.id, data });
-        notify.success('Ciudad actualizada correctamente');
+        notify.success('Ciudad actualizada');
       } else {
         await createMutation.mutateAsync(data);
-        notify.success('Ciudad creada correctamente');
+        notify.success('Ciudad creada');
       }
       setIsModalOpen(false);
     } catch (error) {
-      notify.error('Error al guardar la ciudad');
+      notify.error('No se pudo guardar. Intenta de nuevo.');
     }
   };
 
@@ -50,10 +51,10 @@ export function Ciudades() {
     if (!deletingCiudad) return;
     try {
       await deleteMutation.mutateAsync(deletingCiudad.id);
-      notify.success('Ciudad eliminada correctamente');
+      notify.success('Ciudad eliminada');
       setDeletingCiudad(null);
     } catch (error) {
-      notify.error('Error al eliminar la ciudad');
+      notify.error('No se pudo eliminar. Intenta de nuevo.');
     }
   };
 
@@ -61,16 +62,18 @@ export function Ciudades() {
     return <LoadingPage />;
   }
 
+  const total = ciudades?.length || 0;
+
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Ciudades</h1>
-          <p className="text-gray-500">Gestiona las ciudades donde tienes propiedades</p>
+          <h1 className="page-title">Ciudades</h1>
+          <p className="page-subtitle">{total} registradas</p>
         </div>
         <button onClick={handleCreate} className="btn btn-primary">
-          <Plus className="w-4 h-4 mr-2" />
+          <Plus className="w-4 h-4" />
           Nueva Ciudad
         </button>
       </div>
@@ -79,12 +82,11 @@ export function Ciudades() {
       {ciudades?.length === 0 ? (
         <EmptyState
           icon={MapPin}
-          title="No hay ciudades"
-          description="Crea tu primera ciudad para empezar"
+          title="Aún no hay ciudades"
           action={
             <button onClick={handleCreate} className="btn btn-primary">
-              <Plus className="w-4 h-4 mr-2" />
-              Nueva Ciudad
+              <Plus className="w-4 h-4" />
+              Nueva ciudad
             </button>
           }
         />
@@ -99,25 +101,25 @@ export function Ciudades() {
                   </div>
                   <div>
                     <h3 className="font-semibold text-lg">{ciudad.nombre}</h3>
-                    <p className="text-sm text-gray-500">{ciudad.departamento}</p>
+                    <p className="text-sm text-slate-500">{ciudad.departamento}</p>
                   </div>
                 </div>
                 <div className="flex gap-1">
                   <button
                     onClick={() => handleEdit(ciudad)}
-                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                    className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
                   >
-                    <Edit className="w-4 h-4 text-gray-500" />
+                    <Edit className="w-4 h-4 text-slate-500" />
                   </button>
                   <button
                     onClick={() => handleDelete(ciudad)}
-                    className="p-2 hover:bg-danger-50 rounded-lg transition-colors"
+                    className="p-2 hover:bg-red-50 rounded-lg transition-colors"
                   >
-                    <Trash2 className="w-4 h-4 text-danger-600" />
+                    <Trash2 className="w-4 h-4 text-red-600" />
                   </button>
                 </div>
               </div>
-              <div className="mt-4 pt-4 border-t">
+              <div className="mt-4 pt-4 border-t border-slate-200">
                 <span
                   className={`badge ${ciudad.activo ? 'badge-success' : 'badge-danger'}`}
                 >
@@ -150,7 +152,7 @@ export function Ciudades() {
         onClose={() => setDeletingCiudad(null)}
         onConfirm={confirmDelete}
         title="Eliminar Ciudad"
-        message={`¿Estás seguro de eliminar la ciudad "${deletingCiudad?.nombre}"? Esta acción no se puede deshacer.`}
+        message={`¿Eliminar la ciudad "${deletingCiudad?.nombre ?? ''}"? Esta acción no se puede deshacer.`}
         confirmText="Eliminar"
         isLoading={deleteMutation.isPending}
       />
@@ -184,12 +186,10 @@ function CiudadForm({
         <label className="label">Nombre *</label>
         <input
           {...register('nombre', { required: 'Ingrese el nombre' })}
-          className="input"
+          className={cn('input', errors.nombre && 'input-error')}
           placeholder="Ej: Puno, Juli"
         />
-        {errors.nombre && (
-          <p className="text-xs text-danger-600 mt-1 font-medium">{errors.nombre.message}</p>
-        )}
+        {errors.nombre && <p className="form-error">{errors.nombre.message}</p>}
       </div>
 
       <div>
@@ -206,14 +206,14 @@ function CiudadForm({
           type="checkbox"
           {...register('activo')}
           id="activo"
-          className="w-4 h-4 rounded border-gray-300"
+          className="w-4 h-4 rounded border-slate-300"
         />
-        <label htmlFor="activo" className="text-sm text-gray-700">
+        <label htmlFor="activo" className="text-sm text-slate-700">
           Ciudad activa
         </label>
       </div>
 
-      <div className="flex justify-end gap-2.5 pt-4 border-t border-gray-100">
+      <div className="flex justify-end gap-2 pt-5 border-t border-slate-200 mt-6">
         <button type="button" onClick={onCancel} className="btn btn-outline">
           Cancelar
         </button>

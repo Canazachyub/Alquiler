@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Building2, DollarSign, Bell, Database, Save } from 'lucide-react';
 import { useNotifications } from '@/store';
+import { cn } from '@/utils/cn';
 
 interface ConfiguracionData {
   negocio: {
@@ -53,13 +54,11 @@ export function Configuracion() {
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      // Aqui se guardaria en el backend
-      // Por ahora solo simulamos
       await new Promise((resolve) => setTimeout(resolve, 500));
       localStorage.setItem('app_config', JSON.stringify(config));
-      notify.success('Configuracion guardada correctamente');
+      notify.success('Configuración guardada');
     } catch (error) {
-      notify.error('Error al guardar la configuracion');
+      notify.error('No se pudo guardar. Intenta de nuevo.');
     } finally {
       setIsSaving(false);
     }
@@ -90,27 +89,28 @@ export function Configuracion() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Configuracion</h1>
-          <p className="text-gray-500">Personaliza el sistema segun tus necesidades</p>
+          <h1 className="page-title">Configuración</h1>
+          <p className="page-subtitle">Parámetros generales del sistema</p>
         </div>
         <button onClick={handleSave} className="btn btn-primary" disabled={isSaving}>
-          <Save className="w-4 h-4 mr-2" />
+          <Save className="w-4 h-4" />
           {isSaving ? 'Guardando...' : 'Guardar Cambios'}
         </button>
       </div>
 
       {/* Tabs */}
       <div className="card">
-        <div className="flex border-b">
+        <div className="flex border-b border-slate-200">
           {tabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
+              className={cn(
+                'flex items-center gap-2 px-6 py-3 text-sm font-medium border-b-2 transition-colors',
                 activeTab === tab.id
                   ? 'border-primary-600 text-primary-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
-              }`}
+                  : 'border-transparent text-slate-500 hover:text-slate-700'
+              )}
             >
               <tab.icon className="w-4 h-4" />
               {tab.label}
@@ -123,8 +123,8 @@ export function Configuracion() {
           {activeTab === 'negocio' && (
             <div className="space-y-6">
               <div className="flex items-center gap-2 mb-4">
-                <Building2 className="w-5 h-5 text-gray-500" />
-                <h2 className="text-lg font-semibold">Informacion del Negocio</h2>
+                <Building2 className="w-5 h-5 text-slate-500" />
+                <h2 className="text-lg font-semibold">Información del Negocio</h2>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -151,7 +151,7 @@ export function Configuracion() {
                 </div>
 
                 <div>
-                  <label className="label">Direccion</label>
+                  <label className="label">Dirección</label>
                   <input
                     type="text"
                     value={config.negocio.direccion}
@@ -162,7 +162,7 @@ export function Configuracion() {
                 </div>
 
                 <div>
-                  <label className="label">Telefono</label>
+                  <label className="label">Teléfono</label>
                   <input
                     type="text"
                     value={config.negocio.telefono}
@@ -190,38 +190,38 @@ export function Configuracion() {
           {activeTab === 'pagos' && (
             <div className="space-y-6">
               <div className="flex items-center gap-2 mb-4">
-                <DollarSign className="w-5 h-5 text-gray-500" />
-                <h2 className="text-lg font-semibold">Configuracion de Pagos</h2>
+                <DollarSign className="w-5 h-5 text-slate-500" />
+                <h2 className="text-lg font-semibold">Configuración de Pagos</h2>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="label">Dia de Pago (del mes)</label>
+                  <label className="label">Día de Pago (del mes)</label>
                   <input
                     type="number"
                     value={config.pagos.diaPago}
                     onChange={(e) => updateConfig('pagos', 'diaPago', Number(e.target.value))}
-                    className="input"
+                    className="input tabular-nums"
                     min={1}
                     max={28}
                   />
-                  <p className="text-xs text-gray-500 mt-1">
-                    Dia del mes en que vence el pago
+                  <p className="text-xs text-slate-500 mt-1">
+                    Día del mes en que vence el pago
                   </p>
                 </div>
 
                 <div>
-                  <label className="label">Dias de Gracia</label>
+                  <label className="label">Días de Gracia</label>
                   <input
                     type="number"
                     value={config.pagos.diasGracia}
                     onChange={(e) => updateConfig('pagos', 'diasGracia', Number(e.target.value))}
-                    className="input"
+                    className="input tabular-nums"
                     min={0}
                     max={15}
                   />
-                  <p className="text-xs text-gray-500 mt-1">
-                    Dias adicionales antes de aplicar mora
+                  <p className="text-xs text-slate-500 mt-1">
+                    Días adicionales antes de aplicar mora
                   </p>
                 </div>
 
@@ -231,11 +231,11 @@ export function Configuracion() {
                     type="number"
                     value={config.pagos.montoMora}
                     onChange={(e) => updateConfig('pagos', 'montoMora', Number(e.target.value))}
-                    className="input"
+                    className="input tabular-nums"
                     min={0}
                     step={5}
                   />
-                  <p className="text-xs text-gray-500 mt-1">Monto fijo de mora</p>
+                  <p className="text-xs text-slate-500 mt-1">Monto fijo de mora</p>
                 </div>
 
                 <div>
@@ -244,12 +244,12 @@ export function Configuracion() {
                     type="number"
                     value={config.pagos.porcentajeMora}
                     onChange={(e) => updateConfig('pagos', 'porcentajeMora', Number(e.target.value))}
-                    className="input"
+                    className="input tabular-nums"
                     min={0}
                     max={100}
                     step={0.5}
                   />
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-slate-500 mt-1">
                     Porcentaje adicional sobre el monto
                   </p>
                 </div>
@@ -261,15 +261,15 @@ export function Configuracion() {
           {activeTab === 'notificaciones' && (
             <div className="space-y-6">
               <div className="flex items-center gap-2 mb-4">
-                <Bell className="w-5 h-5 text-gray-500" />
+                <Bell className="w-5 h-5 text-slate-500" />
                 <h2 className="text-lg font-semibold">Notificaciones</h2>
               </div>
 
               <div className="space-y-6">
-                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                <div className="flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-200">
                   <div>
                     <p className="font-medium">Recordatorio de Pago</p>
-                    <p className="text-sm text-gray-500">
+                    <p className="text-sm text-slate-500">
                       Enviar recordatorio antes de la fecha de vencimiento
                     </p>
                   </div>
@@ -282,31 +282,31 @@ export function Configuracion() {
                       }
                       className="sr-only peer"
                     />
-                    <div className="w-11 h-6 bg-gray-200 peer-focus:ring-4 peer-focus:ring-primary-100 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
+                    <div className="w-11 h-6 bg-slate-200 peer-focus:ring-4 peer-focus:ring-primary-100 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
                   </label>
                 </div>
 
                 {config.notificaciones.recordatorioPago && (
                   <div className="ml-4">
-                    <label className="label">Dias de Anticipacion</label>
+                    <label className="label">Días de Anticipación</label>
                     <input
                       type="number"
                       value={config.notificaciones.diasAnticipacion}
                       onChange={(e) =>
                         updateConfig('notificaciones', 'diasAnticipacion', Number(e.target.value))
                       }
-                      className="input w-32"
+                      className="input w-32 tabular-nums"
                       min={1}
                       max={10}
                     />
                   </div>
                 )}
 
-                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                <div className="flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-200">
                   <div>
                     <p className="font-medium">Notificar Mora</p>
-                    <p className="text-sm text-gray-500">
-                      Enviar notificacion cuando se aplique mora
+                    <p className="text-sm text-slate-500">
+                      Enviar notificación cuando se aplique mora
                     </p>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
@@ -318,7 +318,7 @@ export function Configuracion() {
                       }
                       className="sr-only peer"
                     />
-                    <div className="w-11 h-6 bg-gray-200 peer-focus:ring-4 peer-focus:ring-primary-100 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
+                    <div className="w-11 h-6 bg-slate-200 peer-focus:ring-4 peer-focus:ring-primary-100 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
                   </label>
                 </div>
               </div>
@@ -330,20 +330,20 @@ export function Configuracion() {
       {/* Info adicional */}
       <div className="card p-5">
         <div className="flex items-center gap-2 mb-4">
-          <Database className="w-5 h-5 text-gray-500" />
-          <h2 className="text-lg font-semibold">Informacion del Sistema</h2>
+          <Database className="w-5 h-5 text-slate-500" />
+          <h2 className="text-lg font-semibold">Información del Sistema</h2>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
           <div>
-            <p className="text-gray-500">Version</p>
+            <p className="text-slate-500">Versión</p>
             <p className="font-medium">1.0.0</p>
           </div>
           <div>
-            <p className="text-gray-500">Backend</p>
+            <p className="text-slate-500">Backend</p>
             <p className="font-medium">Google Apps Script</p>
           </div>
           <div>
-            <p className="text-gray-500">Base de Datos</p>
+            <p className="text-slate-500">Base de Datos</p>
             <p className="font-medium">Google Sheets</p>
           </div>
         </div>

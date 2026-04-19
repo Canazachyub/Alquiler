@@ -1,4 +1,4 @@
-import { LucideIcon } from 'lucide-react';
+import { LucideIcon, TrendingUp, TrendingDown } from 'lucide-react';
 import { cn } from '@/utils/cn';
 
 interface StatCardProps {
@@ -11,27 +11,21 @@ interface StatCardProps {
     isPositive: boolean;
   };
   variant?: 'default' | 'success' | 'warning' | 'danger';
+  prominent?: boolean;
 }
 
-const variants = {
-  default: 'bg-white border-gray-100',
-  success: 'bg-white border-success-200/60',
-  warning: 'bg-white border-warning-200/60',
-  danger: 'bg-white border-danger-200/60',
-};
-
 const iconVariants = {
-  default: 'bg-primary-50 text-primary-600',
-  success: 'bg-success-50 text-success-600',
-  warning: 'bg-warning-50 text-warning-600',
-  danger: 'bg-danger-50 text-danger-600',
+  default: 'bg-primary-50 text-primary-600 ring-primary-100',
+  success: 'bg-emerald-50 text-emerald-600 ring-emerald-100',
+  warning: 'bg-amber-50 text-amber-600 ring-amber-100',
+  danger: 'bg-red-50 text-red-600 ring-red-100',
 };
 
-const valueVariants = {
-  default: 'text-gray-900',
-  success: 'text-success-700',
-  warning: 'text-warning-700',
-  danger: 'text-danger-700',
+const dotVariants = {
+  default: '',
+  success: 'bg-emerald-500',
+  warning: 'bg-amber-500',
+  danger: 'bg-red-500',
 };
 
 export function StatCard({
@@ -41,34 +35,66 @@ export function StatCard({
   subtitle,
   trend,
   variant = 'default',
+  prominent = false,
 }: StatCardProps) {
   return (
-    <div className={cn('card p-4 md:p-5', variants[variant])}>
-      <div className="flex items-start justify-between">
+    <div
+      className={cn(
+        'card border-slate-200/70 transition-shadow hover:shadow-elevated',
+        prominent ? 'p-6' : 'p-5'
+      )}
+    >
+      <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <p className="text-xs md:text-xs font-semibold text-gray-500 uppercase tracking-wider truncate">
-            {title}
-          </p>
-          <p className={cn('text-xl md:text-2xl font-bold mt-2 truncate', valueVariants[variant])}>
+          <div className="flex items-center gap-1.5">
+            {variant !== 'default' && (
+              <span
+                className={cn(
+                  'w-1.5 h-1.5 rounded-full flex-shrink-0',
+                  dotVariants[variant]
+                )}
+              />
+            )}
+            <p className="text-[13px] font-medium text-slate-600 truncate">
+              {title}
+            </p>
+          </div>
+          <p
+            className={cn(
+              'font-semibold tabular-nums tracking-tight text-slate-900 mt-2 truncate',
+              prominent ? 'text-[32px] md:text-4xl' : 'text-3xl'
+            )}
+          >
             {value}
           </p>
           {subtitle && (
-            <p className="text-xs md:text-sm text-gray-500 mt-1.5 font-medium">{subtitle}</p>
+            <p className="text-xs text-slate-500 mt-1.5">{subtitle}</p>
           )}
           {trend && (
-            <p
+            <span
               className={cn(
-                'text-xs font-semibold mt-1.5 flex items-center gap-1',
-                trend.isPositive ? 'text-success-600' : 'text-danger-600'
+                'inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-semibold mt-2',
+                trend.isPositive
+                  ? 'bg-emerald-50 text-emerald-700'
+                  : 'bg-red-50 text-red-700'
               )}
             >
-              <span>{trend.isPositive ? '↑' : '↓'}</span>
-              <span>{Math.abs(trend.value)}%</span>
-            </p>
+              {trend.isPositive ? (
+                <TrendingUp className="w-3 h-3" />
+              ) : (
+                <TrendingDown className="w-3 h-3" />
+              )}
+              {Math.abs(trend.value)}%
+            </span>
           )}
         </div>
         {Icon && (
-          <div className={cn('p-2.5 md:p-3 rounded-xl flex-shrink-0', iconVariants[variant])}>
+          <div
+            className={cn(
+              'p-2.5 rounded-xl ring-1 ring-inset flex-shrink-0',
+              iconVariants[variant]
+            )}
+          >
             <Icon className="w-4 h-4 md:w-5 md:h-5" strokeWidth={2} />
           </div>
         )}

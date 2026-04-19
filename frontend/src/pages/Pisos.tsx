@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Plus, Edit, Trash2, Layers, Building2, Home } from 'lucide-react';
 import { Modal, ConfirmDialog, LoadingPage, EmptyState } from '@/components/ui';
 import { useNotifications } from '@/store';
+import { cn } from '@/utils/cn';
 import type { Piso, PisoInput, Edificio } from '@/types';
 import { useForm } from 'react-hook-form';
 import { useEdificios } from '@/hooks';
@@ -38,14 +39,14 @@ export function Pisos() {
     try {
       if (editingPiso) {
         await updateMutation.mutateAsync({ id: editingPiso.id, data });
-        notify.success('Piso actualizado correctamente');
+        notify.success('Piso actualizado');
       } else {
         await createMutation.mutateAsync(data);
-        notify.success('Piso creado correctamente');
+        notify.success('Piso creado');
       }
       setIsModalOpen(false);
     } catch (error) {
-      notify.error('Error al guardar el piso');
+      notify.error('No se pudo guardar. Intenta de nuevo.');
     }
   };
 
@@ -53,10 +54,10 @@ export function Pisos() {
     if (!deletingPiso) return;
     try {
       await deleteMutation.mutateAsync(deletingPiso.id);
-      notify.success('Piso eliminado correctamente');
+      notify.success('Piso eliminado');
       setDeletingPiso(null);
     } catch (error) {
-      notify.error('Error al eliminar el piso');
+      notify.error('No se pudo eliminar. Intenta de nuevo.');
     }
   };
 
@@ -71,16 +72,23 @@ export function Pisos() {
     return <LoadingPage />;
   }
 
+  const total = pisos?.length || 0;
+  const edificioNombre = selectedEdificio ? getEdificioNombre(selectedEdificio) : null;
+
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Pisos</h1>
-          <p className="text-gray-500">Gestiona los pisos de tus edificios</p>
+          <h1 className="page-title">Pisos</h1>
+          <p className="page-subtitle">
+            {edificioNombre
+              ? `${total} pisos en ${edificioNombre}`
+              : `${total} registrados`}
+          </p>
         </div>
         <button onClick={handleCreate} className="btn btn-primary">
-          <Plus className="w-4 h-4 mr-2" />
+          <Plus className="w-4 h-4" />
           Nuevo Piso
         </button>
       </div>
@@ -88,7 +96,7 @@ export function Pisos() {
       {/* Filtro por edificio */}
       <div className="card p-4">
         <div className="flex items-center gap-4">
-          <label className="text-sm font-medium text-gray-700">Filtrar por edificio:</label>
+          <label className="text-sm font-medium text-slate-700">Filtrar por edificio:</label>
           <select
             value={selectedEdificio}
             onChange={(e) => setSelectedEdificio(e.target.value)}
@@ -108,12 +116,11 @@ export function Pisos() {
       {pisos?.length === 0 ? (
         <EmptyState
           icon={Layers}
-          title="No hay pisos"
-          description={selectedEdificio ? "Este edificio no tiene pisos registrados" : "Crea tu primer piso para empezar"}
+          title="Aún no hay pisos"
           action={
             <button onClick={handleCreate} className="btn btn-primary">
-              <Plus className="w-4 h-4 mr-2" />
-              Nuevo Piso
+              <Plus className="w-4 h-4" />
+              Nuevo piso
             </button>
           }
         />
@@ -123,12 +130,12 @@ export function Pisos() {
             <div key={piso.id} className="card p-4">
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center">
-                    <span className="text-lg font-bold text-purple-600">{piso.numero}</span>
+                  <div className="w-10 h-10 rounded-lg bg-primary-100 flex items-center justify-center">
+                    <span className="text-lg font-bold text-primary-600 tabular-nums">{piso.numero}</span>
                   </div>
                   <div>
                     <h3 className="font-semibold">Piso {piso.numero}</h3>
-                    <div className="flex items-center gap-1 text-xs text-gray-500">
+                    <div className="flex items-center gap-1 text-xs text-slate-500">
                       <Building2 className="w-3 h-3" />
                       {getEdificioNombre(piso.edificioId)}
                     </div>
@@ -137,24 +144,24 @@ export function Pisos() {
                 <div className="flex gap-1">
                   <button
                     onClick={() => handleEdit(piso)}
-                    className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+                    className="p-1.5 hover:bg-slate-100 rounded-lg transition-colors"
                   >
-                    <Edit className="w-4 h-4 text-gray-500" />
+                    <Edit className="w-4 h-4 text-slate-500" />
                   </button>
                   <button
                     onClick={() => handleDelete(piso)}
-                    className="p-1.5 hover:bg-danger-50 rounded-lg transition-colors"
+                    className="p-1.5 hover:bg-red-50 rounded-lg transition-colors"
                   >
-                    <Trash2 className="w-4 h-4 text-danger-600" />
+                    <Trash2 className="w-4 h-4 text-red-600" />
                   </button>
                 </div>
               </div>
 
               {piso.descripcion && (
-                <p className="mt-3 text-sm text-gray-600">{piso.descripcion}</p>
+                <p className="mt-3 text-sm text-slate-600">{piso.descripcion}</p>
               )}
 
-              <div className="mt-3 pt-3 border-t flex items-center gap-2 text-xs text-gray-500">
+              <div className="mt-3 pt-3 border-t border-slate-200 flex items-center gap-2 text-xs text-slate-500">
                 <Home className="w-3 h-3" />
                 <span>ID: {piso.id}</span>
               </div>
@@ -186,7 +193,7 @@ export function Pisos() {
         onClose={() => setDeletingPiso(null)}
         onConfirm={confirmDelete}
         title="Eliminar Piso"
-        message={`¿Estas seguro de eliminar el piso ${deletingPiso?.numero}? Se eliminaran todas las habitaciones asociadas.`}
+        message={`¿Eliminar el piso ${deletingPiso?.numero ?? ''}? Se eliminarán todas las habitaciones asociadas. Esta acción no se puede deshacer.`}
         confirmText="Eliminar"
         isLoading={deleteMutation.isPending}
       />
@@ -224,7 +231,7 @@ function PisoForm({
         <label className="label">Edificio *</label>
         <select
           {...register('edificioId', { required: 'Seleccione un edificio' })}
-          className="select"
+          className={cn('select', errors.edificioId && 'input-error')}
         >
           <option value="">Seleccionar edificio...</option>
           {edificios.map((edificio) => (
@@ -233,13 +240,11 @@ function PisoForm({
             </option>
           ))}
         </select>
-        {errors.edificioId && (
-          <p className="text-xs text-danger-600 mt-1 font-medium">{errors.edificioId.message}</p>
-        )}
+        {errors.edificioId && <p className="form-error">{errors.edificioId.message}</p>}
       </div>
 
       <div>
-        <label className="label">Numero de Piso *</label>
+        <label className="label">Número de Piso *</label>
         <input
           type="number"
           {...register('numero', {
@@ -247,16 +252,14 @@ function PisoForm({
             min: { value: 1, message: 'Minimo piso 1' },
             valueAsNumber: true,
           })}
-          className="input"
+          className={cn('input tabular-nums', errors.numero && 'input-error')}
           min={1}
         />
-        {errors.numero && (
-          <p className="text-xs text-danger-600 mt-1 font-medium">{errors.numero.message}</p>
-        )}
+        {errors.numero && <p className="form-error">{errors.numero.message}</p>}
       </div>
 
       <div>
-        <label className="label">Descripcion</label>
+        <label className="label">Descripción</label>
         <textarea
           {...register('descripcion')}
           className="input"
@@ -265,7 +268,7 @@ function PisoForm({
         />
       </div>
 
-      <div className="flex justify-end gap-2 pt-4 border-t">
+      <div className="flex justify-end gap-2 pt-5 border-t border-slate-200 mt-6">
         <button type="button" onClick={onCancel} className="btn btn-outline">
           Cancelar
         </button>

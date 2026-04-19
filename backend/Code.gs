@@ -7,6 +7,9 @@
 // CONFIGURACIÓN
 // =====================================================
 const CONFIG = {
+  // Version del backend, usar en /ping para verificar que el deploy es el actual
+  VERSION: '2026.04.19',
+
   // IMPORTANTE: Cambia este ID por el de tu Google Spreadsheet
   SPREADSHEET_ID: '1ugfqN_1yjbIjR_IB-oUR66gX0lbQemGpu0-cF39-m6E',
 
@@ -113,6 +116,28 @@ class BaseRepository {
       sheet = this.spreadsheet.insertSheet(this.sheetName);
       sheet.appendRow(this.headers);
       sheet.getRange(1, 1, 1, this.headers.length).setFontWeight('bold');
+      return sheet;
+    }
+
+    // Auto-migracion: si los headers actuales no coinciden con el config,
+    // sobreescribirlos para agregar columnas nuevas (Garantia, LlaveHabitacion, etc.)
+    const lastCol = Math.max(sheet.getLastColumn(), this.headers.length);
+    const currentHeaders = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
+    let needsMigration = false;
+    for (let i = 0; i < this.headers.length; i++) {
+      if (currentHeaders[i] !== this.headers[i]) {
+        needsMigration = true;
+        break;
+      }
+    }
+    if (needsMigration) {
+      // Asegurar que la sheet tiene suficientes columnas
+      const maxCols = sheet.getMaxColumns();
+      if (maxCols < this.headers.length) {
+        sheet.insertColumnsAfter(maxCols, this.headers.length - maxCols);
+      }
+      sheet.getRange(1, 1, 1, this.headers.length).setValues([this.headers]);
+      sheet.getRange(1, 1, 1, this.headers.length).setFontWeight('bold');
     }
     return sheet;
   }
@@ -142,6 +167,21 @@ class BaseRepository {
       if (value instanceof Date) {
         value = value.toISOString();
       }
+      // Campos que deben ser string aunque Google Sheets los convierta a number
+      if ((key === 'dni' || key === 'telefono' || key === 'telefonoEmergencia') && typeof value === 'number') {
+        value = String(value);
+      }
+      // Flags booleanos del contrato: aceptar TRUE/FALSE, "SI"/"NO", 1/0, "true"/"false"
+      if (key === 'garantia' || key === 'llaveHabitacion' || key === 'llavePuertaCalle') {
+        if (typeof value === 'string') {
+          const v = value.trim().toUpperCase();
+          value = (v === 'TRUE' || v === 'SI' || v === '1');
+        } else if (typeof value === 'number') {
+          value = value === 1;
+        } else {
+          value = Boolean(value);
+        }
+      }
       obj[key] = value;
     });
     return obj;
@@ -151,10 +191,17 @@ class BaseRepository {
     return this.headers.map(header => {
       const key = this.headerToKey(header);
       const value = obj[key];
-      if (typeof value === 'string' && header.toLowerCase().includes('fecha')) {
-        return new Date(value);
+      // Campos de fecha: convertir ISO string a Date, pero no tocar strings vacios
+      if (typeof value === 'string' && value.trim() !== '' && header.toLowerCase().includes('fecha')) {
+        const d = new Date(value);
+        if (!isNaN(d.getTime())) return d;
+        return value; // fallback al string original si no parsea
       }
-      return value !== undefined ? value : '';
+      // DNI y telefonos siempre como texto para que Google Sheets no los convierta a number
+      if ((key === 'dni' || key === 'telefono' || key === 'telefonoEmergencia') && value !== undefined && value !== null && value !== '') {
+        return String(value);
+      }
+      return value !== undefined && value !== null ? value : '';
     });
   }
 
@@ -311,6 +358,77 @@ const gastoFijoRepo = {
 // =====================================================
 // FUNCIONES AUXILIARES
 // =====================================================
+
+/**
+ * Cascada: elimina pisos, habitaciones, inquilinos, pagos, gastos y gastos fijos
+ * asociados a un edificio. Devuelve un resumen de lo eliminado.
+ */
+function deleteEdificioCascada(edificioId) {
+  const resumen = { pisos: 0, habitaciones: 0, inquilinos: 0, pagos: 0, gastos: 0, gastosFijos: 0 };
+  const pisos = pisoRepo.get().getAll().filter(p => p.edificioId === edificioId);
+  const pisoIds = pisos.map(p => p.id);
+  const habitaciones = habitacionRepo.get().getAll().filter(h => pisoIds.includes(h.pisoId));
+  const habitacionIds = habitaciones.map(h => h.id);
+  const inquilinos = inquilinoRepo.get().getAll().filter(i => habitacionIds.includes(i.habitacionId));
+  const pagos = pagoRepo.get().getAll().filter(p => habitacionIds.includes(p.habitacionId));
+  const gastos = gastoRepo.get().getAll().filter(g => g.edificioId === edificioId);
+  const gastosFijos = gastoFijoRepo.get().getAll().filter(g => g.edificioId === edificioId);
+
+  pagos.forEach(p => { if (pagoRepo.get().delete(p.id)) resumen.pagos++; });
+  inquilinos.forEach(i => { if (inquilinoRepo.get().delete(i.id)) resumen.inquilinos++; });
+  habitaciones.forEach(h => { if (habitacionRepo.get().delete(h.id)) resumen.habitaciones++; });
+  pisos.forEach(p => { if (pisoRepo.get().delete(p.id)) resumen.pisos++; });
+  gastos.forEach(g => { if (gastoRepo.get().delete(g.id)) resumen.gastos++; });
+  gastosFijos.forEach(g => { if (gastoFijoRepo.get().delete(g.id)) resumen.gastosFijos++; });
+  return resumen;
+}
+
+/**
+ * Cascada: elimina habitaciones, inquilinos y pagos asociados a un piso.
+ */
+function deletePisoCascada(pisoId) {
+  const resumen = { habitaciones: 0, inquilinos: 0, pagos: 0 };
+  const habitaciones = habitacionRepo.get().getAll().filter(h => h.pisoId === pisoId);
+  const habitacionIds = habitaciones.map(h => h.id);
+  const inquilinos = inquilinoRepo.get().getAll().filter(i => habitacionIds.includes(i.habitacionId));
+  const pagos = pagoRepo.get().getAll().filter(p => habitacionIds.includes(p.habitacionId));
+
+  pagos.forEach(p => { if (pagoRepo.get().delete(p.id)) resumen.pagos++; });
+  inquilinos.forEach(i => { if (inquilinoRepo.get().delete(i.id)) resumen.inquilinos++; });
+  habitaciones.forEach(h => { if (habitacionRepo.get().delete(h.id)) resumen.habitaciones++; });
+  return resumen;
+}
+
+/**
+ * Cascada: elimina inquilinos y pagos de una habitacion.
+ */
+function deleteHabitacionCascada(habitacionId) {
+  const resumen = { inquilinos: 0, pagos: 0 };
+  const inquilinos = inquilinoRepo.get().getByField('habitacionId', habitacionId);
+  const pagos = pagoRepo.get().getByField('habitacionId', habitacionId);
+  pagos.forEach(p => { if (pagoRepo.get().delete(p.id)) resumen.pagos++; });
+  inquilinos.forEach(i => { if (inquilinoRepo.get().delete(i.id)) resumen.inquilinos++; });
+  return resumen;
+}
+
+/**
+ * Cascada: elimina edificios de una ciudad (usa deleteEdificioCascada en cadena).
+ */
+function deleteCiudadCascada(ciudadId) {
+  const resumen = { edificios: 0, pisos: 0, habitaciones: 0, inquilinos: 0, pagos: 0, gastos: 0, gastosFijos: 0 };
+  const edificios = edificioRepo.get().getAll().filter(e => e.ciudadId === ciudadId);
+  edificios.forEach(ed => {
+    const r = deleteEdificioCascada(ed.id);
+    resumen.pisos += r.pisos;
+    resumen.habitaciones += r.habitaciones;
+    resumen.inquilinos += r.inquilinos;
+    resumen.pagos += r.pagos;
+    resumen.gastos += r.gastos;
+    resumen.gastosFijos += r.gastosFijos;
+    if (edificioRepo.get().delete(ed.id)) resumen.edificios++;
+  });
+  return resumen;
+}
 
 /**
  * Obtiene los IDs de pisos para un edificio
@@ -497,15 +615,35 @@ function handleRequest(request) {
 
   try {
     const parts = endpoint.split('/').filter(p => p && p !== 'api');
-    const resource = parts[0];
+    let resource = parts[0];
     const id = parts[1];
     const subResource = parts[2];
     const params = data || {};
+
+    // Si se accede a la URL raiz sin parametros, devolver el ping por defecto
+    // (ayuda a verificar que el deploy esta vivo abriendo la URL en el navegador)
+    if (!resource) resource = 'ping';
 
     // Log para debug
     console.log('Request:', action, endpoint, JSON.stringify(params));
 
     switch (resource) {
+      // ------------------- PING / HEALTH CHECK -------------------
+      case 'ping':
+      case 'health':
+      case 'version': {
+        const now = new Date();
+        const tz = Session.getScriptTimeZone(); // Definida en appsscript.json (America/Lima)
+        return successResponse({
+          version: CONFIG.VERSION,
+          timestamp: now.toISOString(),        // UTC (estandar)
+          localTime: Utilities.formatDate(now, tz, "yyyy-MM-dd HH:mm:ss"),
+          timezone: tz,
+          spreadsheetId: CONFIG.SPREADSHEET_ID,
+          sheets: Object.values(CONFIG.SHEETS),
+        }, 'OK');
+      }
+
       // ------------------- CIUDADES -------------------
       case 'ciudades':
         if (action === 'GET') {
@@ -526,7 +664,11 @@ function handleRequest(request) {
         }
         if (action === 'DELETE') {
           if (!id) return errorResponse('ID requerido');
-          return ciudadRepo.get().delete(id) ? successResponse(null, 'Eliminada') : errorResponse('No encontrada');
+          const cascada = deleteCiudadCascada(id);
+          const deleted = ciudadRepo.get().delete(id);
+          return deleted
+            ? successResponse(cascada, `Ciudad eliminada con ${cascada.edificios} edificios y ${cascada.habitaciones} habitaciones`)
+            : errorResponse('Ciudad no encontrada');
         }
         break;
 
@@ -606,7 +748,11 @@ function handleRequest(request) {
         }
         if (action === 'DELETE') {
           if (!id) return errorResponse('ID requerido');
-          return edificioRepo.get().delete(id) ? successResponse(null, 'Eliminado') : errorResponse('No encontrado');
+          const cascada = deleteEdificioCascada(id);
+          const deleted = edificioRepo.get().delete(id);
+          return deleted
+            ? successResponse(cascada, `Edificio eliminado con ${cascada.pisos} pisos y ${cascada.habitaciones} habitaciones`)
+            : errorResponse('Edificio no encontrado');
         }
         break;
 
@@ -630,7 +776,11 @@ function handleRequest(request) {
         }
         if (action === 'DELETE') {
           if (!id) return errorResponse('ID requerido');
-          return pisoRepo.get().delete(id) ? successResponse(null, 'Eliminado') : errorResponse('No encontrado');
+          const cascada = deletePisoCascada(id);
+          const deleted = pisoRepo.get().delete(id);
+          return deleted
+            ? successResponse(cascada, `Piso eliminado con ${cascada.habitaciones} habitaciones`)
+            : errorResponse('Piso no encontrado');
         }
         break;
 
@@ -670,7 +820,11 @@ function handleRequest(request) {
         }
         if (action === 'DELETE') {
           if (!id) return errorResponse('ID requerido');
-          return habitacionRepo.get().delete(id) ? successResponse(null, 'Eliminada') : errorResponse('No encontrada');
+          const cascada = deleteHabitacionCascada(id);
+          const deleted = habitacionRepo.get().delete(id);
+          return deleted
+            ? successResponse(cascada, `Habitacion eliminada con ${cascada.inquilinos} inquilinos y ${cascada.pagos} pagos`)
+            : errorResponse('Habitacion no encontrada');
         }
         break;
 
@@ -691,28 +845,54 @@ function handleRequest(request) {
           return successResponse(inquilinoRepo.get().getAll());
         }
         if (action === 'POST') {
+          // Validacion minima
+          if (!params.nombre || !params.apellido) return errorResponse('Nombre y apellido son requeridos');
+          if (!params.habitacionId) return errorResponse('Habitacion es requerida');
+          if (!params.dni || String(params.dni).trim() === '') return errorResponse('DNI es requerido');
+
           const newInq = inquilinoRepo.get().create({
             ...params,
             fechaIngreso: params.fechaIngreso || new Date().toISOString(),
             estado: 'activo'
           });
-          // Actualizar habitación a ocupada
-          if (params.habitacionId) {
-            habitacionRepo.get().update(params.habitacionId, { estado: 'occupied' });
-          }
+          // Actualizar habitacion a ocupada
+          habitacionRepo.get().update(params.habitacionId, { estado: 'occupied' });
           return successResponse(newInq, 'Inquilino registrado');
         }
         if (action === 'PUT') {
           if (!id) return errorResponse('ID requerido');
-          return successResponse(inquilinoRepo.get().update(id, params));
+          const inqActual = inquilinoRepo.get().getById(id);
+          const updated = inquilinoRepo.get().update(id, params);
+          // Si el inquilino fue dado de baja, liberar la habitacion
+          if (inqActual && updated && params.estado === 'inactivo' && inqActual.estado === 'activo' && inqActual.habitacionId) {
+            // Solo liberar si no hay otro inquilino activo en esa habitacion
+            const otrosActivos = inquilinoRepo.get().getByField('habitacionId', inqActual.habitacionId)
+              .filter(i => i.id !== id && i.estado === 'activo');
+            if (otrosActivos.length === 0) {
+              habitacionRepo.get().update(inqActual.habitacionId, { estado: 'vacant' });
+            }
+          }
+          return updated ? successResponse(updated) : errorResponse('Inquilino no encontrado');
         }
         if (action === 'DELETE') {
           if (!id) return errorResponse('ID requerido');
           const inq = inquilinoRepo.get().getById(id);
-          if (inq && inq.habitacionId) {
-            habitacionRepo.get().update(inq.habitacionId, { estado: 'vacant' });
+          if (!inq) return errorResponse('Inquilino no encontrado');
+          // Eliminar pagos asociados al inquilino (cascada)
+          const pagos = pagoRepo.get().getByField('inquilinoId', id);
+          let pagosEliminados = 0;
+          pagos.forEach(p => { if (pagoRepo.get().delete(p.id)) pagosEliminados++; });
+          // Liberar habitacion si este era el unico inquilino activo
+          if (inq.habitacionId && inq.estado === 'activo') {
+            const otrosActivos = inquilinoRepo.get().getByField('habitacionId', inq.habitacionId)
+              .filter(i => i.id !== id && i.estado === 'activo');
+            if (otrosActivos.length === 0) {
+              habitacionRepo.get().update(inq.habitacionId, { estado: 'vacant' });
+            }
           }
-          return inquilinoRepo.get().delete(id) ? successResponse(null, 'Eliminado') : errorResponse('No encontrado');
+          return inquilinoRepo.get().delete(id)
+            ? successResponse({ pagosEliminados }, `Inquilino eliminado (${pagosEliminados} pagos)`)
+            : errorResponse('No se pudo eliminar');
         }
         break;
 
@@ -762,22 +942,38 @@ function handleRequest(request) {
           if (params.habitacionId) {
             return successResponse(pagoRepo.get().getByField('habitacionId', params.habitacionId));
           }
+          if (params.inquilinoId) {
+            return successResponse(pagoRepo.get().getByField('inquilinoId', params.inquilinoId));
+          }
           return successResponse(pagoRepo.get().getAll());
         }
         if (action === 'POST') {
           if (id === 'reset-mes') {
             return successResponse({ affected: 0 }, 'Reset completado');
           }
+          // Validacion minima
+          if (!params.habitacionId) return errorResponse('Habitacion es requerida');
+          if (!params.concepto) return errorResponse('Concepto es requerido');
+          if (params.monto === undefined || params.monto === null || Number(params.monto) < 0) {
+            return errorResponse('Monto valido es requerido');
+          }
           const newPago = pagoRepo.get().create({
             ...params,
             fecha: params.fecha || new Date().toISOString(),
-            estado: 'pagado'
+            estado: params.estado || 'pagado'
           });
           return successResponse(newPago, 'Pago registrado');
         }
         if (action === 'PUT') {
           if (!id) return errorResponse('ID requerido');
-          return successResponse(pagoRepo.get().update(id, params));
+          const updated = pagoRepo.get().update(id, params);
+          return updated ? successResponse(updated) : errorResponse('Pago no encontrado');
+        }
+        if (action === 'DELETE') {
+          if (!id) return errorResponse('ID requerido');
+          return pagoRepo.get().delete(id)
+            ? successResponse(null, 'Pago eliminado')
+            : errorResponse('Pago no encontrado');
         }
         break;
 
@@ -958,7 +1154,7 @@ function handleRequest(request) {
     return errorResponse('Acción no soportada');
 
   } catch (error) {
-    console.error('Error en handleRequest:', error);
+    console.error('Error en handleRequest:', error, error && error.stack);
     return errorResponse(String(error));
   }
 }
@@ -1015,7 +1211,8 @@ function doGet(e) {
  */
 function doPost(e) {
   try {
-    const body = JSON.parse(e.postData?.contents || '{}');
+    const contents = (e && e.postData && e.postData.contents) ? e.postData.contents : '{}';
+    const body = JSON.parse(contents);
 
     const request = {
       action: body.action || 'POST',
@@ -1025,7 +1222,7 @@ function doPost(e) {
 
     return handleRequest(request);
   } catch (error) {
-    console.error('Error en doPost:', error);
+    console.error('Error en doPost:', error, error && error.stack);
     return errorResponse(String(error));
   }
 }
@@ -1284,6 +1481,7 @@ function onOpen() {
   const ui = SpreadsheetApp.getUi();
   ui.createMenu('Sistema Alquiler')
     .addItem('Inicializar Base de Datos', 'initializeDatabase')
+    .addItem('Migrar Headers (agregar columnas nuevas)', 'migrateSheets')
     .addItem('Crear Datos de Prueba', 'createTestData')
     .addSeparator()
     .addItem('Ver URL del API', 'showApiUrl')
@@ -1294,4 +1492,45 @@ function showApiUrl() {
   const url = ScriptApp.getService().getUrl();
   const ui = SpreadsheetApp.getUi();
   ui.alert('URL del API', url || 'Primero debes hacer un deployment como Web App', ui.ButtonSet.OK);
+}
+
+/**
+ * Fuerza la migracion de headers en todas las hojas.
+ * Util cuando se agregan columnas nuevas al CONFIG.HEADERS
+ * (ej. Garantia, LlaveHabitacion, LlavePuertaCalle en Inquilinos).
+ * Ejecutar desde el menu "Sistema Alquiler" o desde el editor de Apps Script.
+ */
+function migrateSheets() {
+  try {
+    const repos = [
+      { name: 'Ciudades', repo: ciudadRepo },
+      { name: 'Edificios', repo: edificioRepo },
+      { name: 'Pisos', repo: pisoRepo },
+      { name: 'Habitaciones', repo: habitacionRepo },
+      { name: 'Inquilinos', repo: inquilinoRepo },
+      { name: 'Pagos', repo: pagoRepo },
+      { name: 'Gastos', repo: gastoRepo },
+      { name: 'GastosFijos', repo: gastoFijoRepo },
+    ];
+    const updated = [];
+    repos.forEach(r => {
+      try {
+        r.repo.get().getSheet(); // getSheet() ya aplica la migracion automatica
+        updated.push(r.name);
+      } catch (e) {
+        console.error('Error migrando ' + r.name + ':', e);
+      }
+    });
+    const ui = SpreadsheetApp.getUi();
+    ui.alert(
+      'Migracion completa',
+      'Headers actualizados en:\n' + updated.join(', ') +
+      '\n\nLas columnas nuevas (Garantia, LlaveHabitacion, LlavePuertaCalle) ya estan disponibles.' +
+      '\nNo es necesario re-deploy: el backend ya usa los nuevos campos.',
+      ui.ButtonSet.OK
+    );
+  } catch (error) {
+    console.error('Error en migrateSheets:', error);
+    SpreadsheetApp.getUi().alert('Error', String(error), SpreadsheetApp.getUi().ButtonSet.OK);
+  }
 }
