@@ -182,7 +182,7 @@ export async function generateContratoPDF(data: ContratoData): Promise<void> {
   doc.setFontSize(20);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(accent[0], accent[1], accent[2]);
-  const titleLines = doc.splitTextToSize('CONTRATO DE ALQUILER', titleMaxWidth);
+  const titleLines = doc.splitTextToSize('REGLAMENTO INTERNO DE CONVIVENCIA', titleMaxWidth);
   doc.text(titleLines, margin, y + 6);
 
   // Subtitulo con nombre del edificio
@@ -251,10 +251,10 @@ export async function generateContratoPDF(data: ContratoData): Promise<void> {
 
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(dark[0], dark[1], dark[2]);
-  doc.text(', EN CALIDAD DE INQUILINO,', dniStartX + dniWidth + 1, y);
+  doc.text(', EN CALIDAD DE OCUPANTE,', dniStartX + dniWidth + 1, y);
 
   y += 7.5;
-  doc.text('ACEPTO LAS SIGUIENTES CONDICIONES DE ALQUILER:', margin, y);
+  doc.text('ACEPTO LAS SIGUIENTES NORMAS DE CONVIVENCIA:', margin, y);
 
   y += 5.5;
   hLine(y);
@@ -274,7 +274,7 @@ export async function generateContratoPDF(data: ContratoData): Promise<void> {
   // ---- COLUMNA IZQUIERDA: DATOS DEL INQUILINO ----
 
   // Header FUERA de la caja (arriba)
-  yL = sectionHeader('DATOS DEL INQUILINO', yL, colLeftX + 1);
+  yL = sectionHeader('DATOS DEL OCUPANTE', yL, colLeftX + 1);
 
   // Marco empieza DESPUES del header
   const datosBoxY = yL - 2;
@@ -284,7 +284,7 @@ export async function generateContratoPDF(data: ContratoData): Promise<void> {
   yL = fieldRow('Celular:', String(inquilino.telefono || ''), yL, colLeftX + 1, colLeftW - 2);
 
   // Campo: Celular apoderado
-  yL = fieldRow('Cel. Apoderado:', String(inquilino.telefonoEmergencia || ''), yL, colLeftX + 1, colLeftW - 2);
+  yL = fieldRow('Cel. de contacto familiar:', String(inquilino.telefonoEmergencia || ''), yL, colLeftX + 1, colLeftW - 2);
 
   // Campo: Correo
   yL = fieldRow('Correo:', String(inquilino.email || ''), yL, colLeftX + 1, colLeftW - 2);
@@ -359,7 +359,7 @@ export async function generateContratoPDF(data: ContratoData): Promise<void> {
   yL += 17;
 
   // Monto de alquiler
-  yL = sectionHeader('MONTO DE ALQUILER', yL, colLeftX + 1);
+  yL = sectionHeader('APORTE MENSUAL', yL, colLeftX + 1);
 
   // Caja destacada con monto (con padding interno generoso)
   doc.setFillColor(accent[0], accent[1], accent[2]);
@@ -379,7 +379,7 @@ export async function generateContratoPDF(data: ContratoData): Promise<void> {
 
   // ---- COLUMNA DERECHA: REGLAS ----
   // Header FUERA de la caja (arriba)
-  yR = sectionHeader('REGLAS DEL INQUILINO', yR, colRightX + 1);
+  yR = sectionHeader('NORMAS DE CONVIVENCIA', yR, colRightX + 1);
 
   // Marco empieza DESPUES del header
   const reglasBoxY = yR - 2;
@@ -390,7 +390,7 @@ export async function generateContratoPDF(data: ContratoData): Promise<void> {
     'La puerta principal se cierra a partir de las 10:50 PM como lapso máximo.',
     'Queda parcialmente impedido hacer uso de artefactos eléctricos que requieran una mayor potencia de uso.',
     'No dañaré las paredes (caso contrario dejaré como el dueño me brindó la habitación).',
-    'Pagaré puntualmente la pensión de alquiler (pasada la fecha de pago adicionaré S/ 1 por día que transcurra).',
+    'Entregaré puntualmente el aporte mensual acordado (pasada la fecha adicionaré S/ 1 por día que transcurra).',
     'Mantendré limpios los pasadizos y los servicios higiénicos.',
     'Todo visitante del inquilino debe hacerse conocer al dueño.'
   ];
@@ -422,57 +422,50 @@ export async function generateContratoPDF(data: ContratoData): Promise<void> {
   doc.roundedRect(colRightX - 2, reglasBoxY, colRightW + 4, reglasBoxH, 2, 2, 'S');
 
   // ================================================================
-  // FIRMA Y HUELLA DACTILAR (anclados al pie de pagina)
+  // FIRMA DEL OCUPANTE (centrada, sin huella dactilar)
   // ================================================================
-  // Separador se posiciona al final para aprovechar el espacio
-  // Margen generoso con el footer para que firma/DNI no toquen el marco
-  const footerTop = pageHeight - 14; // banda inferior + label
-  const huellaW = 32;
-  const huellaH = 36;
-  const separatorY = Math.max(Math.max(yL, yR) + 6, footerTop - huellaH - 22);
+  // footerTop considera la banda inferior + texto de footer + disclaimer legal
+  const footerTop = pageHeight - 26; // banda + "Constancia..." + disclaimer (2 lineas)
+  const firmaBlockHeight = 28; // linea + label + nombre + DNI
+  const separatorY = Math.max(Math.max(yL, yR) + 10, footerTop - firmaBlockHeight - 10);
 
-  // Linea separadora antes de firmas
+  // Linea separadora antes de la firma
   hLine(separatorY, margin, pageWidth - margin, accent);
 
-  // Huella dactilar - derecha
-  const huellaX = pageWidth - margin - huellaW - 3;
-  const huellaY = separatorY + 5;
-  doc.setDrawColor(borderColor[0], borderColor[1], borderColor[2]);
-  doc.setLineWidth(0.5);
-  doc.roundedRect(huellaX, huellaY, huellaW, huellaH, 2, 2, 'S');
+  // Firma del ocupante - centrada horizontalmente en la pagina
+  const firmaLineWidth = 80;
+  const firmaCenterX = pageWidth / 2;
+  const firmaLineX1 = firmaCenterX - firmaLineWidth / 2;
+  const firmaLineX2 = firmaCenterX + firmaLineWidth / 2;
+  const firmaY = separatorY + 18; // espacio para la firma manuscrita
 
-  // Lineas guia para la huella
-  doc.setDrawColor(230, 230, 235);
-  doc.setLineWidth(0.2);
-  for (let i = 1; i < 4; i++) {
-    doc.line(huellaX + 4, huellaY + (huellaH * i / 4), huellaX + huellaW - 4, huellaY + (huellaH * i / 4));
-  }
-
-  doc.setFontSize(9);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(mid[0], mid[1], mid[2]);
-  doc.text('HUELLA DACTILAR', huellaX + huellaW / 2, huellaY + huellaH + 5, { align: 'center' });
-
-  // Firma del inquilino - centrado izquierda, subida para dar aire con el pie de pagina
-  const firmaY = huellaY + huellaH - 12;
-  const firmaLineX1 = margin + 8;
-  const firmaLineX2 = margin + 88;
   doc.setDrawColor(dark[0], dark[1], dark[2]);
   doc.setLineWidth(0.5);
   doc.line(firmaLineX1, firmaY, firmaLineX2, firmaY);
+
   doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(dark[0], dark[1], dark[2]);
-  doc.text('FIRMA DEL INQUILINO', (firmaLineX1 + firmaLineX2) / 2, firmaY + 5, { align: 'center' });
+  doc.text('FIRMA DEL OCUPANTE', firmaCenterX, firmaY + 5, { align: 'center' });
+
   doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(mid[0], mid[1], mid[2]);
-  doc.text(nombreCompleto.toUpperCase(), (firmaLineX1 + firmaLineX2) / 2, firmaY + 10, { align: 'center' });
-  doc.text(`DNI: ${dniText}`, (firmaLineX1 + firmaLineX2) / 2, firmaY + 14.5, { align: 'center' });
+  doc.text(nombreCompleto.toUpperCase(), firmaCenterX, firmaY + 10, { align: 'center' });
+  doc.text(`DNI: ${dniText}`, firmaCenterX, firmaY + 14.5, { align: 'center' });
 
   // ================================================================
   // FOOTER
   // ================================================================
+  // Disclaimer legal (encima del texto del footer, en italica y mas chico)
+  doc.setFontSize(6.5);
+  doc.setFont('helvetica', 'italic');
+  doc.setTextColor(mid[0], mid[1], mid[2]);
+  const disclaimer = 'El presente documento tiene fines exclusivos de registro interno de convivencia y no constituye contrato de arrendamiento ni título equivalente para efectos legales, bancarios o tributarios.';
+  const disclaimerLines = doc.splitTextToSize(disclaimer, contentWidth - 20);
+  const disclaimerY = pageHeight - 14 - (disclaimerLines.length - 1) * 3;
+  doc.text(disclaimerLines, pageWidth / 2, disclaimerY, { align: 'center' });
+
   // Banda inferior minimal (una sola linea)
   doc.setFillColor(accent[0], accent[1], accent[2]);
   doc.rect(0, pageHeight - 3, pageWidth, 3, 'F');
@@ -481,12 +474,12 @@ export async function generateContratoPDF(data: ContratoData): Promise<void> {
   doc.setFontSize(7.5);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(mid[0], mid[1], mid[2]);
-  doc.text('Documento generado electrónicamente  |  Este contrato tiene validez legal', pageWidth / 2, pageHeight - 7, { align: 'center' });
+  doc.text('Documento generado electrónicamente  |  Constancia de compromiso de cumplimiento de normas', pageWidth / 2, pageHeight - 7, { align: 'center' });
 
   // ================================================================
   // GUARDAR PDF
   // ================================================================
-  const fileName = `Contrato_${inquilino.nombre || 'Inquilino'}_${inquilino.apellido || ''}_${habitacion.codigo || 'HAB'}.pdf`;
+  const fileName = `Reglamento_${inquilino.nombre || 'Ocupante'}_${inquilino.apellido || ''}_${habitacion.codigo || 'HAB'}.pdf`;
   doc.save(fileName);
 }
 
