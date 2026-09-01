@@ -13,16 +13,44 @@ export function formatCurrency(amount: number): string {
 }
 
 /**
+ * Convierte una fecha del backend en una fecha de calendario local.
+ *
+ * El backend guarda las fechas como medianoche UTC ('2026-04-19T00:00:00.000Z').
+ * parseISO devuelve ese instante y format() lo renderiza en la zona del navegador:
+ * en Peru (UTC-5) eso es el 18/04 a las 19:00, o sea un dia menos. Se reconstruye
+ * la fecha con los componentes del propio string para que el dia mostrado sea
+ * exactamente el que se guardo, en cualquier zona horaria.
+ */
+function aFechaCalendario(valor: string): Date | null {
+  const m = valor.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (m) {
+    return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+  }
+  const d = parseISO(valor);
+  return isNaN(d.getTime()) ? null : d;
+}
+
+/**
  * Formatea una fecha ISO a formato legible
  */
 export function formatDate(dateString: string | undefined, formatStr: string = 'dd/MM/yyyy'): string {
   if (!dateString) return '-';
   try {
-    const date = typeof dateString === 'string' ? parseISO(dateString) : dateString;
+    const date = aFechaCalendario(String(dateString));
+    if (!date) return '-';
     return format(date, formatStr, { locale: es });
   } catch {
     return '-';
   }
+}
+
+/**
+ * Dia del mes de una fecha del backend, sin corrimiento de zona horaria.
+ */
+export function diaDeFecha(dateString: string | undefined): number | null {
+  if (!dateString) return null;
+  const date = aFechaCalendario(String(dateString));
+  return date ? date.getDate() : null;
 }
 
 /**

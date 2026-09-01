@@ -70,6 +70,37 @@ async function apiRequest<T>(
   return response.data.data as T;
 }
 
+/**
+ * POST real con el payload en el cuerpo, para cargas que no caben en una URL
+ * (imagenes y PDFs en base64 pesan cientos de KB).
+ *
+ * El Content-Type es 'text/plain' a proposito: convierte la peticion en una
+ * "simple request" y evita el preflight OPTIONS, que Apps Script no responde.
+ * NO cambiar a 'application/json' — rompe CORS.
+ */
+export async function apiPostBody<T>(
+  action: 'GET' | 'POST' | 'PUT' | 'DELETE',
+  endpoint: string,
+  data: unknown
+): Promise<T> {
+  const response = await fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({ action, endpoint, data }),
+    redirect: 'follow',
+  });
+
+  if (!response.ok) {
+    throw new Error(`Error de red (${response.status})`);
+  }
+
+  const payload = (await response.json()) as ApiResponse<T>;
+  if (!payload.success) {
+    throw new Error(payload.error || 'Error en la petición');
+  }
+  return payload.data as T;
+}
+
 // Funciones helper para las peticiones
 export async function apiGet<T>(endpoint: string, config?: AxiosRequestConfig): Promise<T> {
   return apiRequest<T>('GET', endpoint, undefined, config?.params);

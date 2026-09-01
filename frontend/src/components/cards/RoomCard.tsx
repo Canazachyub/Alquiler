@@ -16,6 +16,15 @@ export function RoomCard({ habitacion, onClick }: RoomCardProps) {
   const hasDebt = isOccupied && (!habitacion.alquilerPagado || !habitacion.internetPagado);
   const isPaid = isOccupied && habitacion.alquilerPagado && habitacion.internetPagado;
 
+  // El backend devuelve el numero de piso plano (pisoNumero); el objeto anidado
+  // solo llega en los endpoints que hacen join. Se aceptan ambos.
+  const pisoNumero = habitacion.piso?.numero ?? habitacion.pisoNumero;
+
+  // El backend no calcula deuda: se deriva de lo que ya viene en la respuesta.
+  const deuda =
+    (habitacion.alquilerPagado ? 0 : Number(habitacion.montoAlquiler || 0)) +
+    (habitacion.internetPagado ? 0 : Number(habitacion.montoInternet || 0));
+
   // Prioridad: deuda > mantenimiento > pagado > vacante
   const stateLabel =
     hasDebt ? 'Con deuda' :
@@ -65,7 +74,16 @@ export function RoomCard({ habitacion, onClick }: RoomCardProps) {
         </div>
         <div className="min-w-0">
           <h3 className="font-semibold text-base tracking-tight text-slate-900">{habitacion.codigo}</h3>
-          <p className="text-xs text-slate-500">Piso {habitacion.piso?.numero}</p>
+          {(pisoNumero !== undefined || habitacion.edificioNombre) && (
+            <p className="text-xs text-slate-500 truncate">
+              {[
+                pisoNumero !== undefined ? `Piso ${pisoNumero}` : null,
+                habitacion.edificioNombre,
+              ]
+                .filter(Boolean)
+                .join(' · ')}
+            </p>
+          )}
         </div>
       </div>
 
@@ -111,12 +129,12 @@ export function RoomCard({ habitacion, onClick }: RoomCardProps) {
       </div>
 
       {/* Deuda */}
-      {isOccupied && hasDebt && habitacion.deudaTotal && habitacion.deudaTotal > 0 && (
+      {isOccupied && hasDebt && deuda > 0 && (
         <div className="mt-3 pt-2.5 border-t border-red-100">
           <div className="flex justify-between items-center text-sm">
-            <span className="text-red-600 font-medium">Deuda total:</span>
+            <span className="text-red-600 font-medium">Deuda del mes:</span>
             <span className="font-semibold tabular-nums text-red-700">
-              {formatCurrency(habitacion.deudaTotal)}
+              {formatCurrency(deuda)}
             </span>
           </div>
         </div>

@@ -40,49 +40,49 @@ export function useAlertas() {
     const hoy = new Date();
     const diaHoy = hoy.getDate();
 
-    // 1. Pagos del mes pendientes (danger) — habitaciones ocupadas sin pago de alquiler
+    // 1. Pagos del mes de habitaciones ocupadas sin pagar.
+    // Una sola alerta por habitacion: o esta por vencer (warning) o esta pendiente/vencida (danger).
+    // Antes se emitian dos y el badge de la campana contaba doble.
     habitaciones.forEach((hab) => {
-      if (hab.estado === 'occupied' && !hab.alquilerPagado) {
-        const vencido = hab.diaPago !== undefined && hab.diaPago < diaHoy;
-        alertas.push({
-          id: `pago-${hab.id}`,
-          severidad: 'danger',
-          categoria: 'pago-pendiente',
-          titulo: `${hab.codigo} · ${hab.nombreInquilino || 'Sin inquilino'}`,
-          detalle: vencido
-            ? `Vencido · debía pagar el ${hab.diaPago}`
-            : `Pago pendiente del mes`,
-          link: '/habitaciones',
-          monto: hab.montoAlquiler,
-        });
-      }
-    });
+      if (hab.estado !== 'occupied' || hab.alquilerPagado) return;
 
-    // 2. Pagos próximos a vencer (warning) — ocupadas con diaPago dentro de los próximos N días
-    habitaciones.forEach((hab) => {
-      if (
-        hab.estado === 'occupied' &&
-        !hab.alquilerPagado &&
+      const titulo = `${hab.codigo} · ${hab.nombreInquilino || 'Sin inquilino'}`;
+      const porVencer =
         hab.diaPago !== undefined &&
+        hab.diaPago !== null &&
         hab.diaPago >= diaHoy &&
-        hab.diaPago <= diaHoy + DIAS_PROXIMO_VENCIMIENTO
-      ) {
-        const dias = hab.diaPago - diaHoy;
+        hab.diaPago <= diaHoy + DIAS_PROXIMO_VENCIMIENTO;
+
+      if (porVencer) {
+        const dias = (hab.diaPago as number) - diaHoy;
         alertas.push({
           id: `proximo-${hab.id}`,
           severidad: 'warning',
           categoria: 'pago-proximo',
-          titulo: `${hab.codigo} · ${hab.nombreInquilino || 'Sin inquilino'}`,
+          titulo,
           detalle: dias === 0 ? 'Vence hoy' : dias === 1 ? 'Vence mañana' : `Vence en ${dias} días`,
           link: '/habitaciones',
           monto: hab.montoAlquiler,
         });
+        return;
       }
+
+      const vencido = hab.diaPago !== undefined && hab.diaPago !== null && hab.diaPago < diaHoy;
+      alertas.push({
+        id: `pago-${hab.id}`,
+        severidad: 'danger',
+        categoria: 'pago-pendiente',
+        titulo,
+        detalle: vencido ? `Vencido · debía pagar el ${hab.diaPago}` : 'Pago pendiente del mes',
+        link: '/habitaciones',
+        monto: hab.montoAlquiler,
+      });
     });
 
-    // 3. Gastos fijos próximos a vencer (warning)
+    // 2. Gastos fijos proximos a vencer (warning), acotados al edificio seleccionado
     gastosFijos
       .filter((g) => g.activo)
+      .filter((g) => !edificioSeleccionado || g.edificioId === edificioSeleccionado)
       .forEach((g) => {
         const dias = g.diaVencimiento - diaHoy;
         if (dias >= 0 && dias <= DIAS_PROXIMO_VENCIMIENTO) {
@@ -98,12 +98,14 @@ export function useAlertas() {
         }
       });
 
-    // 4. Inquilinos con contrato incompleto (info) — solo los activos
+    // 3. Inquilinos con contrato incompleto (info) — solo los activos
     inquilinos
       .filter((i) => i.estado === 'activo')
       .forEach((inq) => {
         const faltantes: string[] = [];
-        if (!inq.dni || String(inq.dni).trim() === '') faltantes.push('DNI');
+        // Google Sheets devuelve 0 cuando la celda de DNI quedo vacia y se guardo como numero
+        const dniStr = String(inq.dni ?? '').trim();
+        if (dniStr === '' || dniStr === '0') faltantes.push('DNI');
         if (!inq.garantia) faltantes.push('garantía');
         if (!inq.llaveHabitacion) faltantes.push('llave habitación');
         if (!inq.llavePuertaCalle) faltantes.push('llave puerta');
@@ -123,5 +125,5 @@ export function useAlertas() {
     // Orden: danger → warning → info
     const orden: Record<AlertaSeveridad, number> = { danger: 0, warning: 1, info: 2 };
     return alertas.sort((a, b) => orden[a.severidad] - orden[b.severidad]);
-  }, [habitaciones, inquilinos, gastosFijos]);
+  }, [habitaciones, inquilinos, gastosFijos, edificioSeleccionado]);
 }

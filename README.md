@@ -49,8 +49,9 @@ ALQUILER PUNO JULI/
 │       └── deploy.yml                   # CI/CD - Deploy automatico a GitHub Pages
 │
 ├── backend/
-│   ├── Code.gs                          # API REST completa (Google Apps Script)
+│   ├── Code.gs                          # API REST completa - UNICA FUENTE del backend
 │   └── appsscript.json                  # Config de Apps Script (timezone: America/Lima)
+│                                        # No hay compilacion: Code.gs se pega tal cual en Apps Script
 │
 ├── frontend/
 │   ├── src/
@@ -366,6 +367,8 @@ El proyecto utiliza **GitHub Actions** para deploy automatico a **GitHub Pages**
 - URL de produccion: **https://canazachyub.github.io/Alquiler/**
 
 ### Re-deploy del backend (manual)
+`backend/Code.gs` es la **unica** fuente del backend: se escribe en JavaScript plano y se pega tal cual en el editor de Apps Script. No existe version TypeScript ni paso de compilacion — hubo una en `backend/src/` que quedo obsoleta y fue eliminada.
+
 A diferencia del frontend, Apps Script **no se redeploya automaticamente**. Si tocas `backend/Code.gs`:
 
 1. Pegar el codigo actualizado en el editor de Apps Script
@@ -394,6 +397,8 @@ Click en la campana abre un popover con alertas agrupadas por severidad:
 - **Ambar**: vencimientos en los proximos 3 dias; gastos fijos proximos
 - **Azules**: contratos incompletos (falta DNI, garantia o llaves)
 
+Cada habitacion genera **una sola** alerta: si vence dentro de 3 dias sale en ambar, si no sale en rojo. Los gastos fijos se acotan al edificio seleccionado en el header.
+
 El badge de la campana muestra el conteo total. Click en cada alerta navega a la pagina correspondiente.
 
 ### Habitaciones
@@ -402,6 +407,8 @@ El badge de la campana muestra el conteo total. Click en cada alerta navega a la
   - Dot de estado top-right (rojo/ambar/emerald/slate)
   - Shade sutil de fondo segun estado
   - Prioridad: deuda > mantenimiento > pagado > vacante
+  - Piso y edificio bajo el codigo de habitacion
+  - Deuda del mes calculada como la suma de alquiler + internet no pagados
 - Panel resumen con "Por cobrar" del mes
 - FAB en movil para crear nueva habitacion
 
@@ -428,6 +435,8 @@ Al registrar un inquilino o desde la tabla se genera un PDF A4 con:
 - Navegacion por mes/año
 - Filtros por concepto (alquiler, internet, servicios)
 - Generacion de voucher PDF termico (80mm)
+- **Envio por WhatsApp**: el boton "Generar PDF y enviar" arma el voucher y lo hace llegar al numero registrado del inquilino. En celular comparte el PDF real via el menu nativo; en escritorio lo descarga y abre el chat con el mensaje escrito para adjuntarlo. WhatsApp no admite adjuntos desde un enlace web, por eso el segundo paso es manual en escritorio
+- Boton "Descargar" para obtener solo el PDF, sin abrir WhatsApp
 - Fecha de pago editable
 - FAB en movil
 

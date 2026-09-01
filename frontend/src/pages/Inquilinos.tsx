@@ -1,20 +1,26 @@
 import { useState } from 'react';
-import { Plus, Search, Edit, Trash2, User, Phone, Mail, Home, FileText } from 'lucide-react';
-import { InquilinoForm } from '@/components/forms';
+import { useQueryClient } from '@tanstack/react-query';
+import { Plus, Search, Edit, Trash2, User, Phone, Mail, Home, FileText, UploadCloud, ExternalLink } from 'lucide-react';
+import { InquilinoForm, type CapturaDniValue } from '@/components/forms';
 import { Modal, ConfirmDialog, LoadingPage, EmptyState } from '@/components/ui';
 import { Fab } from '@/components/ui/Fab';
-import { generateContratoPDF } from '@/components/voucher';
+import { generateContratoPDF, getContratoBlob } from '@/components/voucher';
 import {
   useInquilinos,
   useCreateInquilino,
   useUpdateInquilino,
   useDeleteInquilino,
-  useHabitaciones,
+  useHabitacionesConEstadoPago,
+  useCiudades,
+  useEdificios,
+  INQUILINOS_KEY,
 } from '@/hooks';
-import { useNotifications } from '@/store';
+import { driveApi } from '@/api';
+import { useConfigStore, useNotifications } from '@/store';
 import { cn } from '@/utils/cn';
+import { archivoADataUrl } from '@/utils/imagen';
 import { formatDate, formatPhone, formatDNI } from '@/utils/formatters';
-import type { Inquilino, InquilinoInput, Habitacion } from '@/types';
+import type { Inquilino, InquilinoInput, Habitacion, TipoDocumentoDrive } from '@/types';
 
 export function Inquilinos() {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -24,13 +30,32 @@ export function Inquilinos() {
   const [showInactivos, setShowInactivos] = useState(false);
   const [showContractDialog, setShowContractDialog] = useState(false);
   const [newInquilinoData, setNewInquilinoData] = useState<{ inquilino: Inquilino; habitacion: Habitacion } | null>(null);
+  const [subiendoDni, setSubiendoDni] = useState(false);
+  const [archivandoId, setArchivandoId] = useState<string | null>(null);
+
+  const queryClient = useQueryClient();
+  const { mesActual, anioActual, ciudadSeleccionada, edificioSeleccionado } = useConfigStore();
 
   const { data: inquilinos, isLoading } = useInquilinos();
-  const { data: habitaciones } = useHabitaciones();
+  // Con estado-pago porque es el unico endpoint que trae edificio y piso resueltos,
+  // necesarios para agrupar el selector y para el contexto del formulario.
+  const { data: habitaciones } = useHabitacionesConEstadoPago(mesActual, anioActual);
+  const { data: ciudades } = useCiudades();
+  const { data: edificios } = useEdificios();
   const createMutation = useCreateInquilino();
   const updateMutation = useUpdateInquilino();
   const deleteMutation = useDeleteInquilino();
   const { notify } = useNotifications();
+
+  // El formulario solo ofrece habitaciones del edificio seleccionado en el header
+  const habitacionesForm = edificioSeleccionado
+    ? (habitaciones ?? []).filter((h) => h.edificioId === edificioSeleccionado)
+    : habitaciones ?? [];
+
+  const contexto = {
+    ciudad: ciudades?.find((c) => c.id === ciudadSeleccionada)?.nombre ?? null,
+    edificio: edificios?.find((e) => e.id === edificioSeleccionado)?.nombre ?? null,
+  };
 
   // Filtrar inquilinos (coerción a string para tolerar numbers desde Google Sheets)
   const filteredInquilinos = inquilinos?.filter((inq) => {
@@ -40,7 +65,9 @@ export function Inquilinos() {
       String(inq.nombre || '').toLowerCase().includes(searchLower) ||
       String(inq.apellido || '').toLowerCase().includes(searchLower) ||
       String(inq.dni || '').includes(searchTerm) ||
-      String(inq.telefono || '').includes(searchTerm);
+      String(inq.telefono || '').includes(searchTerm) ||
+      String(inq.habitacion?.codigo || '').toLowerCase().includes(searchLower) ||
+      String(inq.habitacion?.edificioNombre || '').toLowerCase().includes(searchLower);
 
     const matchesStatus = showInactivos || inq.estado === 'activo';
 
@@ -65,16 +92,50 @@ export function Inquilinos() {
     setDeletingInquilino(inquilino);
   };
 
-  const handleSubmit = async (data: InquilinoInput) => {
+  /**
+   * Sube las fotos del DNI despues de guardar al inquilino.
+   * Es un paso aparte a proposito: si Drive falla, el alta no se pierde.
+   * Se suben en serie porque Apps Script serializa la escritura en la hoja igual.
+   */
+  const subirFotosDni = async (inquilinoId: string, fotos: CapturaDniValue) => {
+    const tareas: Array<{ tipo: TipoDocumentoDrive; archivoBase64: string }> = [];
+    if (fotos.frente) tareas.push({ tipo: 'dni-frente', archivoBase64: fotos.frente });
+    if (fotos.reverso) tareas.push({ tipo: 'dni-reverso', archivoBase64: fotos.reverso });
+    if (!tareas.length) return;
+
+    setSubiendoDni(true);
+    try {
+      for (const tarea of tareas) {
+        await driveApi.subir({ ...tarea, inquilinoId });
+      }
+      queryClient.invalidateQueries({ queryKey: INQUILINOS_KEY });
+      notify.success(
+        tareas.length === 2 ? 'Fotos del DNI guardadas en Drive' : 'Foto del DNI guardada en Drive'
+      );
+    } catch (error) {
+      notify.error(
+        'El inquilino se guardó, pero no se pudieron subir las fotos. Cargalas editándolo.'
+      );
+    } finally {
+      setSubiendoDni(false);
+    }
+  };
+
+  const handleSubmit = async (data: InquilinoInput, fotosDni: CapturaDniValue) => {
     try {
       if (selectedInquilino) {
         await updateMutation.mutateAsync({ id: selectedInquilino.id, data });
         notify.success('Inquilino actualizado');
         setIsModalOpen(false);
+        await subirFotosDni(selectedInquilino.id, fotosDni);
       } else {
         const result = await createMutation.mutateAsync(data);
         notify.success('Inquilino registrado');
         setIsModalOpen(false);
+
+        if (result?.id) {
+          await subirFotosDni(result.id, fotosDni);
+        }
 
         // Mostrar dialogo para descargar contrato
         const habitacion = habitaciones?.find(h => h.id === data.habitacionId);
@@ -120,6 +181,31 @@ export function Inquilinos() {
   const handleSkipContract = () => {
     setShowContractDialog(false);
     setNewInquilinoData(null);
+  };
+
+  /**
+   * Genera el Reglamento y lo archiva en Drive, en la carpeta del inquilino.
+   * Manual a proposito: solo sube cuando se pide.
+   */
+  const handleArchivarContrato = async (inq: Inquilino) => {
+    const hab = habitaciones?.find((h) => h.id === inq.habitacionId);
+    if (!hab) {
+      notify.error('No se encontró la habitación del inquilino');
+      return;
+    }
+
+    setArchivandoId(inq.id);
+    try {
+      const blob = await getContratoBlob({ inquilino: inq, habitacion: hab });
+      const archivoBase64 = await archivoADataUrl(blob);
+      await driveApi.subir({ tipo: 'contrato', inquilinoId: inq.id, archivoBase64 });
+      queryClient.invalidateQueries({ queryKey: INQUILINOS_KEY });
+      notify.success('Reglamento archivado en Drive');
+    } catch (error) {
+      notify.error('No se pudo archivar el Reglamento en Drive');
+    } finally {
+      setArchivandoId(null);
+    }
   };
 
   const confirmDelete = async () => {
@@ -244,9 +330,25 @@ export function Inquilinos() {
                     </div>
                   </td>
                   <td>
-                    <div className="flex items-center gap-1">
-                      <Home className="w-4 h-4 text-slate-400" />
-                      <span>{inq.habitacion?.codigo || inq.habitacionId}</span>
+                    <div className="flex items-start gap-1.5">
+                      <Home className="w-4 h-4 text-slate-400 mt-0.5 shrink-0" />
+                      <div className="min-w-0">
+                        <p className="font-medium text-slate-800">
+                          {inq.habitacion?.codigo || inq.habitacionId}
+                          {inq.habitacion?.pisoNumero != null && (
+                            <span className="font-normal text-slate-400">
+                              {' '}
+                              · Piso {inq.habitacion.pisoNumero}
+                            </span>
+                          )}
+                        </p>
+                        {inq.habitacion?.edificioNombre && (
+                          <p className="text-xs text-slate-500 truncate">
+                            {inq.habitacion.edificioNombre}
+                            {inq.habitacion.ciudadNombre ? ` · ${inq.habitacion.ciudadNombre}` : ''}
+                          </p>
+                        )}
+                      </div>
                     </div>
                   </td>
                   <td className="hidden sm:table-cell tabular-nums">{formatDate(inq.fechaIngreso)}</td>
@@ -274,6 +376,31 @@ export function Inquilinos() {
                       >
                         <FileText className="w-4 h-4 text-primary-500" />
                       </button>
+                      {inq.contratoPdfUrl ? (
+                        <a
+                          href={inq.contratoPdfUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="p-2 hover:bg-emerald-50 rounded-lg transition-colors inline-flex"
+                          title="Reglamento archivado en Drive — abrir"
+                        >
+                          <ExternalLink className="w-4 h-4 text-emerald-600" />
+                        </a>
+                      ) : (
+                        <button
+                          onClick={() => handleArchivarContrato(inq)}
+                          disabled={archivandoId === inq.id}
+                          className="p-2 hover:bg-slate-100 rounded-lg transition-colors disabled:opacity-50"
+                          title="Guardar Reglamento en Drive"
+                        >
+                          <UploadCloud
+                            className={cn(
+                              'w-4 h-4 text-slate-500',
+                              archivandoId === inq.id && 'animate-pulse'
+                            )}
+                          />
+                        </button>
+                      )}
                       <button
                         onClick={() => handleEdit(inq)}
                         className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
@@ -308,11 +435,16 @@ export function Inquilinos() {
         size="lg"
       >
         <InquilinoForm
-          habitaciones={habitaciones || []}
+          habitaciones={selectedInquilino ? habitaciones || [] : habitacionesForm}
           initialData={selectedInquilino || undefined}
+          dniUrls={{
+            frente: selectedInquilino?.dniFotoFrenteUrl,
+            reverso: selectedInquilino?.dniFotoReversoUrl,
+          }}
+          contexto={contexto}
           onSubmit={handleSubmit}
           onCancel={() => setIsModalOpen(false)}
-          isLoading={createMutation.isPending || updateMutation.isPending}
+          isLoading={createMutation.isPending || updateMutation.isPending || subiendoDni}
         />
       </Modal>
 

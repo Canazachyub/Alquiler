@@ -7,3 +7,4 @@ export { pagosApi } from './pagos.api';
 export { gastosApi } from './gastos.api';
 export { gastosFijosApi } from './gastosFijos.api';
 export { reportesApi } from './reportes.api';
+export { driveApi } from './drive.api';

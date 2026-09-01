@@ -1,12 +1,11 @@
 {
   "name": "backend",
   "version": "1.0.0",
-  "description": "Backend API REST con Google Apps Script",
+  "description": "Backend API REST con Google Apps Script. La unica fuente es Code.gs, no hay compilacion.",
   "scripts": {
-    "build": "tsc",
     "push": "clasp push",
     "pull": "clasp pull",
-    "deploy": "npm run build && clasp push && clasp deploy",
+    "deploy": "clasp push && clasp deploy",
     "open": "clasp open",
     "logs": "clasp logs",
     "login": "clasp login"

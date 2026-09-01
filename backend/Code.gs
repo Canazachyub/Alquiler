@@ -8,10 +8,18 @@
 // =====================================================
 const CONFIG = {
   // Version del backend, usar en /ping para verificar que el deploy es el actual
-  VERSION: '2026.04.19',
+  VERSION: '2026.08.31',
 
   // IMPORTANTE: Cambia este ID por el de tu Google Spreadsheet
   SPREADSHEET_ID: '1ugfqN_1yjbIjR_IB-oUR66gX0lbQemGpu0-cF39-m6E',
+
+  // Carpeta raiz de Drive donde se archivan DNI, contratos y vouchers.
+  // Todo cuelga de una subcarpeta 'Inquilinos' para no mezclarse con lo que ya haya ahi.
+  DRIVE_ROOT_FOLDER_ID: '1pMamGQnr-cKbovWE8H0ZeVEJa0moN3HH',
+  DRIVE_BASE_FOLDER_NAME: 'Inquilinos',
+
+  // Destinatarios del resumen semanal de cobranza
+  ADMIN_EMAILS: ['canazach12@gmail.com', 'canazaarturo@gmail.com'],
 
   SHEETS: {
     CIUDADES: 'Ciudades',
@@ -30,8 +38,10 @@ const CONFIG = {
     EDIFICIOS: ['ID', 'CiudadId', 'Nombre', 'Descripcion', 'Direccion', 'TotalPisos', 'Activo'],
     PISOS: ['ID', 'EdificioId', 'Numero', 'Descripcion'],
     HABITACIONES: ['ID', 'PisoId', 'Codigo', 'Ubicacion', 'MontoAlquiler', 'MontoInternet', 'MontoServicios', 'Estado', 'Activo', 'Observaciones'],
-    INQUILINOS: ['ID', 'HabitacionId', 'Nombre', 'Apellido', 'DNI', 'Telefono', 'Email', 'FechaIngreso', 'FechaSalida', 'Estado', 'ContactoEmergencia', 'TelefonoEmergencia', 'Observaciones', 'Garantia', 'LlaveHabitacion', 'LlavePuertaCalle'],
-    PAGOS: ['ID', 'InquilinoId', 'HabitacionId', 'Fecha', 'Mes', 'Anio', 'Concepto', 'Monto', 'MetodoPago', 'Referencia', 'Estado', 'Observaciones'],
+    // Las columnas nuevas van SIEMPRE al final: la auto-migracion sobreescribe la fila 1
+    // y correr una columna existente desalinearia todos los datos.
+    INQUILINOS: ['ID', 'HabitacionId', 'Nombre', 'Apellido', 'DNI', 'Telefono', 'Email', 'FechaIngreso', 'FechaSalida', 'Estado', 'ContactoEmergencia', 'TelefonoEmergencia', 'Observaciones', 'Garantia', 'LlaveHabitacion', 'LlavePuertaCalle', 'DniFotoFrenteUrl', 'DniFotoReversoUrl', 'ContratoPdfUrl'],
+    PAGOS: ['ID', 'InquilinoId', 'HabitacionId', 'Fecha', 'Mes', 'Anio', 'Concepto', 'Monto', 'MetodoPago', 'Referencia', 'Estado', 'Observaciones', 'VoucherPdfUrl'],
     GASTOS: ['ID', 'EdificioId', 'HabitacionId', 'Fecha', 'Concepto', 'Categoria', 'Monto', 'ComprobanteUrl', 'Observaciones'],
     GASTOS_FIJOS: ['ID', 'EdificioId', 'Tipo', 'Descripcion', 'Monto', 'DiaVencimiento', 'Activo']
   }
@@ -85,6 +95,39 @@ function generateId(sheetName) {
   const nextNum = maxNum + 1;
   const padding = nextNum < 1000 ? 3 : (nextNum < 10000 ? 4 : 5);
   return prefix + nextNum.toString().padStart(padding, '0');
+}
+
+/**
+ * Extrae anio/mes/dia de una fecha guardada, SIN pasar por la zona horaria local.
+ *
+ * Las fechas se escriben como medianoche UTC: el frontend manda 'YYYY-MM-DD' y
+ * new Date('2026-06-01') lo interpreta como 2026-06-01T00:00:00Z. Como el script
+ * corre en UTC-5, leer eso con getDate() devuelve 31 de mayo: un dia menos.
+ * Por eso el dia se lee del propio string ISO, que es la fuente sin ambiguedad.
+ */
+function partesDeFecha(valor) {
+  if (valor === null || valor === undefined || valor === '') return null;
+
+  const m = String(valor).match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (m) {
+    return { anio: Number(m[1]), mes: Number(m[2]), dia: Number(m[3]) };
+  }
+
+  const d = new Date(valor);
+  if (isNaN(d.getTime())) return null;
+  return { anio: d.getUTCFullYear(), mes: d.getUTCMonth() + 1, dia: d.getUTCDate() };
+}
+
+/** Dia del mes de una fecha guardada, o null si no se puede determinar. */
+function diaDeFecha(valor) {
+  const p = partesDeFecha(valor);
+  return p ? p.dia : null;
+}
+
+/** true si la fecha guardada cae en el mes/anio indicados. */
+function fechaEnPeriodo(valor, mes, anio) {
+  const p = partesDeFecha(valor);
+  return !!p && p.mes == mes && p.anio == anio;
 }
 
 function jsonResponse(data) {
@@ -478,13 +521,13 @@ function getHabitacionesConEstadoPago(mes, anio, edificioId, ciudadId) {
     const piso = pisos.find(p => p.id === hab.pisoId);
     const edificio = piso ? edificios.find(e => e.id === piso.edificioId) : null;
 
-    // Calcular el dia de pago basado en la fecha de ingreso del inquilino
+    // Calcular el dia de pago basado en la fecha de ingreso del inquilino.
+    // Se lee del string ISO, no con getDate(): ver partesDeFecha().
     let diaPago = null;
     let fechaIngreso = null;
     if (inquilino && inquilino.fechaIngreso) {
       fechaIngreso = inquilino.fechaIngreso;
-      const fechaIngresoDate = new Date(inquilino.fechaIngreso);
-      diaPago = fechaIngresoDate.getDate(); // Dia del mes (1-31)
+      diaPago = diaDeFecha(inquilino.fechaIngreso); // Dia del mes (1-31)
     }
 
     return {
@@ -536,10 +579,8 @@ function getResumenPagosMes(mes, anio, edificioId, ciudadId) {
 
 function getResumenGastosPorCategoria(mes, anio, edificioId) {
   const gastos = gastoRepo.get().getAll().filter(g => {
-    const fecha = new Date(g.fecha);
-    const matchesMes = (fecha.getMonth() + 1) == mes && fecha.getFullYear() == anio;
     const matchesEdificio = !edificioId || g.edificioId === edificioId;
-    return matchesMes && matchesEdificio;
+    return fechaEnPeriodo(g.fecha, mes, anio) && matchesEdificio;
   });
 
   const resumen = {
@@ -582,10 +623,8 @@ function getDashboardStats(mes, anio, edificioId, ciudadId) {
 
   // Filtrar gastos
   gastos = gastos.filter(g => {
-    const fecha = new Date(g.fecha);
-    const matchesMes = (fecha.getMonth() + 1) == mes && fecha.getFullYear() == anio;
     const matchesEdificio = !edificioIds || edificioIds.includes(g.edificioId);
-    return matchesMes && matchesEdificio;
+    return fechaEnPeriodo(g.fecha, mes, anio) && matchesEdificio;
   });
 
   const ocupadas = habitaciones.filter(h => h.estado === 'occupied');
@@ -605,6 +644,239 @@ function getDashboardStats(mes, anio, edificioId, ciudadId) {
     habitacionesPagadas: pagosResumen.habitacionesPagadas,
     habitacionesPendientes: pagosResumen.habitacionesPendientes
   };
+}
+
+// =====================================================
+// UBICACION DE UNA HABITACION (piso -> edificio -> ciudad)
+// =====================================================
+
+/**
+ * Indice habitacionId -> ubicacion completa.
+ * Se arma una sola vez por request: releer las hojas por cada inquilino
+ * multiplicaria las llamadas a SpreadsheetApp y reventaria el tiempo de ejecucion.
+ */
+function construirIndiceUbicaciones() {
+  const habitaciones = habitacionRepo.get().getAll();
+  const pisos = pisoRepo.get().getAll();
+  const edificios = edificioRepo.get().getAll();
+  const ciudades = ciudadRepo.get().getAll();
+
+  const pisoPorId = {};
+  pisos.forEach(p => { pisoPorId[p.id] = p; });
+  const edificioPorId = {};
+  edificios.forEach(e => { edificioPorId[e.id] = e; });
+  const ciudadPorId = {};
+  ciudades.forEach(c => { ciudadPorId[c.id] = c; });
+
+  const indice = {};
+  habitaciones.forEach(hab => {
+    const piso = pisoPorId[hab.pisoId] || null;
+    const edificio = piso ? (edificioPorId[piso.edificioId] || null) : null;
+    const ciudad = edificio ? (ciudadPorId[edificio.ciudadId] || null) : null;
+
+    indice[hab.id] = {
+      id: hab.id,
+      codigo: hab.codigo,
+      estado: hab.estado,
+      montoAlquiler: hab.montoAlquiler,
+      montoInternet: hab.montoInternet,
+      pisoId: hab.pisoId,
+      pisoNumero: piso ? piso.numero : null,
+      edificioId: edificio ? edificio.id : null,
+      edificioNombre: edificio ? edificio.nombre : null,
+      ciudadId: ciudad ? ciudad.id : null,
+      ciudadNombre: ciudad ? ciudad.nombre : null
+    };
+  });
+  return indice;
+}
+
+/** Adjunta la ubicacion a un inquilino. Mismo patron que ya usa GET /pagos. */
+function conUbicacion(inquilino, indice) {
+  if (!inquilino) return inquilino;
+  const copia = {};
+  Object.keys(inquilino).forEach(k => { copia[k] = inquilino[k]; });
+  copia.habitacion = indice[inquilino.habitacionId] || null;
+  return copia;
+}
+
+// =====================================================
+// ARCHIVO DOCUMENTAL EN DRIVE
+// =====================================================
+
+const DRIVE_TIPOS = {
+  'dni-frente':  { hoja: 'INQUILINOS', campo: 'dniFotoFrenteUrl',  mime: 'image/jpeg',      nombre: 'DNI_frente.jpg' },
+  'dni-reverso': { hoja: 'INQUILINOS', campo: 'dniFotoReversoUrl', mime: 'image/jpeg',      nombre: 'DNI_reverso.jpg' },
+  'contrato':    { hoja: 'INQUILINOS', campo: 'contratoPdfUrl',    mime: 'application/pdf', nombre: null },
+  'voucher':     { hoja: 'PAGOS',      campo: 'voucherPdfUrl',     mime: 'application/pdf', nombre: null }
+};
+
+const DRIVE_MAX_BYTES = 6 * 1024 * 1024;
+const DRIVE_CACHE_SEGUNDOS = 21600; // 6 h
+
+/** Quita tildes y caracteres que Drive rechaza en nombres. */
+function normalizarNombreDrive(texto) {
+  // ̀-ͯ es el bloque de diacriticos combinantes que deja NFD
+  return String(texto == null ? '' : texto)
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/[\\/:*?"<>|]/g, '-')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function getOrCreateFolder(padre, nombre) {
+  const limpio = normalizarNombreDrive(nombre) || 'Sin nombre';
+  const existentes = padre.getFoldersByName(limpio);
+  if (existentes.hasNext()) return existentes.next();
+  return padre.createFolder(limpio);
+}
+
+/**
+ * Resuelve (creando lo que falte) la ruta CONFIG.DRIVE_BASE_FOLDER_NAME/<segmentos>.
+ * Cachea el id resultante para no repetir la cadena de busquedas en cada subida.
+ */
+function resolverRutaDrive(segmentos) {
+  const clave = 'drive:' + CONFIG.DRIVE_BASE_FOLDER_NAME + '/' + segmentos.join('/');
+  const cache = CacheService.getScriptCache();
+  const cacheado = cache.get(clave);
+  if (cacheado) {
+    try {
+      return DriveApp.getFolderById(cacheado);
+    } catch (e) {
+      // La carpeta fue borrada o movida: se recrea abajo
+    }
+  }
+
+  let carpeta = DriveApp.getFolderById(CONFIG.DRIVE_ROOT_FOLDER_ID);
+  carpeta = getOrCreateFolder(carpeta, CONFIG.DRIVE_BASE_FOLDER_NAME);
+  segmentos.forEach(seg => { carpeta = getOrCreateFolder(carpeta, seg); });
+
+  cache.put(clave, carpeta.getId(), DRIVE_CACHE_SEGUNDOS);
+  return carpeta;
+}
+
+/** Inquilinos/<Ciudad>/<Edificio>/<Codigo> - <Nombre Apellido> */
+function resolverCarpetaInquilino(inquilino, ubicacion) {
+  const ciudad = (ubicacion && ubicacion.ciudadNombre) || 'Sin ciudad';
+  const edificio = (ubicacion && ubicacion.edificioNombre) || 'Sin edificio';
+  const codigo = (ubicacion && ubicacion.codigo) || inquilino.habitacionId || 'SIN-HAB';
+  return resolverRutaDrive([ciudad, edificio, codigo + ' - ' + inquilino.nombre + ' ' + inquilino.apellido]);
+}
+
+/** Inquilinos/<Ciudad>/<Edificio>/Vouchers/<AAAA-MM> */
+function resolverCarpetaVouchers(ubicacion, anio, mes) {
+  const ciudad = (ubicacion && ubicacion.ciudadNombre) || 'Sin ciudad';
+  const edificio = (ubicacion && ubicacion.edificioNombre) || 'Sin edificio';
+  const mm = ('0' + String(mes)).slice(-2);
+  return resolverRutaDrive([ciudad, edificio, 'Vouchers', String(anio) + '-' + mm]);
+}
+
+function extraerIdDriveDesdeUrl(url) {
+  const m = String(url == null ? '' : url).match(/[-\w]{25,}/);
+  return m ? m[0] : null;
+}
+
+/**
+ * Sube un documento a Drive y guarda el enlace en la hoja correspondiente.
+ * Los archivos NO se comparten: heredan los permisos de la carpeta raiz y quedan privados.
+ */
+function subirDocumentoDrive(params) {
+  const spec = DRIVE_TIPOS[params.tipo];
+  if (!spec) return errorResponse('Tipo de documento no reconocido: ' + params.tipo);
+  if (!params.archivoBase64) return errorResponse('El archivo llego vacio');
+
+  // El frontend puede mandar un data URL completo
+  const base64 = String(params.archivoBase64).replace(/^data:[^;]+;base64,/, '');
+  let bytes;
+  try {
+    bytes = Utilities.base64Decode(base64);
+  } catch (e) {
+    return errorResponse('El archivo no es base64 valido');
+  }
+  if (bytes.length > DRIVE_MAX_BYTES) {
+    return errorResponse('El archivo supera el limite de 6 MB');
+  }
+
+  const indice = construirIndiceUbicaciones();
+  let carpeta, nombreArchivo, repo, entidadId;
+
+  if (spec.hoja === 'PAGOS') {
+    const pago = pagoRepo.get().getById(params.pagoId);
+    if (!pago) return errorResponse('Pago no encontrado');
+
+    const ubicacion = indice[pago.habitacionId] || null;
+    const inquilino = params.inquilinoId ? inquilinoRepo.get().getById(params.inquilinoId) : null;
+    const quien = inquilino ? '_' + inquilino.nombre + '_' + inquilino.apellido : '';
+    const codigoHab = ubicacion ? ubicacion.codigo : pago.habitacionId;
+
+    carpeta = resolverCarpetaVouchers(ubicacion, pago.anio, pago.mes);
+    nombreArchivo = normalizarNombreDrive('Voucher_' + pago.id + '_' + codigoHab + quien).replace(/\s+/g, '_') + '.pdf';
+    repo = pagoRepo.get();
+    entidadId = pago.id;
+  } else {
+    const inquilino = inquilinoRepo.get().getById(params.inquilinoId);
+    if (!inquilino) return errorResponse('Inquilino no encontrado');
+
+    const ubicacion = indice[inquilino.habitacionId] || null;
+    carpeta = resolverCarpetaInquilino(inquilino, ubicacion);
+
+    if (params.tipo === 'contrato') {
+      const hoy = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd');
+      nombreArchivo = 'Reglamento_' + hoy + '.pdf';
+    } else {
+      nombreArchivo = spec.nombre;
+    }
+    repo = inquilinoRepo.get();
+    entidadId = inquilino.id;
+  }
+
+  const actual = repo.getById(entidadId);
+  const urlAnterior = actual ? actual[spec.campo] : null;
+
+  const blob = Utilities.newBlob(bytes, params.mime || spec.mime, nombreArchivo);
+  const archivo = carpeta.createFile(blob);
+
+  // Reemplazo: el archivo viejo de este mismo slot va a la papelera
+  if (urlAnterior) {
+    const idAnterior = extraerIdDriveDesdeUrl(urlAnterior);
+    if (idAnterior && idAnterior !== archivo.getId()) {
+      try {
+        DriveApp.getFileById(idAnterior).setTrashed(true);
+      } catch (e) {
+        console.log('No se pudo enviar a papelera el archivo anterior: ' + idAnterior);
+      }
+    }
+  }
+
+  const patch = {};
+  patch[spec.campo] = archivo.getUrl();
+  const actualizado = repo.update(entidadId, patch);
+
+  return successResponse({
+    tipo: params.tipo,
+    url: archivo.getUrl(),
+    fileId: archivo.getId(),
+    nombre: nombreArchivo,
+    carpeta: carpeta.getName(),
+    entidad: actualizado
+  }, 'Documento guardado en Drive');
+}
+
+/**
+ * Devuelve el enlace ya guardado de un documento.
+ * Sirve para confirmar una subida cuando la respuesta del POST no se pudo leer.
+ */
+function consultarDocumentoDrive(params) {
+  const spec = DRIVE_TIPOS[params.tipo];
+  if (!spec) return errorResponse('Tipo de documento no reconocido: ' + params.tipo);
+
+  const entidad = spec.hoja === 'PAGOS'
+    ? pagoRepo.get().getById(params.pagoId)
+    : inquilinoRepo.get().getById(params.inquilinoId);
+
+  if (!entidad) return errorResponse('Registro no encontrado');
+  return successResponse({ tipo: params.tipo, url: entidad[spec.campo] || null });
 }
 
 // =====================================================
@@ -831,18 +1103,25 @@ function handleRequest(request) {
       // ------------------- INQUILINOS -------------------
       case 'inquilinos':
         if (action === 'GET') {
+          // Cada inquilino sale con su ubicacion resuelta (habitacion, piso, edificio, ciudad).
+          // Sin esto el frontend solo tiene habitacionId y termina mostrando "H006".
+          const indiceUbic = construirIndiceUbicaciones();
+
           if (id === 'habitacion' && subResource) {
             const inquilinos = inquilinoRepo.get().getByField('habitacionId', subResource);
             const activo = inquilinos.find(i => i.estado === 'activo');
-            return successResponse(activo || null);
+            return successResponse(activo ? conUbicacion(activo, indiceUbic) : null);
           }
           if (id) {
-            return successResponse(inquilinoRepo.get().getById(id));
+            const inq = inquilinoRepo.get().getById(id);
+            return successResponse(inq ? conUbicacion(inq, indiceUbic) : null);
           }
           if (params.activos === true || params.activos === 'true') {
-            return successResponse(inquilinoRepo.get().getByField('estado', 'activo'));
+            return successResponse(
+              inquilinoRepo.get().getByField('estado', 'activo').map(i => conUbicacion(i, indiceUbic))
+            );
           }
-          return successResponse(inquilinoRepo.get().getAll());
+          return successResponse(inquilinoRepo.get().getAll().map(i => conUbicacion(i, indiceUbic)));
         }
         if (action === 'POST') {
           // Validacion minima
@@ -894,6 +1173,13 @@ function handleRequest(request) {
             ? successResponse({ pagosEliminados }, `Inquilino eliminado (${pagosEliminados} pagos)`)
             : errorResponse('No se pudo eliminar');
         }
+        break;
+
+      // ------------------- ARCHIVO EN DRIVE -------------------
+      case 'drive':
+        if (id !== 'documento') return errorResponse('Recurso de Drive no encontrado: ' + id);
+        if (action === 'POST') return subirDocumentoDrive(params);
+        if (action === 'GET') return consultarDocumentoDrive(params);
         break;
 
       // ------------------- PAGOS -------------------
@@ -989,10 +1275,8 @@ function handleRequest(request) {
             return successResponse(gastoRepo.get().getById(id));
           }
           if (params.mes && params.anio) {
-            const gastos = gastoRepo.get().getAll().filter(g => {
-              const fecha = new Date(g.fecha);
-              return (fecha.getMonth() + 1) == params.mes && fecha.getFullYear() == params.anio;
-            });
+            const gastos = gastoRepo.get().getAll()
+              .filter(g => fechaEnPeriodo(g.fecha, params.mes, params.anio));
             return successResponse(gastos);
           }
           return successResponse(gastoRepo.get().getAll());
@@ -1072,10 +1356,7 @@ function handleRequest(request) {
           const habitacionIds = habitaciones.map(h => h.id);
 
           let pagos = pagoRepo.get().getAll().filter(p => p.mes == mes && p.anio == anio);
-          let gastos = gastoRepo.get().getAll().filter(g => {
-            const fecha = new Date(g.fecha);
-            return (fecha.getMonth() + 1) == mes && fecha.getFullYear() == anio;
-          });
+          let gastos = gastoRepo.get().getAll().filter(g => fechaEnPeriodo(g.fecha, mes, anio));
 
           if (pisosIds) {
             pagos = pagos.filter(p => habitacionIds.includes(p.habitacionId));
@@ -1124,10 +1405,7 @@ function handleRequest(request) {
             if (m <= 0) { m += 12; a -= 1; }
 
             let pagosH = pagoRepo.get().getAll().filter(p => p.mes == m && p.anio == a);
-            let gastosH = gastoRepo.get().getAll().filter(g => {
-              const fecha = new Date(g.fecha);
-              return (fecha.getMonth() + 1) == m && fecha.getFullYear() == a;
-            });
+            let gastosH = gastoRepo.get().getAll().filter(g => fechaEnPeriodo(g.fecha, m, a));
 
             if (pisosIds) {
               pagosH = pagosH.filter(p => habitacionIds.includes(p.habitacionId));
@@ -1475,6 +1753,283 @@ INQUILINOS PENDIENTES DE PAGO (mes actual):
 }
 
 // =====================================================
+// RESUMEN SEMANAL DE COBRANZA (correo del domingo)
+// =====================================================
+
+const MESES_ES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+                  'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+
+/**
+ * Arma el detalle de cobranza de la semana que contiene fechaBase.
+ * Ventana: domingo a sabado. Devuelve dos listas excluyentes:
+ *  - venceSemana: el dia de pago cae dentro de la ventana y el alquiler no esta pagado
+ *  - vencidos: el dia de pago del mes en curso ya paso y sigue impago
+ *
+ * El dia de pago se deriva de fechaIngreso, igual que en getHabitacionesConEstadoPago.
+ */
+function getResumenSemanal(fechaBase) {
+  const base = fechaBase ? new Date(fechaBase) : new Date();
+  const hoy = new Date(base.getFullYear(), base.getMonth(), base.getDate());
+
+  // Domingo de la semana en curso
+  const inicio = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate() - hoy.getDay());
+  const dias = [];
+  for (let i = 0; i < 7; i++) {
+    dias.push(new Date(inicio.getFullYear(), inicio.getMonth(), inicio.getDate() + i));
+  }
+  const fin = dias[6];
+
+  const indice = construirIndiceUbicaciones();
+  const inquilinos = inquilinoRepo.get().getAll().filter(i => i.estado === 'activo');
+  const pagos = pagoRepo.get().getAll();
+
+  const alquilerPagado = function (habitacionId, mes, anio) {
+    return pagos.some(p =>
+      p.habitacionId === habitacionId &&
+      Number(p.mes) === mes &&
+      Number(p.anio) === anio &&
+      p.concepto === 'alquiler' &&
+      p.estado === 'pagado'
+    );
+  };
+
+  const venceSemana = [];
+  const vencidos = [];
+
+  inquilinos.forEach(inq => {
+    // El dia se lee del string ISO, no con getDate(): ver partesDeFecha()
+    const diaPago = diaDeFecha(inq.fechaIngreso);
+    if (!diaPago) return;
+
+    const ubic = indice[inq.habitacionId];
+    if (!ubic || ubic.estado !== 'occupied') return;
+
+    const fila = {
+      inquilinoId: inq.id,
+      nombre: (inq.nombre + ' ' + inq.apellido).trim(),
+      telefono: inq.telefono || '',
+      habitacionId: inq.habitacionId,
+      codigo: ubic.codigo,
+      pisoNumero: ubic.pisoNumero,
+      edificio: ubic.edificioNombre || 'Sin edificio',
+      ciudad: ubic.ciudadNombre || 'Sin ciudad',
+      diaPago: diaPago,
+      monto: Number(ubic.montoAlquiler || 0)
+    };
+
+    // 1. Vence dentro de la ventana de esta semana
+    let diaEnVentana = null;
+    for (let i = 0; i < dias.length; i++) {
+      if (dias[i].getDate() === diaPago) { diaEnVentana = dias[i]; break; }
+    }
+    if (diaEnVentana) {
+      const mes = diaEnVentana.getMonth() + 1;
+      const anio = diaEnVentana.getFullYear();
+      if (!alquilerPagado(inq.habitacionId, mes, anio)) {
+        fila.mes = mes;
+        fila.anio = anio;
+        fila.fechaVencimiento = diaEnVentana;
+        venceSemana.push(fila);
+      }
+      return; // ya clasificado, no puede estar tambien en vencidos
+    }
+
+    // 2. Vencido: el dia de pago del mes en curso ya paso y sigue impago.
+    // Se acota al ultimo dia del mes para los dias 29-31 en meses cortos.
+    const mesActual = hoy.getMonth() + 1;
+    const anioActual = hoy.getFullYear();
+    const ultimoDiaDelMes = new Date(anioActual, mesActual, 0).getDate();
+    const diaEfectivo = Math.min(diaPago, ultimoDiaDelMes);
+
+    if (diaEfectivo < hoy.getDate() && !alquilerPagado(inq.habitacionId, mesActual, anioActual)) {
+      fila.mes = mesActual;
+      fila.anio = anioActual;
+      fila.diasAtraso = hoy.getDate() - diaEfectivo;
+      vencidos.push(fila);
+    }
+  });
+
+  const porDia = (a, b) => a.diaPago - b.diaPago;
+  venceSemana.sort(porDia);
+  vencidos.sort((a, b) => b.diasAtraso - a.diasAtraso);
+
+  const sumar = lista => lista.reduce((s, f) => s + f.monto, 0);
+
+  return {
+    inicio: inicio,
+    fin: fin,
+    venceSemana: venceSemana,
+    vencidos: vencidos,
+    totalSemana: sumar(venceSemana),
+    totalVencido: sumar(vencidos),
+    totalGeneral: sumar(venceSemana) + sumar(vencidos)
+  };
+}
+
+/** Agrupa filas por ciudad y edificio, preservando el orden de llegada. */
+function agruparPorCiudadEdificio(filas) {
+  const grupos = [];
+  const indiceGrupo = {};
+  filas.forEach(f => {
+    const clave = f.ciudad + '||' + f.edificio;
+    if (indiceGrupo[clave] === undefined) {
+      indiceGrupo[clave] = grupos.length;
+      grupos.push({ ciudad: f.ciudad, edificio: f.edificio, filas: [], total: 0 });
+    }
+    const g = grupos[indiceGrupo[clave]];
+    g.filas.push(f);
+    g.total += f.monto;
+  });
+  return grupos;
+}
+
+function formatearSolesGs(monto) {
+  return 'S/ ' + Number(monto || 0).toFixed(2);
+}
+
+function escaparHtml(texto) {
+  return String(texto == null ? '' : texto)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function seccionHtmlResumen(titulo, color, filas, mostrarAtraso) {
+  if (!filas.length) {
+    return '<h2 style="font:600 15px system-ui,sans-serif;color:#334155;margin:24px 0 8px">' +
+      escaparHtml(titulo) + '</h2>' +
+      '<p style="font:14px system-ui,sans-serif;color:#64748b;margin:0">Sin casos.</p>';
+  }
+
+  let html = '<h2 style="font:600 15px system-ui,sans-serif;color:' + color + ';margin:24px 0 8px">' +
+    escaparHtml(titulo) + ' (' + filas.length + ')</h2>';
+
+  agruparPorCiudadEdificio(filas).forEach(g => {
+    html += '<p style="font:600 13px system-ui,sans-serif;color:#475569;margin:14px 0 6px">' +
+      escaparHtml(g.ciudad) + ' &middot; ' + escaparHtml(g.edificio) +
+      ' <span style="font-weight:400;color:#94a3b8">— ' + formatearSolesGs(g.total) + '</span></p>';
+
+    html += '<table cellpadding="6" cellspacing="0" style="border-collapse:collapse;width:100%;' +
+      'font:13px system-ui,sans-serif;color:#0f172a">';
+    html += '<tr style="background:#f1f5f9;color:#475569;text-align:left">' +
+      '<th>Hab.</th><th>Inquilino</th><th>Telefono</th><th>' +
+      (mostrarAtraso ? 'Atraso' : 'Dia') + '</th><th style="text-align:right">Monto</th></tr>';
+
+    g.filas.forEach(f => {
+      const piso = f.pisoNumero !== null && f.pisoNumero !== undefined ? ' <span style="color:#94a3b8">P' + f.pisoNumero + '</span>' : '';
+      const cuarta = mostrarAtraso
+        ? f.diasAtraso + (f.diasAtraso === 1 ? ' dia' : ' dias')
+        : 'dia ' + f.diaPago;
+      html += '<tr style="border-top:1px solid #e2e8f0">' +
+        '<td><strong>' + escaparHtml(f.codigo) + '</strong>' + piso + '</td>' +
+        '<td>' + escaparHtml(f.nombre) + '</td>' +
+        '<td>' + escaparHtml(f.telefono) + '</td>' +
+        '<td>' + escaparHtml(cuarta) + '</td>' +
+        '<td style="text-align:right">' + formatearSolesGs(f.monto) + '</td>' +
+        '</tr>';
+    });
+    html += '</table>';
+  });
+
+  return html;
+}
+
+function construirHtmlResumenSemanal(r) {
+  const rango = r.inicio.getDate() + ' al ' + r.fin.getDate() + ' de ' + MESES_ES[r.fin.getMonth()];
+
+  let html = '<div style="max-width:640px;margin:0 auto;padding:16px">';
+  html += '<h1 style="font:700 19px system-ui,sans-serif;color:#4f46e5;margin:0 0 4px">Cobranza de la semana</h1>';
+  html += '<p style="font:14px system-ui,sans-serif;color:#64748b;margin:0 0 4px">' + escaparHtml(rango) + '</p>';
+
+  if (!r.venceSemana.length && !r.vencidos.length) {
+    html += '<p style="font:15px system-ui,sans-serif;color:#059669;margin:20px 0">' +
+      'No hay cobros pendientes esta semana ni atrasos arrastrados. Semana limpia.</p>';
+  } else {
+    html += '<p style="font:600 16px system-ui,sans-serif;color:#0f172a;margin:8px 0 0">Total a cobrar: ' +
+      formatearSolesGs(r.totalGeneral) + '</p>';
+    html += seccionHtmlResumen('Vencen esta semana', '#b45309', r.venceSemana, false);
+    html += seccionHtmlResumen('Vencidos sin pagar', '#b91c1c', r.vencidos, true);
+  }
+
+  html += '<p style="font:12px system-ui,sans-serif;color:#94a3b8;margin:28px 0 0;' +
+    'border-top:1px solid #e2e8f0;padding-top:12px">Sistema de Alquileres Puno / Juli &middot; ' +
+    'enviado automaticamente los domingos</p>';
+  html += '</div>';
+  return html;
+}
+
+/**
+ * Envia el resumen semanal a los correos de CONFIG.ADMIN_EMAILS.
+ * Se dispara solo los domingos, y tambien puede correrse a mano desde el menu.
+ * Si no hay nada pendiente manda igual un correo corto: el silencio no debe
+ * confundirse con un disparador caido.
+ */
+function enviarResumenSemanal() {
+  try {
+    const r = getResumenSemanal(new Date());
+    const rango = r.inicio.getDate() + ' al ' + r.fin.getDate() + ' de ' + MESES_ES[r.fin.getMonth()];
+    const pendientes = r.venceSemana.length + r.vencidos.length;
+
+    const asunto = pendientes > 0
+      ? 'Alquileres · Cobros semana del ' + rango + ' — ' + formatearSolesGs(r.totalGeneral)
+      : 'Alquileres · Semana del ' + rango + ' sin cobros pendientes';
+
+    MailApp.sendEmail({
+      to: CONFIG.ADMIN_EMAILS.join(','),
+      subject: asunto,
+      htmlBody: construirHtmlResumenSemanal(r)
+    });
+
+    const msg = 'Resumen enviado a ' + CONFIG.ADMIN_EMAILS.join(', ') +
+      ' (' + r.venceSemana.length + ' vencen, ' + r.vencidos.length + ' vencidos)';
+    console.log(msg);
+    return msg;
+  } catch (error) {
+    console.error('Error enviando resumen semanal:', error);
+    return 'Error: ' + error;
+  }
+}
+
+const TRIGGER_RESUMEN = 'enviarResumenSemanal';
+
+/**
+ * Crea el disparador de los domingos entre 7 y 8 AM (hora del script, America/Lima).
+ * Borra primero los existentes del mismo handler para no acumular duplicados
+ * si se ejecuta mas de una vez.
+ */
+function instalarTriggerSemanal() {
+  desactivarTriggerSemanal();
+  ScriptApp.newTrigger(TRIGGER_RESUMEN)
+    .timeBased()
+    .onWeekDay(ScriptApp.WeekDay.SUNDAY)
+    .atHour(7)
+    .create();
+
+  const msg = 'Aviso semanal activado: domingos entre 7 y 8 AM, a ' + CONFIG.ADMIN_EMAILS.join(' y ');
+  try {
+    SpreadsheetApp.getUi().alert('Aviso semanal', msg, SpreadsheetApp.getUi().ButtonSet.OK);
+  } catch (e) { /* ejecutado desde el editor, sin UI */ }
+  return msg;
+}
+
+function desactivarTriggerSemanal() {
+  let borrados = 0;
+  ScriptApp.getProjectTriggers().forEach(t => {
+    if (t.getHandlerFunction() === TRIGGER_RESUMEN) {
+      ScriptApp.deleteTrigger(t);
+      borrados++;
+    }
+  });
+  return 'Disparadores eliminados: ' + borrados;
+}
+
+function enviarResumenSemanalPrueba() {
+  const msg = enviarResumenSemanal();
+  try {
+    SpreadsheetApp.getUi().alert('Resumen de prueba', msg, SpreadsheetApp.getUi().ButtonSet.OK);
+  } catch (e) { /* sin UI */ }
+  return msg;
+}
+
+// =====================================================
 // MENÚ EN GOOGLE SHEETS
 // =====================================================
 function onOpen() {
@@ -1483,6 +2038,10 @@ function onOpen() {
     .addItem('Inicializar Base de Datos', 'initializeDatabase')
     .addItem('Migrar Headers (agregar columnas nuevas)', 'migrateSheets')
     .addItem('Crear Datos de Prueba', 'createTestData')
+    .addSeparator()
+    .addItem('Activar aviso semanal (domingos 7 AM)', 'instalarTriggerSemanal')
+    .addItem('Enviar resumen ahora (prueba)', 'enviarResumenSemanalPrueba')
+    .addItem('Desactivar aviso semanal', 'desactivarTriggerSemanal')
     .addSeparator()
     .addItem('Ver URL del API', 'showApiUrl')
     .addToUi();

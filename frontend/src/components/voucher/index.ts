@@ -1,2 +1,13 @@
-export { VoucherPago, printVoucher, generateVoucherPDF } from './VoucherPago';
-export { ContratoAlquiler, generateContratoPDF } from './ContratoAlquiler';
+export {
+  VoucherPago,
+  printVoucher,
+  generateVoucherPDF,
+  buildVoucherDoc,
+  getVoucherFile,
+} from './VoucherPago';
+export {
+  ContratoAlquiler,
+  generateContratoPDF,
+  buildContratoDoc,
+  getContratoBlob,
+} from './ContratoAlquiler';

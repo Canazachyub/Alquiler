@@ -1,11 +1,18 @@
+import { useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
+import { MapPin, Camera } from 'lucide-react';
 import { cn } from '@/utils/cn';
+import { CapturaDni, type CapturaDniValue } from './CapturaDni';
 import type { InquilinoInput, Habitacion, HabitacionConDetalles } from '@/types';
 
 interface InquilinoFormProps {
   habitaciones: (Habitacion | HabitacionConDetalles)[];
   initialData?: Partial<InquilinoInput>;
-  onSubmit: (data: InquilinoInput) => void;
+  /** Enlaces de DNI ya archivados, cuando se edita un inquilino existente. */
+  dniUrls?: { frente?: string; reverso?: string };
+  /** Ciudad y edificio seleccionados en el header, para dar contexto al alta. */
+  contexto?: { ciudad?: string | null; edificio?: string | null };
+  onSubmit: (data: InquilinoInput, fotosDni: CapturaDniValue) => void;
   onCancel: () => void;
   isLoading?: boolean;
 }
@@ -13,10 +20,13 @@ interface InquilinoFormProps {
 export function InquilinoForm({
   habitaciones,
   initialData,
+  dniUrls,
+  contexto,
   onSubmit,
   onCancel,
   isLoading = false,
 }: InquilinoFormProps) {
+  const [fotosDni, setFotosDni] = useState<CapturaDniValue>({});
   // Coerciones defensivas: Google Sheets a veces devuelve numeros o strings para flags/documentos
   const toStr = (v: unknown): string => (v === null || v === undefined ? '' : String(v));
   const toBool = (v: unknown): boolean => {
@@ -56,8 +66,57 @@ export function InquilinoForm({
     (h) => h.estado === 'vacant' || h.id === initialData?.habitacionId
   );
 
+  // Agrupar por edificio: los codigos (B2, D1) se repiten entre edificios,
+  // asi que sin el agrupado no hay forma de saber a cual se esta asignando.
+  const gruposPorEdificio = useMemo(() => {
+    const grupos = new Map<string, (Habitacion | HabitacionConDetalles)[]>();
+    habitacionesDisponibles.forEach((hab) => {
+      const nombre = (hab as HabitacionConDetalles).edificioNombre || 'Sin edificio';
+      const actual = grupos.get(nombre);
+      if (actual) actual.push(hab);
+      else grupos.set(nombre, [hab]);
+    });
+    return Array.from(grupos.entries());
+  }, [habitacionesDisponibles]);
+
+  const etiquetaHabitacion = (hab: Habitacion | HabitacionConDetalles) => {
+    const pisoNum = hab.piso?.numero ?? (hab as HabitacionConDetalles).pisoNumero;
+    return pisoNum ? `${hab.codigo} — Piso ${pisoNum}` : hab.codigo;
+  };
+
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+    <form onSubmit={handleSubmit((data) => onSubmit(data, fotosDni))} className="space-y-5">
+      {/* Contexto: donde se esta registrando */}
+      <div
+        className={cn(
+          'flex items-start gap-2.5 rounded-xl border p-3',
+          contexto?.edificio
+            ? 'border-primary-200 bg-primary-50/50'
+            : 'border-amber-200 bg-amber-50/50'
+        )}
+      >
+        <MapPin
+          className={cn(
+            'w-4 h-4 mt-0.5 shrink-0',
+            contexto?.edificio ? 'text-primary-600' : 'text-amber-600'
+          )}
+        />
+        {contexto?.edificio ? (
+          <p className="text-sm text-slate-700">
+            Registrando en{' '}
+            <span className="font-semibold">
+              {contexto.ciudad ? `${contexto.ciudad} · ` : ''}
+              {contexto.edificio}
+            </span>
+          </p>
+        ) : (
+          <p className="text-sm text-slate-700">
+            <span className="font-semibold">Sin edificio seleccionado.</span> El selector lista
+            habitaciones de todos los edificios; elegí uno en el filtro superior para acotarlo.
+          </p>
+        )}
+      </div>
+
       {/* Datos Personales */}
       <div className="border-t border-slate-200 pt-5 first:border-t-0 first:pt-0">
         <p className="fieldset-title mb-3">Datos personales</p>
@@ -148,14 +207,21 @@ export function InquilinoForm({
               className={cn('select', errors.habitacionId && 'input-error')}
             >
               <option value="">Seleccionar habitación</option>
-              {habitacionesDisponibles.map((hab) => {
-                const pisoNum = hab.piso?.numero || (hab as HabitacionConDetalles).pisoNumero;
-                return (
-                  <option key={hab.id} value={hab.id}>
-                    {hab.codigo}{pisoNum ? ` - Piso ${pisoNum}` : ''}
-                  </option>
-                );
-              })}
+              {gruposPorEdificio.length > 1
+                ? gruposPorEdificio.map(([edificio, habs]) => (
+                    <optgroup key={edificio} label={edificio}>
+                      {habs.map((hab) => (
+                        <option key={hab.id} value={hab.id}>
+                          {etiquetaHabitacion(hab)}
+                        </option>
+                      ))}
+                    </optgroup>
+                  ))
+                : habitacionesDisponibles.map((hab) => (
+                    <option key={hab.id} value={hab.id}>
+                      {etiquetaHabitacion(hab)}
+                    </option>
+                  ))}
             </select>
             {errors.habitacionId && <p className="form-error">{errors.habitacionId.message}</p>}
           </div>
@@ -210,6 +276,24 @@ export function InquilinoForm({
             </div>
           </label>
         </div>
+      </div>
+
+      {/* Documento de identidad */}
+      <div className="border-t border-slate-200 pt-5">
+        <div className="flex items-center gap-2 mb-1">
+          <Camera className="w-4 h-4 text-slate-400" />
+          <p className="fieldset-title">Documento de identidad</p>
+        </div>
+        <p className="text-xs text-slate-500 mb-3">
+          Las fotos se archivan de forma privada en Drive, dentro de la carpeta del inquilino.
+        </p>
+        <CapturaDni
+          value={fotosDni}
+          onChange={setFotosDni}
+          urlFrenteGuardada={dniUrls?.frente}
+          urlReversoGuardada={dniUrls?.reverso}
+          disabled={isLoading}
+        />
       </div>
 
       {/* Contacto de Emergencia */}

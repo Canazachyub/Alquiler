@@ -137,8 +137,31 @@ export interface Inquilino extends BaseEntity {
   garantia?: boolean;
   llaveHabitacion?: boolean;
   llavePuertaCalle?: boolean;
-  // Relaciones
-  habitacion?: Habitacion;
+  // Documentos archivados en Drive (enlaces, no archivos)
+  dniFotoFrenteUrl?: string;
+  dniFotoReversoUrl?: string;
+  contratoPdfUrl?: string;
+  // Relaciones — el backend resuelve la ubicacion completa en GET /inquilinos
+  habitacion?: HabitacionUbicacion | null;
+}
+
+/**
+ * Ubicacion resuelta por el backend: habitacion + piso + edificio + ciudad.
+ * Evita que el frontend tenga que recruzar cuatro colecciones para saber
+ * a que edificio pertenece un inquilino.
+ */
+export interface HabitacionUbicacion {
+  id: string;
+  codigo: string;
+  estado: EstadoHabitacion;
+  montoAlquiler: number;
+  montoInternet: number;
+  pisoId: string;
+  pisoNumero: number | null;
+  edificioId: string | null;
+  edificioNombre: string | null;
+  ciudadId: string | null;
+  ciudadNombre: string | null;
 }
 
 export interface InquilinoInput {
@@ -178,9 +201,33 @@ export interface Pago extends BaseEntity {
   referencia?: string;
   estado: EstadoPago;
   observaciones?: string;
+  // Voucher archivado en Drive
+  voucherPdfUrl?: string;
   // Relaciones
   inquilino?: Inquilino;
   habitacion?: Habitacion;
+}
+
+// ============================================
+// ARCHIVO DOCUMENTAL EN DRIVE
+// ============================================
+
+export type TipoDocumentoDrive = 'dni-frente' | 'dni-reverso' | 'contrato' | 'voucher';
+
+export interface SubirDocumentoInput {
+  tipo: TipoDocumentoDrive;
+  inquilinoId?: string;
+  pagoId?: string;
+  archivoBase64: string;
+  mime?: string;
+}
+
+export interface DocumentoDriveResult {
+  tipo: TipoDocumentoDrive;
+  url: string;
+  fileId: string;
+  nombre: string;
+  carpeta: string;
 }
 
 export interface PagoInput {

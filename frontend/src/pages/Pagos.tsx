@@ -1,19 +1,24 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { Plus, Search, ChevronLeft, ChevronRight, Calendar, CreditCard, Printer, FileDown, Zap } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
+import { Plus, Search, ChevronLeft, ChevronRight, Calendar, CreditCard, Printer, FileDown, Zap, Send, UploadCloud, ExternalLink } from 'lucide-react';
 import { PagoForm } from '@/components/forms';
 import { Modal, LoadingPage, EmptyState } from '@/components/ui';
 import { Fab } from '@/components/ui/Fab';
-import { VoucherPago, printVoucher, generateVoucherPDF } from '@/components/voucher';
+import { VoucherPago, printVoucher, generateVoucherPDF, getVoucherFile } from '@/components/voucher';
 import { printThermalVoucher, isThermalPrinterAvailable, connectThermalPrinter, checkThermalPrinter } from '@/utils/thermalPrint';
+import { compartirVoucherWhatsApp } from '@/utils/whatsapp';
 import {
   usePagosByMes,
   useResumenPagosMes,
   useCreatePago,
   useHabitacionesConEstadoPago,
   useInquilinos,
+  PAGOS_KEY,
 } from '@/hooks';
+import { driveApi } from '@/api';
 import { useConfigStore, useNotifications } from '@/store';
+import { archivoADataUrl } from '@/utils/imagen';
 import { formatCurrency, formatDate, formatMonthYear, getMonthName } from '@/utils/formatters';
 import { MESES } from '@/utils/constants';
 import type { Pago, PagoInput } from '@/types';
@@ -32,6 +37,9 @@ export function Pagos() {
   const [thermalPrinting, setThermalPrinting] = useState(false);
   const [thermalConnected, setThermalConnected] = useState(false);
   const [thermalConnecting, setThermalConnecting] = useState(false);
+  const [sharingWhatsapp, setSharingWhatsapp] = useState(false);
+  const [archivandoVoucher, setArchivandoVoucher] = useState(false);
+  const queryClient = useQueryClient();
 
   const { mesActual, anioActual, edificioSeleccionado, setMesAnio } = useConfigStore();
   const { notify } = useNotifications();
@@ -163,13 +171,71 @@ export function Pagos() {
     }
   };
 
-  const handleGeneratePDF = () => {
+  // Genera el voucher y lo hace llegar por WhatsApp.
+  // En celular comparte el PDF real; en escritorio lo descarga y abre el chat
+  // con el mensaje escrito, porque wa.me no admite adjuntos.
+  const handleGeneratePDF = async () => {
+    if (!voucherPago || sharingWhatsapp) return;
+    setSharingWhatsapp(true);
+    try {
+      const resultado = await compartirVoucherWhatsApp({
+        pago: voucherPago,
+        inquilino: getInquilinoForPago(voucherPago),
+        habitacion: getHabitacionForPago(voucherPago),
+      });
+
+      if (resultado.via === 'compartido') {
+        notify.success('Voucher compartido');
+      } else if (resultado.via === 'descarga-y-chat') {
+        notify.success('Voucher descargado. Adjuntalo en el chat de WhatsApp');
+      } else if (resultado.via === 'solo-descarga') {
+        notify.error('El inquilino no tiene un telefono valido. Solo se descargo el voucher');
+      }
+    } catch (error) {
+      notify.error('No se pudo generar el voucher');
+    } finally {
+      setSharingWhatsapp(false);
+    }
+  };
+
+  const handleDownloadPDF = () => {
     if (!voucherPago) return;
     generateVoucherPDF({
       pago: voucherPago,
       inquilino: getInquilinoForPago(voucherPago),
       habitacion: getHabitacionForPago(voucherPago),
     });
+  };
+
+  /**
+   * Archiva el voucher en Drive, bajo Vouchers/<AAAA-MM> del edificio.
+   * Manual a proposito: solo sube cuando se pide.
+   */
+  const handleArchivarVoucher = async () => {
+    if (!voucherPago || archivandoVoucher) return;
+    setArchivandoVoucher(true);
+    try {
+      const inquilino = getInquilinoForPago(voucherPago);
+      const { file } = getVoucherFile({
+        pago: voucherPago,
+        inquilino,
+        habitacion: getHabitacionForPago(voucherPago),
+      });
+      const archivoBase64 = await archivoADataUrl(file);
+      const resultado = await driveApi.subir({
+        tipo: 'voucher',
+        pagoId: voucherPago.id,
+        inquilinoId: inquilino?.id,
+        archivoBase64,
+      });
+      setVoucherPago({ ...voucherPago, voucherPdfUrl: resultado.url });
+      queryClient.invalidateQueries({ queryKey: PAGOS_KEY });
+      notify.success('Voucher archivado en Drive');
+    } catch (error) {
+      notify.error('No se pudo archivar el voucher en Drive');
+    } finally {
+      setArchivandoVoucher(false);
+    }
   };
 
   const getInquilinoForPago = (pago: Pago) => {
@@ -456,11 +522,42 @@ export function Pagos() {
               Imprimir
             </button>
             <button
-              onClick={handleGeneratePDF}
-              className="btn btn-primary"
+              onClick={handleDownloadPDF}
+              className="btn btn-outline"
+              title="Solo descargar el PDF"
             >
               <FileDown className="w-4 h-4" />
-              Generar PDF
+              Descargar
+            </button>
+            {voucherPago?.voucherPdfUrl ? (
+              <a
+                href={voucherPago.voucherPdfUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn btn-outline text-emerald-700 border-emerald-200 hover:bg-emerald-50"
+                title="Ver el voucher archivado en Drive"
+              >
+                <ExternalLink className="w-4 h-4" />
+                En Drive
+              </a>
+            ) : (
+              <button
+                onClick={handleArchivarVoucher}
+                disabled={archivandoVoucher}
+                className="btn btn-outline"
+                title="Guardar el voucher en Drive"
+              >
+                <UploadCloud className="w-4 h-4" />
+                {archivandoVoucher ? 'Guardando...' : 'Guardar en Drive'}
+              </button>
+            )}
+            <button
+              onClick={handleGeneratePDF}
+              disabled={sharingWhatsapp}
+              className="btn btn-primary"
+            >
+              <Send className="w-4 h-4" />
+              {sharingWhatsapp ? 'Generando...' : 'Generar PDF y enviar'}
             </button>
           </div>
         </div>

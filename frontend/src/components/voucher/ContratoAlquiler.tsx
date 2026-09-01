@@ -1,5 +1,6 @@
 import { jsPDF } from 'jspdf';
 import QRCode from 'qrcode';
+import { formatDate } from '@/utils/formatters';
 import type { Inquilino, Habitacion } from '@/types';
 
 interface ContratoData {
@@ -16,9 +17,13 @@ interface ContratoData {
 }
 
 /**
- * Genera el PDF del contrato de alquiler - Diseño profesional y formal
+ * Construye el PDF del Reglamento sin decidir que hacer con el.
+ * Separado de la descarga para poder tambien archivarlo en Drive.
+ * Es async porque el QR se genera con await.
  */
-export async function generateContratoPDF(data: ContratoData): Promise<void> {
+export async function buildContratoDoc(
+  data: ContratoData
+): Promise<{ doc: jsPDF; fileName: string }> {
   const { inquilino, habitacion, edificio } = data;
   const garantia = data.garantia ?? (inquilino as any).garantia ?? false;
   const llaveHabitacion = data.llaveHabitacion ?? (inquilino as any).llaveHabitacion ?? false;
@@ -330,15 +335,12 @@ export async function generateContratoPDF(data: ContratoData): Promise<void> {
   yL += 6;
 
   // Caja de fecha
+  // formatDate lee la fecha sin corrimiento de zona horaria: new Date().getDate()
+  // sobre una fecha guardada en medianoche UTC devuelve el dia anterior en Peru.
   let fechaPagoText = '____/____/________';
   if (inquilino.fechaIngreso) {
-    const fecha = new Date(inquilino.fechaIngreso);
-    if (!isNaN(fecha.getTime())) {
-      const dia = String(fecha.getDate()).padStart(2, '0');
-      const mes = String(fecha.getMonth() + 1).padStart(2, '0');
-      const anio = fecha.getFullYear();
-      fechaPagoText = `${dia}/${mes}/${anio}`;
-    }
+    const texto = formatDate(inquilino.fechaIngreso);
+    if (texto !== '-') fechaPagoText = texto;
   }
 
   doc.setFillColor(lightBg[0], lightBg[1], lightBg[2]);
@@ -476,11 +478,24 @@ export async function generateContratoPDF(data: ContratoData): Promise<void> {
   doc.setTextColor(mid[0], mid[1], mid[2]);
   doc.text('Documento generado electrónicamente  |  Constancia de compromiso de cumplimiento de normas', pageWidth / 2, pageHeight - 7, { align: 'center' });
 
-  // ================================================================
-  // GUARDAR PDF
-  // ================================================================
   const fileName = `Reglamento_${inquilino.nombre || 'Ocupante'}_${inquilino.apellido || ''}_${habitacion.codigo || 'HAB'}.pdf`;
+  return { doc, fileName };
+}
+
+/**
+ * Genera y descarga el Reglamento.
+ */
+export async function generateContratoPDF(data: ContratoData): Promise<void> {
+  const { doc, fileName } = await buildContratoDoc(data);
   doc.save(fileName);
+}
+
+/**
+ * Devuelve el Reglamento como Blob, para archivarlo en Drive.
+ */
+export async function getContratoBlob(data: ContratoData): Promise<Blob> {
+  const { doc } = await buildContratoDoc(data);
+  return doc.output('blob');
 }
 
 /**

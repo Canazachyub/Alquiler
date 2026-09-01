@@ -181,9 +181,10 @@ export const VoucherPago = forwardRef<HTMLDivElement, VoucherPagoProps>(
 VoucherPago.displayName = 'VoucherPago';
 
 /**
- * Genera un PDF voucher profesional y formal
+ * Construye el documento del voucher sin decidir que hacer con el.
+ * Separado de la descarga para poder tambien compartirlo o subirlo a Drive.
  */
-export function generateVoucherPDF(params: GeneratePDFParams): void {
+export function buildVoucherDoc(params: GeneratePDFParams): { doc: jsPDF; fileName: string } {
   const { pago, inquilino, habitacion, negocio } = params;
 
   const empresa = negocio || {
@@ -452,8 +453,24 @@ export function generateVoucherPDF(params: GeneratePDFParams): void {
   doc.setFillColor(accent[0], accent[1], accent[2]);
   doc.rect(0, y, pageWidth, 2.5, 'F');
 
-  // Guardar el PDF
-  doc.save(`voucher_${pago.id}.pdf`);
+  return { doc, fileName: `voucher_${pago.id}.pdf` };
+}
+
+/**
+ * Genera y descarga el voucher.
+ */
+export function generateVoucherPDF(params: GeneratePDFParams): void {
+  const { doc, fileName } = buildVoucherDoc(params);
+  doc.save(fileName);
+}
+
+/**
+ * Devuelve el voucher como archivo, para compartirlo o subirlo a Drive.
+ */
+export function getVoucherFile(params: GeneratePDFParams): { file: File; fileName: string } {
+  const { doc, fileName } = buildVoucherDoc(params);
+  const blob = doc.output('blob');
+  return { file: new File([blob], fileName, { type: 'application/pdf' }), fileName };
 }
 
 // Funcion para imprimir el voucher
