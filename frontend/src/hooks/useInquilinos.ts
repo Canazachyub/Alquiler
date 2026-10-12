@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { inquilinosApi } from '@/api';
 import type { InquilinoInput } from '@/types';
+import { guardarModalidadLocal } from '@/utils/modalidad';
 import { HABITACIONES_KEY } from './useHabitaciones';
 
 export const INQUILINOS_KEY = ['inquilinos'];
@@ -40,7 +41,8 @@ export function useCreateInquilino() {
 
   return useMutation({
     mutationFn: (data: InquilinoInput) => inquilinosApi.create(data),
-    onSuccess: () => {
+    onSuccess: (creado, data) => {
+      if (creado?.id) guardarModalidadLocal(creado.id, data.modalidadPago);
       queryClient.invalidateQueries({ queryKey: INQUILINOS_KEY });
       queryClient.invalidateQueries({ queryKey: HABITACIONES_KEY });
     },
@@ -53,7 +55,8 @@ export function useUpdateInquilino() {
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: Partial<InquilinoInput> }) =>
       inquilinosApi.update(id, data),
-    onSuccess: () => {
+    onSuccess: (_r, { id, data }) => {
+      guardarModalidadLocal(id, data.modalidadPago);
       queryClient.invalidateQueries({ queryKey: INQUILINOS_KEY });
       queryClient.invalidateQueries({ queryKey: HABITACIONES_KEY });
     },

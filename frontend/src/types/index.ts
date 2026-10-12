@@ -147,6 +147,8 @@ export interface Inquilino extends BaseEntity {
   dniFotoFrenteUrl?: string;
   dniFotoReversoUrl?: string;
   contratoPdfUrl?: string;
+  /** adelantado (paga al inicio del periodo) · vencido (paga al terminarlo) */
+  modalidadPago?: 'adelantado' | 'vencido';
   // Relaciones — el backend resuelve la ubicacion completa en GET /inquilinos
   habitacion?: HabitacionUbicacion | null;
 }
@@ -185,6 +187,7 @@ export interface InquilinoInput {
   garantia?: boolean;
   llaveHabitacion?: boolean;
   llavePuertaCalle?: boolean;
+  modalidadPago?: 'adelantado' | 'vencido';
 }
 
 // ============================================

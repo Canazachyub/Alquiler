@@ -1,5 +1,6 @@
 import { getVoucherFile } from '@/components/voucher';
 import { formatCurrency, getMonthName } from '@/utils/formatters';
+import { coberturaDePago } from '@/utils/modalidad';
 import type { Pago, Inquilino, Habitacion, HabitacionConDetalles } from '@/types';
 
 const CODIGO_PAIS_PERU = '51';
@@ -46,6 +47,9 @@ function construirMensaje({ pago, inquilino, habitacion }: CompartirVoucherParam
     `Habitación: ${codigo}`,
     `Concepto: ${pago.concepto}`,
     `Periodo: ${getMonthName(pago.mes)} ${pago.anio}`,
+    ...(coberturaDePago(pago, inquilino, habitacion as { diaPago?: number } | null)
+      ? [coberturaDePago(pago, inquilino, habitacion as { diaPago?: number } | null)!.texto]
+      : []),
     `Monto: ${formatCurrency(pago.monto)}`,
     '',
     'Gracias por su pago.',
@@ -63,7 +67,7 @@ function construirMensaje({ pago, inquilino, habitacion }: CompartirVoucherParam
 export async function compartirVoucherWhatsApp(
   params: CompartirVoucherParams
 ): Promise<ResultadoCompartir> {
-  const { file, fileName } = getVoucherFile(params);
+  const { file, fileName } = await getVoucherFile(params);
   const mensaje = construirMensaje(params);
   const telefono = normalizarTelefonoPeru(params.inquilino?.telefono);
 

@@ -12,3 +12,4 @@ export {
   getContratoBlob,
 } from './ContratoAlquiler';
 export { ResumenImprimible } from './ResumenImprimible';
+export { buildVoucherMovilDoc } from './voucherMovil';

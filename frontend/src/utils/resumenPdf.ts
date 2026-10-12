@@ -1,5 +1,6 @@
 import { jsPDF } from 'jspdf';
 import { calcularCobro } from './cobro';
+import { periodoCubierto } from './modalidad';
 import { compararCodigos, letraDePiso } from './plano';
 import { inicialCobrador, COBRADORES } from './cobradores';
 import { getMonthName } from './formatters';
@@ -254,9 +255,11 @@ export function generarResumenPagosPdf(p: ResumenParams): jsPDF {
           (x) => x.habitacionId === h.id && Number(x.mes) === c.mes && Number(x.anio) === c.anio
         );
         const v = vence(c.mes, c.anio, dia);
-        const hasta = new Date(vence(c.mes === 12 ? 1 : c.mes + 1, c.mes === 12 ? c.anio + 1 : c.anio, dia).getTime() - 86_400_000);
+        // Periodo que cubre el pago de este mes según la modalidad del inquilino
+        const per = periodoCubierto(c.mes, c.anio, dia, cobro.modalidad);
+        const hasta = per.hasta;
 
-        if (inicioK !== null && k < inicioK) {
+        if (inicioK !== null && k < inicioK + (cobro.modalidad === 'vencido' ? 1 : 0)) {
           doc.setFont('helvetica', 'normal');
           doc.setFontSize(10);
           color(GRIS_CLARO);
@@ -294,7 +297,7 @@ export function generarResumenPagosPdf(p: ResumenParams): jsPDF {
           doc.setFont('helvetica', 'normal');
           doc.setFontSize(7.5 * fs);
           color(GRIS);
-          doc.text(`${dm(v)} al ${dm(hasta)}`, xDot - 1.7, linea2Y);
+          doc.text(`${dm(per.desde)} al ${dm(hasta)}`, xDot - 1.7, linea2Y);
         } else if (v <= hoy0) {
           relleno(ROJO_FONDO);
           doc.rect(x0 + 0.6, top + 0.6, wMes - 1.2, hFila - 1.2, 'F');

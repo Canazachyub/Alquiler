@@ -1,6 +1,7 @@
 import { Fragment, useState } from 'react';
-import { Pencil, Plus, Check, X, History } from 'lucide-react';
-import { usePagosByHabitacion, useUpdatePago, useCreatePago, useInquilinos } from '@/hooks';
+import { Pencil, Plus, Check, X, History, Trash2 } from 'lucide-react';
+import { usePagosByHabitacion, useUpdatePago, useCreatePago, useInquilinos, useDeletePago } from '@/hooks';
+import { ConfirmDialog } from '@/components/ui';
 import { useNotifications } from '@/store';
 import { cn } from '@/utils/cn';
 import { formatCurrency, formatDate, getMonthName, hoyISO } from '@/utils/formatters';
@@ -45,6 +46,18 @@ export function HistorialPagos({ habitacion: h }: HistorialPagosProps) {
   const { data: inquilinos } = useInquilinos();
   const updatePago = useUpdatePago();
   const createPago = useCreatePago();
+  const deletePago = useDeletePago();
+  const [borrando, setBorrando] = useState<Pago | null>(null);
+  const confirmarBorrado = async () => {
+    if (!borrando) return;
+    try {
+      await deletePago.mutateAsync(borrando.id);
+      notify.success(`Pago ${borrando.id} eliminado`);
+      setBorrando(null);
+    } catch {
+      notify.error('No se pudo eliminar el pago');
+    }
+  };
 
   // Fila en edición: id de pago, o "nuevo-<anio>-<mes>" para registrar en un mes pendiente
   const [editando, setEditando] = useState<string | null>(null);
@@ -224,7 +237,7 @@ export function HistorialPagos({ habitacion: h }: HistorialPagosProps) {
                 <th className="text-right">Monto</th>
                 <th>Método</th>
                 <th>Observaciones</th>
-                <th className="w-16" />
+                <th className="w-20" />
               </tr>
             </thead>
             <tbody>
@@ -275,14 +288,24 @@ export function HistorialPagos({ habitacion: h }: HistorialPagosProps) {
                           <td className="!py-2 text-slate-600 max-w-[220px] truncate" title={p.observaciones}>
                             {p.observaciones || <span className="text-slate-300">—</span>}
                           </td>
-                          <td className="!py-2 text-right">
+                          <td className="!py-2 text-right whitespace-nowrap">
                             <button
                               type="button"
                               onClick={() => empezarEdicion(p)}
                               className="p-1.5 rounded-full hover:bg-slate-100 text-slate-500"
                               aria-label={`Editar pago ${p.id}`}
+                              title="Editar"
                             >
                               <Pencil className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setBorrando(p)}
+                              className="p-1.5 rounded-full hover:bg-red-50 text-red-600"
+                              aria-label={`Eliminar pago ${p.id}`}
+                              title="Eliminar"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
                             </button>
                           </td>
                         </tr>
@@ -297,6 +320,19 @@ export function HistorialPagos({ habitacion: h }: HistorialPagosProps) {
           </table>
         </div>
       )}
+      <ConfirmDialog
+        isOpen={!!borrando}
+        onClose={() => setBorrando(null)}
+        onConfirm={confirmarBorrado}
+        title="Eliminar pago"
+        message={
+          borrando
+            ? `¿Eliminar el pago ${borrando.id} (${labelConcepto(borrando.concepto)} de ${getMonthName(Number(borrando.mes))} ${borrando.anio}, ${formatCurrency(Number(borrando.monto))})? Esta acción no se puede deshacer.`
+            : ''
+        }
+        confirmText="Eliminar pago"
+        isLoading={deletePago.isPending}
+      />
     </div>
   );
 }

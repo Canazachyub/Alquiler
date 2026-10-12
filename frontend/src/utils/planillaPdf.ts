@@ -207,7 +207,7 @@ export function generarPlanillaCobrosPdf(p: PlanillaParams): jsPDF {
 
     columnas.forEach((col, i) => {
       const k = col.anio * 12 + (col.mes - 1);
-      if (ingresoK !== null && k < ingresoK) {
+      if (ingresoK !== null && k < ingresoK + (c.modalidad === 'vencido' ? 1 : 0)) {
         // No vivía aún: celda tachada suave
         relleno([238, 236, 233]);
         doc.rect(xMeses + i * wMes, top, wMes, hFila, 'F');

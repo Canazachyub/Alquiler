@@ -2,6 +2,8 @@ import { forwardRef } from 'react';
 import { jsPDF } from 'jspdf';
 import { formatCurrency, formatDate, getMonthName } from '@/utils/formatters';
 import type { Pago, Inquilino, Habitacion } from '@/types';
+import { coberturaDePago } from '@/utils/modalidad';
+import { buildVoucherMovilDoc } from './voucherMovil';
 
 interface VoucherPagoProps {
   pago: Pago;
@@ -105,8 +107,17 @@ export const VoucherPago = forwardRef<HTMLDivElement, VoucherPagoProps>(
             <div>
               <div className="font-medium">{conceptoLabel[pago.concepto] || pago.concepto}</div>
               <div className="text-[10px] text-slate-500">
-                {getMonthName(pago.mes)} {pago.anio}
+                Periodo: {getMonthName(pago.mes)} {pago.anio}
               </div>
+              {(() => {
+                const cob = coberturaDePago(pago, inquilino, habitacion as { diaPago?: number } | null);
+                return cob ? (
+                  <div className="text-[10px] font-semibold text-slate-700">
+                    Del {cob.desde} al {cob.hasta}
+                    <span className="font-normal text-slate-500"> · {cob.modalidad === 'vencido' ? 'mes vencido' : 'adelantado'}</span>
+                  </div>
+                ) : null;
+              })()}
             </div>
             <div className="font-bold">{formatCurrency(pago.monto)}</div>
           </div>
@@ -346,6 +357,16 @@ export function buildVoucherDoc(params: GeneratePDFParams): { doc: jsPDF; fileNa
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(mid[0], mid[1], mid[2]);
   doc.text(`Periodo: ${getMonthName(pago.mes)} ${pago.anio}`, ml + 3, y + 1);
+  // Fechas que cubre el pago (adelantado o mes vencido)
+  const cobertura = coberturaDePago(pago, inquilino, habitacion as { diaPago?: number } | null);
+  if (cobertura) {
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(dark[0], dark[1], dark[2]);
+    doc.text(`Del ${cobertura.desde} al ${cobertura.hasta}`, ml + 3, y + 5);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(mid[0], mid[1], mid[2]);
+    doc.text(cobertura.modalidad === 'vencido' ? 'Mes vencido' : 'Pago adelantado', ml + 3, y + 8.6);
+  }
 
   // Monto a la derecha
   doc.setFontSize(9);
@@ -353,6 +374,7 @@ export function buildVoucherDoc(params: GeneratePDFParams): { doc: jsPDF; fileNa
   doc.setTextColor(dark[0], dark[1], dark[2]);
   doc.text(formatCurrency(pago.monto), pageWidth - mr - 3, y, { align: 'right' });
   y += 5;
+  if (cobertura) y += 8; // espacio para las fechas de cobertura
 
   // Marco del detalle
   doc.setDrawColor(220, 220, 220);
@@ -459,16 +481,18 @@ export function buildVoucherDoc(params: GeneratePDFParams): { doc: jsPDF; fileNa
 /**
  * Genera y descarga el voucher.
  */
-export function generateVoucherPDF(params: GeneratePDFParams): void {
-  const { doc, fileName } = buildVoucherDoc(params);
+/** Descarga el voucher en formato para celular */
+export async function generateVoucherPDF(params: GeneratePDFParams): Promise<void> {
+  const { doc, fileName } = await buildVoucherMovilDoc(params);
   doc.save(fileName);
 }
 
 /**
  * Devuelve el voucher como archivo, para compartirlo o subirlo a Drive.
  */
-export function getVoucherFile(params: GeneratePDFParams): { file: File; fileName: string } {
-  const { doc, fileName } = buildVoucherDoc(params);
+/** Voucher como archivo (formato celular) para WhatsApp y Drive */
+export async function getVoucherFile(params: GeneratePDFParams): Promise<{ file: File; fileName: string }> {
+  const { doc, fileName } = await buildVoucherMovilDoc(params);
   const blob = doc.output('blob');
   return { file: new File([blob], fileName, { type: 'application/pdf' }), fileName };
 }

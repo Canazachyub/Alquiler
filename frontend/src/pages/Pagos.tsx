@@ -20,16 +20,18 @@ import {
   Wallet,
   ListChecks,
   Receipt,
+  Trash2,
   FileText,
 } from 'lucide-react';
 import { CobrarModal } from '@/components/forms';
-import { Modal, LoadingPage, EmptyState, IconChip } from '@/components/ui';
+import { Modal, LoadingPage, EmptyState, IconChip, ConfirmDialog } from '@/components/ui';
 import { Fab } from '@/components/ui/Fab';
 import { VoucherPago, printVoucher, generateVoucherPDF, getVoucherFile, ResumenImprimible } from '@/components/voucher';
 import { printThermalVoucher, isThermalPrinterAvailable, connectThermalPrinter, checkThermalPrinter } from '@/utils/thermalPrint';
 import { compartirVoucherWhatsApp } from '@/utils/whatsapp';
 import {
   usePagosByMes,
+  useDeletePago,
   useHabitacionesConEstadoPago,
   useInquilinos,
   useEdificiosByCiudad,
@@ -199,6 +201,20 @@ export function Pagos() {
   };
   const getHabitacionForPago = (pago: Pago) => habitacionesTodas?.find((h) => h.id === pago.habitacionId);
 
+  // Borrar un pago mal registrado (con confirmación; no se puede deshacer)
+  const deletePago = useDeletePago();
+  const [borrando, setBorrando] = useState<Pago | null>(null);
+  const confirmarBorrado = async () => {
+    if (!borrando) return;
+    try {
+      await deletePago.mutateAsync(borrando.id);
+      notify.success(`Pago ${borrando.id} eliminado`);
+      setBorrando(null);
+    } catch {
+      notify.error('No se pudo eliminar el pago');
+    }
+  };
+
   const verVoucher = (pago: Pago) => {
     setVoucherPago(pago);
     setIsVoucherModalOpen(true);
@@ -263,9 +279,9 @@ export function Pagos() {
     }
   };
 
-  const handleDownloadPDF = () => {
+  const handleDownloadPDF = async () => {
     if (!voucherPago) return;
-    generateVoucherPDF({
+    await generateVoucherPDF({
       pago: voucherPago,
       inquilino: getInquilinoForPago(voucherPago),
       habitacion: getHabitacionForPago(voucherPago),
@@ -278,7 +294,7 @@ export function Pagos() {
     setArchivandoVoucher(true);
     try {
       const inquilino = getInquilinoForPago(voucherPago);
-      const { file } = getVoucherFile({ pago: voucherPago, inquilino, habitacion: getHabitacionForPago(voucherPago) });
+      const { file } = await getVoucherFile({ pago: voucherPago, inquilino, habitacion: getHabitacionForPago(voucherPago) });
       const archivoBase64 = await archivoADataUrl(file);
       const resultado = await driveApi.subir({ tipo: 'voucher', pagoId: voucherPago.id, inquilinoId: inquilino?.id, archivoBase64 });
       setVoucherPago({ ...voucherPago, voucherPdfUrl: resultado.url });
@@ -534,7 +550,7 @@ export function Pagos() {
                   <th className="text-right">Monto</th>
                   <th className="hidden md:table-cell">Método</th>
                   <th className="hidden lg:table-cell">Observaciones</th>
-                  <th className="w-12" />
+                  <th className="w-20" />
                 </tr>
               </thead>
               <tbody>
@@ -557,9 +573,14 @@ export function Pagos() {
                         {p.observaciones || '—'}
                       </td>
                       <td>
-                        <button onClick={() => verVoucher(p)} className="p-2 hover:bg-slate-100 rounded-full" title="Ver voucher" aria-label={`Voucher ${p.id}`}>
-                          <Printer className="w-4 h-4 text-slate-500" />
-                        </button>
+                        <div className="flex justify-end gap-0.5">
+                          <button onClick={() => verVoucher(p)} className="p-2 hover:bg-slate-100 rounded-full" title="Ver voucher" aria-label={`Voucher ${p.id}`}>
+                            <Printer className="w-4 h-4 text-slate-500" />
+                          </button>
+                          <button onClick={() => setBorrando(p)} className="p-2 hover:bg-red-50 rounded-full" title="Eliminar pago" aria-label={`Eliminar pago ${p.id}`}>
+                            <Trash2 className="w-4 h-4 text-red-600" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -603,6 +624,25 @@ export function Pagos() {
           />
         )}
       </Modal>
+
+      {/* Confirmar borrado de pago */}
+      <ConfirmDialog
+        isOpen={!!borrando}
+        onClose={() => setBorrando(null)}
+        onConfirm={confirmarBorrado}
+        title="Eliminar pago"
+        message={
+          borrando
+            ? `¿Eliminar el pago ${borrando.id} de ${habPorId.get(borrando.habitacionId)?.codigo ?? ''}${
+                getInquilinoForPago(borrando) ? ` (${getInquilinoForPago(borrando)?.nombre})` : ''
+              }: ${labelConcepto(borrando.concepto)} de ${getMonthName(Number(borrando.mes))} ${borrando.anio} por ${formatCurrency(
+                Number(borrando.monto)
+              )}? Esta acción no se puede deshacer.`
+            : ''
+        }
+        confirmText="Eliminar pago"
+        isLoading={deletePago.isPending}
+      />
 
       {/* Voucher */}
       <Modal isOpen={isVoucherModalOpen} onClose={() => setIsVoucherModalOpen(false)} title="Voucher de pago" size="sm">

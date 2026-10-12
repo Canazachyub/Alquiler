@@ -59,6 +59,18 @@ export function useUpdatePago() {
   });
 }
 
+export function useDeletePago() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => pagosApi.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: PAGOS_KEY });
+      queryClient.invalidateQueries({ queryKey: HABITACIONES_KEY });
+    },
+  });
+}
+
 export function useAnularPago() {
   const queryClient = useQueryClient();
 

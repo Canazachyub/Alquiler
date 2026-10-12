@@ -1,4 +1,4 @@
-import { apiGet, apiPost, apiPut } from './client';
+import { apiGet, apiPost, apiPut, apiDelete } from './client';
 import type { Pago, PagoInput, FiltrosPago } from '@/types';
 
 const ENDPOINT = '/api/pagos';
@@ -19,6 +19,8 @@ export const pagosApi = {
 
   update: (id: string, data: Partial<PagoInput>) =>
     apiPut<Pago, Partial<PagoInput>>(`${ENDPOINT}/${id}`, data),
+
+  delete: (id: string) => apiDelete<void>(`${ENDPOINT}/${id}`),
 
   anular: (id: string) =>
     apiPut<Pago, { estado: 'anulado' }>(`${ENDPOINT}/${id}`, { estado: 'anulado' }),

@@ -1,5 +1,6 @@
 import { jsPDF } from 'jspdf';
 import { inicialCobrador } from './cobradores';
+import { modalidadDeInquilino, periodoCubierto } from './modalidad';
 import type { HabitacionConDetalles, Inquilino, Pago } from '@/types';
 
 /**
@@ -29,8 +30,6 @@ const MESES = ['ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO', 'JULIO', '
 const dmy = (d: Date) =>
   `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
 const dm = (d: Date) => `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
-const vence = (mes: number, anio: number, dia: number) =>
-  new Date(anio, mes - 1, Math.min(dia, new Date(anio, mes, 0).getDate()));
 const fechaLocal = (iso?: string) => {
   if (!iso) return null;
   const [y, m, d] = String(iso).slice(0, 10).split('-').map(Number);
@@ -43,6 +42,9 @@ export function generarTrackingPdf(p: TrackingParams): jsPDF {
   const dia = Number(h.diaPago) || desde?.getDate() || 1;
   const ingresoK = desde ? desde.getFullYear() * 12 + desde.getMonth() : null;
   const monto = Number(h.montoAlquiler || 0);
+  // Mes vencido: el primer cobro es el mes siguiente al ingreso y cada pago cubre el mes ya usado
+  const modalidad = modalidadDeInquilino(inq);
+  const primerK = ingresoK === null ? null : ingresoK + (modalidad === 'vencido' ? 1 : 0);
   const montoInternet = Number(h.montoInternet || 0);
 
   const delCuarto = p.pagos.filter((x) => x.habitacionId === h.id && x.estado !== 'anulado');
@@ -118,7 +120,7 @@ export function generarTrackingPdf(p: TrackingParams): jsPDF {
     trazo(TINTA, 0.3);
     doc.rect(x, y, w, hc, 'S');
 
-    if (ingresoK !== null && k < ingresoK) {
+    if (primerK !== null && k < primerK) {
       relleno(APAGADO);
       doc.rect(x + 0.2, y + 0.2, w - 0.4, hc - 0.4, 'F');
       doc.setFont('helvetica', 'normal');
@@ -128,8 +130,7 @@ export function generarTrackingPdf(p: TrackingParams): jsPDF {
       return;
     }
 
-    const ini = vence(mes, anio, dia);
-    const fin = new Date(vence(mes === 12 ? 1 : mes + 1, mes === 12 ? anio + 1 : anio, dia).getTime() - 86_400_000);
+    const { desde: ini, hasta: fin } = periodoCubierto(mes, anio, dia, modalidad);
     const pagado = pagosDe('alquiler', mes);
 
     // Monto del mes (arriba a la derecha)

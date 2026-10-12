@@ -1,4 +1,5 @@
 import { hoyISO } from '@/utils/formatters';
+import { modalidadDeInquilino, periodoDeMes } from '@/utils/modalidad';
 import { useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { MapPin, Camera } from 'lucide-react';
@@ -43,6 +44,8 @@ export function InquilinoForm({
   const {
     register,
     handleSubmit,
+    watch,
+    setValue,
     formState: { errors },
   } = useForm<InquilinoInput>({
     defaultValues: {
@@ -59,8 +62,15 @@ export function InquilinoForm({
       garantia: toBool(initialData?.garantia),
       llaveHabitacion: toBool(initialData?.llaveHabitacion),
       llavePuertaCalle: toBool(initialData?.llavePuertaCalle),
+      // Si la hoja aún no tiene la columna, se recupera la guardada en el navegador
+      modalidadPago: modalidadDeInquilino({
+        id: String((initialData as { id?: string } | undefined)?.id ?? ''),
+        modalidadPago: initialData?.modalidadPago,
+      }),
     },
   });
+  const modalidad = watch('modalidadPago') ?? 'adelantado';
+  const fechaIng = watch('fechaIngreso');
 
   // Filtrar habitaciones vacantes o la habitación actual del inquilino
   const habitacionesDisponibles = habitaciones.filter(
@@ -236,6 +246,45 @@ export function InquilinoForm({
               className={cn('input', errors.fechaIngreso && 'input-error')}
             />
             {errors.fechaIngreso && <p className="form-error">{errors.fechaIngreso.message}</p>}
+          </div>
+
+          {/* Modalidad de pago */}
+          <div className="md:col-span-2">
+            <p className="label">¿Cuándo paga?</p>
+            <input type="hidden" {...register('modalidadPago')} />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2" role="radiogroup" aria-label="Modalidad de pago">
+              {([
+                ['adelantado', 'Adelantado', 'Paga al inicio de cada periodo (lo normal).'],
+                ['vencido', 'Mes vencido', 'Usa el mes y paga al terminarlo.'],
+              ] as const).map(([valor, titulo, ayuda]) => (
+                <button
+                  key={valor}
+                  type="button"
+                  role="radio"
+                  aria-checked={modalidad === valor}
+                  onClick={() => setValue('modalidadPago', valor, { shouldDirty: true })}
+                  className={cn(
+                    'rounded-xl border-2 p-3 text-left transition-colors',
+                    modalidad === valor ? 'border-primary-600 bg-primary-50' : 'border-slate-200 hover:border-slate-400'
+                  )}
+                >
+                  <p className={cn('text-sm font-bold', modalidad === valor ? 'text-primary-700' : 'text-slate-800')}>{titulo}</p>
+                  <p className="text-xs text-slate-500">{ayuda}</p>
+                </button>
+              ))}
+            </div>
+            {fechaIng && (() => {
+              const [y, m, d] = String(fechaIng).split('-').map(Number);
+              if (!y || !m || !d) return null;
+              const { desde, hasta } = periodoDeMes(m, y, d);
+              const f = (x: Date) => x.toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+              const pagoEl = modalidad === 'vencido' ? new Date(hasta.getTime() + 86_400_000) : desde;
+              return (
+                <p className="text-xs text-slate-600 mt-2 rounded-lg bg-slate-50 px-3 py-2">
+                  Primer periodo: <strong>{f(desde)} al {f(hasta)}</strong> · se paga el <strong>{f(pagoEl)}</strong>
+                </p>
+              );
+            })()}
           </div>
 
           {/* Garantia */}

@@ -4,6 +4,7 @@
  */
 
 import type { Pago, Inquilino, Habitacion } from '@/types';
+import { coberturaDePago } from './modalidad';
 
 const PRINT_SERVER_URL = 'http://localhost:5100';
 
@@ -64,6 +65,8 @@ export async function printThermalVoucher(data: PrintVoucherData): Promise<void>
       metodoPago: data.pago.metodoPago,
       estado: data.pago.estado,
       habitacionId: data.pago.habitacionId,
+      // Texto listo para imprimir: "Cubre del 12/10/2026 al 11/11/2026 · pago adelantado"
+      cobertura: coberturaDePago(data.pago, data.inquilino, data.habitacion as { diaPago?: number } | null)?.texto,
     },
     inquilino: data.inquilino
       ? { nombre: data.inquilino.nombre, apellido: data.inquilino.apellido }

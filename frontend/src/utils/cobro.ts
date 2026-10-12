@@ -1,4 +1,5 @@
 import type { HabitacionConDetalles, Pago } from '@/types';
+import { modalidadDeHabitacion, type ModalidadPago } from './modalidad';
 
 /**
  * Ciclo de cobro de un inquilino.
@@ -29,6 +30,8 @@ export interface EstadoCobro {
   /** Avance del ciclo actual 0–100 (del vencimiento anterior al próximo) */
   avance: number;
   nivel: 'ok' | 'pronto' | 'hoy' | 'vencido';
+  /** adelantado = paga al inicio del periodo · vencido = paga al terminarlo */
+  modalidad: ModalidadPago;
   /**
    * Meses que se pueden cobrar, en orden: los atrasados, el del ciclo actual y
    * `adelantos` meses más, saltando los que ya están pagados.
@@ -53,10 +56,23 @@ function vencimiento(mes: number, anio: number, dia: number): Date {
 const clave = (mes: number, anio: number) => anio * 12 + (mes - 1);
 const desdeClave = (k: number) => ({ mes: (k % 12) + 1, anio: Math.floor(k / 12) });
 
-export function calcularCobro(h: HabitacionConDetalles, pagos: Pago[], hoy = new Date(), adelantos = 2): EstadoCobro {
+export function calcularCobro(
+  h: HabitacionConDetalles,
+  pagos: Pago[],
+  hoy = new Date(),
+  adelantos = 2,
+  /** Si se conoce (p. ej. consulta pública), evita buscarla en la lista de inquilinos */
+  modalidadForzada?: ModalidadPago
+): EstadoCobro {
   const hoy0 = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
   const desde = fechaLocal(h.fechaIngreso);
   const diaPago = Number(h.diaPago) || desde?.getDate() || 1;
+  const modalidad = modalidadForzada ?? modalidadDeHabitacion(h.id);
+  // El alquiler del mes M vence el día de pago de M en ambas modalidades. Lo que cambia
+  // es qué cubre: adelantado = el periodo que empieza ese día; mes vencido = el periodo
+  // que termina ese día (el mes ya usado). Por eso, con mes vencido, el primer cobro
+  // llega un mes después del ingreso.
+  const venceDe = (mes: number, anio: number) => vencimiento(mes, anio, diaPago);
 
   const delCuarto = pagos.filter(
     (p) => p.habitacionId === h.id && p.estado !== 'anulado' && p.concepto === 'alquiler'
@@ -80,10 +96,10 @@ export function calcularCobro(h: HabitacionConDetalles, pagos: Pago[], hoy = new
   // Meses vencidos sin pago, desde el ingreso hasta hoy
   const atrasados: MesCobro[] = [];
   const hoyK = clave(hoy0.getMonth() + 1, hoy0.getFullYear());
-  const inicio = inicioK ?? ultimoK ?? hoyK;
+  const inicio = inicioK !== null ? inicioK + (modalidad === 'vencido' ? 1 : 0) : ultimoK ?? hoyK;
   for (let k = inicio; k <= hoyK; k++) {
     const { mes, anio } = desdeClave(k);
-    const vence = vencimiento(mes, anio, diaPago);
+    const vence = venceDe(mes, anio);
     if (!cubiertos.has(k) && vence <= hoy0) atrasados.push({ mes, anio, vence });
   }
 
@@ -93,7 +109,7 @@ export function calcularCobro(h: HabitacionConDetalles, pagos: Pago[], hoy = new
     let k = Math.max(inicio, ultimoK !== null ? ultimoK + 1 : inicio);
     while (cubiertos.has(k)) k++;
     const { mes, anio } = desdeClave(k);
-    proximo = { mes, anio, vence: vencimiento(mes, anio, diaPago) };
+    proximo = { mes, anio, vence: venceDe(mes, anio) };
   }
 
   const dias = proximo ? Math.round((proximo.vence.getTime() - hoy0.getTime()) / DIA_MS) : null;
@@ -101,7 +117,7 @@ export function calcularCobro(h: HabitacionConDetalles, pagos: Pago[], hoy = new
   if (proximo && dias !== null) {
     const prevK = clave(proximo.mes, proximo.anio) - 1;
     const prev = desdeClave(prevK);
-    const inicioCiclo = vencimiento(prev.mes, prev.anio, diaPago);
+    const inicioCiclo = venceDe(prev.mes, prev.anio);
     const total = proximo.vence.getTime() - inicioCiclo.getTime();
     avance = dias < 0 ? 100 : Math.max(0, Math.min(100, ((hoy0.getTime() - inicioCiclo.getTime()) / total) * 100));
   }
@@ -116,7 +132,7 @@ export function calcularCobro(h: HabitacionConDetalles, pagos: Pago[], hoy = new
     let vistoProximo = false;
     while (futuros < adelantos + 1 && k < hoyK + 36) {
       const { mes, anio } = desdeClave(k);
-      const vence = vencimiento(mes, anio, diaPago);
+      const vence = venceDe(mes, anio);
       if (!cubiertos.has(k) && vence > hoy0) {
         porCobrar.push({ mes, anio, vence, tipo: vistoProximo ? 'adelanto' : 'proximo' });
         vistoProximo = true;
@@ -127,6 +143,7 @@ export function calcularCobro(h: HabitacionConDetalles, pagos: Pago[], hoy = new
   }
 
   return {
+    modalidad,
     porCobrar,
     desde,
     diaPago,

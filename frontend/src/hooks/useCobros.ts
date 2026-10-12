@@ -1,5 +1,7 @@
 import { useMemo } from 'react';
 import { usePagos } from './usePagos';
+import { useInquilinos } from './useInquilinos';
+import { actualizarModalidades } from '@/utils/modalidad';
 import { calcularCobro, estadoDesdeCobro, deudaVencida, type EstadoCobro } from '@/utils/cobro';
 import type { HabitacionConDetalles } from '@/types';
 
@@ -9,7 +11,9 @@ import type { HabitacionConDetalles } from '@/types';
  */
 export function useCobros() {
   const { data: pagos } = usePagos();
+  const { data: inquilinos } = useInquilinos();
   return useMemo(() => {
+    actualizarModalidades(inquilinos);
     const cache = new Map<string, EstadoCobro>();
     const cobro = (h: HabitacionConDetalles): EstadoCobro | undefined => {
       if (!pagos) return undefined;
@@ -27,5 +31,5 @@ export function useCobros() {
       estado: (h: HabitacionConDetalles) => estadoDesdeCobro(h, cobro(h)),
       deuda: (h: HabitacionConDetalles) => deudaVencida(h, cobro(h)),
     };
-  }, [pagos]);
+  }, [pagos, inquilinos]);
 }

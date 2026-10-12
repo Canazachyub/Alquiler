@@ -40,7 +40,7 @@ const CONFIG = {
     HABITACIONES: ['ID', 'PisoId', 'Codigo', 'Ubicacion', 'MontoAlquiler', 'MontoInternet', 'MontoServicios', 'Estado', 'Activo', 'Observaciones', 'MotivoExoneracion'],
     // Las columnas nuevas van SIEMPRE al final: la auto-migracion sobreescribe la fila 1
     // y correr una columna existente desalinearia todos los datos.
-    INQUILINOS: ['ID', 'HabitacionId', 'Nombre', 'Apellido', 'DNI', 'Telefono', 'Email', 'FechaIngreso', 'FechaSalida', 'Estado', 'ContactoEmergencia', 'TelefonoEmergencia', 'Observaciones', 'Garantia', 'LlaveHabitacion', 'LlavePuertaCalle', 'DniFotoFrenteUrl', 'DniFotoReversoUrl', 'ContratoPdfUrl'],
+    INQUILINOS: ['ID', 'HabitacionId', 'Nombre', 'Apellido', 'DNI', 'Telefono', 'Email', 'FechaIngreso', 'FechaSalida', 'Estado', 'ContactoEmergencia', 'TelefonoEmergencia', 'Observaciones', 'Garantia', 'LlaveHabitacion', 'LlavePuertaCalle', 'DniFotoFrenteUrl', 'DniFotoReversoUrl', 'ContratoPdfUrl', 'ModalidadPago'],
     PAGOS: ['ID', 'InquilinoId', 'HabitacionId', 'Fecha', 'Mes', 'Anio', 'Concepto', 'Monto', 'MetodoPago', 'Referencia', 'Estado', 'Observaciones', 'VoucherPdfUrl'],
     GASTOS: ['ID', 'EdificioId', 'HabitacionId', 'Fecha', 'Concepto', 'Categoria', 'Monto', 'ComprobanteUrl', 'Observaciones'],
     GASTOS_FIJOS: ['ID', 'EdificioId', 'Tipo', 'Descripcion', 'Monto', 'DiaVencimiento', 'Activo']
@@ -1328,6 +1328,37 @@ function handleRequest(request) {
           return gastoFijoRepo.get().delete(id) ? successResponse(null, 'Eliminado') : errorResponse('No encontrado');
         }
         break;
+
+      // ------------------- CONSULTA PUBLICA (QR) -------------------
+      // Devuelve SOLO lo que el inquilino debe ver de su cuarto: nada de DNI,
+      // telefonos ni datos de otros inquilinos.
+      case 'consulta': {
+        if (action !== 'GET' || !id) return errorResponse('Codigo de consulta invalido');
+        const hab = habitacionRepo.get().getById(id);
+        if (!hab) return errorResponse('No se encontro informacion para este codigo');
+        const inq = inquilinoRepo.get().getAll().find(i => i.habitacionId === hab.id && i.estado === 'activo');
+        const piso = pisoRepo.get().getById(hab.pisoId);
+        const edificio = piso ? edificioRepo.get().getById(piso.edificioId) : null;
+        const ingreso = inq && inq.fechaIngreso ? new Date(inq.fechaIngreso) : null;
+        const inicio = ingreso ? ingreso.getFullYear() * 12 + ingreso.getMonth() : null;
+        const pagosHab = pagoRepo.get().getAll()
+          .filter(p => p.habitacionId === hab.id && p.estado !== 'anulado' && p.concepto === 'alquiler')
+          .filter(p => inicio === null || (Number(p.anio) * 12 + Number(p.mes) - 1) >= inicio - 1)
+          .map(p => ({ mes: Number(p.mes), anio: Number(p.anio), fecha: p.fecha, monto: Number(p.monto), concepto: p.concepto, estado: p.estado }));
+        return successResponse({
+          habitacionId: hab.id,
+          codigo: hab.codigo,
+          estado: hab.estado,
+          edificio: edificio ? edificio.nombre : '',
+          montoAlquiler: Number(hab.montoAlquiler || 0),
+          inquilino: inq ? {
+            nombre: String(inq.nombre || '').split(' ')[0],
+            fechaIngreso: inq.fechaIngreso,
+            modalidadPago: inq.modalidadPago || 'adelantado'
+          } : null,
+          pagos: pagosHab
+        });
+      }
 
       // ------------------- REPORTES -------------------
       case 'reportes':
