@@ -94,17 +94,37 @@ export function generarPlanillaCobrosPdf(p: PlanillaParams): jsPDF {
     { align: 'right' }
   );
 
+  /** Escribe el texto achicando la letra hasta que quepa en `ancho` (nunca se sale de su celda) */
+  const textoAjustado = (
+    texto: string,
+    x: number,
+    y: number,
+    ancho: number,
+    tam: number,
+    opciones?: { align?: 'center' | 'left' | 'right' }
+  ) => {
+    let t = tam;
+    doc.setFontSize(t);
+    while (t > 4.5 && doc.getTextWidth(texto) > ancho) {
+      t -= 0.25;
+      doc.setFontSize(t);
+    }
+    doc.text(texto, x, y, opciones);
+  };
+
   // ---------------- Columnas ----------------
   const xCuarto = M;
   const wCuarto = 9;
   const xInq = xCuarto + wCuarto;
-  const wInq = 40;
+  // Con 5+ meses las columnas fijas se angostan para dar espacio a la cuadrícula
+  const muchos = columnas.length >= 5;
+  const wInq = muchos ? 33 : 40;
   const xDia = xInq + wInq;
   const wDia = 8;
   const xMonto = xDia + wDia;
   const wMonto = 13;
   const xDebe = xMonto + wMonto;
-  const wDebe = 17;
+  const wDebe = muchos ? 14 : 17;
   const xMeses = xDebe + wDebe;
   const wMes = (W - M - xMeses) / columnas.length;
   // Sub-columnas de cada mes (proporciones del ancho del mes)
@@ -155,11 +175,10 @@ export function generarPlanillaCobrosPdf(p: PlanillaParams): jsPDF {
     doc.setFontSize(10);
     doc.setTextColor(255, 255, 255);
     const etiqueta = c.anio === a.anio ? getMonthName(c.mes).toUpperCase() : `${getMonthName(c.mes).toUpperCase()} ${c.anio}`;
-    doc.text(etiqueta, xMeses + i * wMes + wMes / 2, yTabla + 4.9, { align: 'center' });
-    doc.setFontSize(7.5);
+    textoAjustado(etiqueta, xMeses + i * wMes + wMes / 2, yTabla + 4.9, wMes - 3, 10, { align: 'center' });
     color(TINTA);
     sub.forEach((s, j) => {
-      doc.text(s.label, subX(i, j) + subW(j) / 2, yTabla + hCab1 + 3.6, { align: 'center' });
+      textoAjustado(s.label, subX(i, j) + subW(j) / 2, yTabla + hCab1 + 3.6, subW(j) - 1.2, 7.5, { align: 'center' });
     });
   });
 
@@ -186,7 +205,7 @@ export function generarPlanillaCobrosPdf(p: PlanillaParams): jsPDF {
     doc.setFontSize(10);
     color(TINTA);
     doc.text(h.codigo, xCuarto + wCuarto / 2, mid + 1.3, { align: 'center' });
-    doc.setFontSize(7);
+    doc.setFontSize(muchos ? 6.2 : 7);
     const lineas = doc.splitTextToSize((h.nombreInquilino || '').toUpperCase(), wInq - 2.5).slice(0, 2);
     doc.text(lineas, xInq + 1.3, mid - (lineas.length - 1) * 1.4 + 0.9);
     doc.setFontSize(9);
@@ -199,10 +218,10 @@ export function generarPlanillaCobrosPdf(p: PlanillaParams): jsPDF {
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(8);
       color(ROJO);
-      doc.text(soles(previos.length * monto), xDebe + wDebe / 2, mid - 0.2, { align: 'center' });
+      textoAjustado(soles(previos.length * monto), xDebe + wDebe / 2, mid - 0.2, wDebe - 1.5, 8, { align: 'center' });
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(6);
-      doc.text(previos.map((m) => MES_CORTO[m.mes - 1]).join(', '), xDebe + wDebe / 2, mid + 2.8, { align: 'center' });
+      textoAjustado(previos.map((m) => MES_CORTO[m.mes - 1]).join(', '), xDebe + wDebe / 2, mid + 2.8, wDebe - 1.5, 6, { align: 'center' });
     }
 
     columnas.forEach((col, i) => {
@@ -234,7 +253,7 @@ export function generarPlanillaCobrosPdf(p: PlanillaParams): jsPDF {
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(8);
         color(VERDE);
-        doc.text(dm(fechaLocal(pagado[0].fecha) ?? v), xF + subW(1) / 2, mid + 1.1, { align: 'center' });
+        textoAjustado(dm(fechaLocal(pagado[0].fecha) ?? v), xF + subW(1) / 2, mid + 1.1, subW(1) - 1.5, 8, { align: 'center' });
         const iniciales = new Set(pagado.map((x) => inicialCobrador(x.observaciones)).filter(Boolean));
         ['Y', 'J', 'M'].forEach((ini, j) => {
           if (iniciales.has(ini)) {
@@ -250,11 +269,11 @@ export function generarPlanillaCobrosPdf(p: PlanillaParams): jsPDF {
       trazo(TINTA, 0.35);
       doc.rect(xP + subW(0) / 2 - s / 2, mid - s / 2, s, s, 'S');
       doc.setFont('helvetica', 'normal');
-      doc.setFontSize(6);
       color(GUIA);
-      doc.text(`vence ${dm(v)}`, xF + 1, top + 2.6);
-      doc.setFontSize(9);
-      doc.text('__/__', xF + subW(1) / 2, mid + 2.6, { align: 'center' });
+      doc.setFontSize(6);
+      const guia = doc.getTextWidth(`vence ${dm(v)}`) <= subW(1) - 1.5 ? `vence ${dm(v)}` : dm(v);
+      textoAjustado(guia, xF + subW(1) / 2, top + 2.6, subW(1) - 1.5, 6, { align: 'center' });
+      textoAjustado('__/__', xF + subW(1) / 2, mid + 2.6, subW(1) - 1.5, 9, { align: 'center' });
     });
   }
 
