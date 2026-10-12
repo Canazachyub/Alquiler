@@ -38,7 +38,7 @@ export function EdificioWizard({ ciudades, onSubmit, onCancel, isLoading }: Edif
       nombre: '',
       descripcion: '',
       direccion: '',
-      pisos: [{ numero: 1, descripcion: '', cantidadHabitaciones: 2, montoAlquiler: 150, montoInternet: 20, montoServicios: 0 }],
+      pisos: [{ numero: 1, descripcion: '', cantidadHabitaciones: 2, montoAlquiler: 150, montoInternet: 0, montoServicios: 0 }],
     },
   });
 
@@ -79,7 +79,8 @@ export function EdificioWizard({ ciudades, onSubmit, onCancel, isLoading }: Edif
       descripcion: '',
       cantidadHabitaciones: lastPiso?.cantidadHabitaciones || 2,
       montoAlquiler: lastPiso?.montoAlquiler || 150,
-      montoInternet: lastPiso?.montoInternet || 20,
+      // El internet se activa por cuarto desde su ficha (vista Edificio)
+      montoInternet: 0,
       montoServicios: lastPiso?.montoServicios || 0,
     });
   };
@@ -255,15 +256,6 @@ export function EdificioWizard({ ciudades, onSubmit, onCancel, isLoading }: Edif
                       />
                     </div>
                     <div>
-                      <label className="text-xs text-slate-500">Internet (S/)</label>
-                      <input
-                        type="number"
-                        step="0.01"
-                        {...register(`pisos.${index}.montoInternet`, { valueAsNumber: true })}
-                        className="input tabular-nums"
-                      />
-                    </div>
-                    <div>
                       <label className="text-xs text-slate-500">Servicios (S/)</label>
                       <input
                         type="number"
@@ -350,7 +342,7 @@ export function EdificioWizard({ ciudades, onSubmit, onCancel, isLoading }: Edif
                         </span>
                       </span>
                       <span className="text-slate-600 tabular-nums">
-                        Alq: {formatCurrency(piso.montoAlquiler)} | Int: {formatCurrency(piso.montoInternet)}
+                        Alq: {formatCurrency(piso.montoAlquiler)}
                       </span>
                     </div>
                   ))}

@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import { Plus, Search, Edit, Trash2, User, Phone, Mail, Home, FileText, UploadCloud, ExternalLink } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, User, Phone, Mail, Home, FileText, UploadCloud, ExternalLink, Users } from 'lucide-react';
 import { InquilinoForm, type CapturaDniValue } from '@/components/forms';
-import { Modal, ConfirmDialog, LoadingPage, EmptyState } from '@/components/ui';
+import { Modal, ConfirmDialog, LoadingPage, EmptyState, IconChip } from '@/components/ui';
 import { Fab } from '@/components/ui/Fab';
 import { generateContratoPDF, getContratoBlob } from '@/components/voucher';
 import {
@@ -19,6 +20,7 @@ import { driveApi } from '@/api';
 import { useConfigStore, useNotifications } from '@/store';
 import { cn } from '@/utils/cn';
 import { archivoADataUrl } from '@/utils/imagen';
+import { letraDePiso, compararCodigos } from '@/utils/plano';
 import { formatDate, formatPhone, formatDNI } from '@/utils/formatters';
 import type { Inquilino, InquilinoInput, Habitacion, TipoDocumentoDrive } from '@/types';
 
@@ -37,6 +39,7 @@ export function Inquilinos() {
   const { mesActual, anioActual, ciudadSeleccionada, edificioSeleccionado } = useConfigStore();
 
   const { data: inquilinos, isLoading } = useInquilinos();
+  const [searchParams, setSearchParams] = useSearchParams();
   // Con estado-pago porque es el unico endpoint que trae edificio y piso resueltos,
   // necesarios para agrupar el selector y para el contexto del formulario.
   const { data: habitaciones } = useHabitacionesConEstadoPago(mesActual, anioActual);
@@ -72,7 +75,15 @@ export function Inquilinos() {
     const matchesStatus = showInactivos || inq.estado === 'activo';
 
     return matchesSearch && matchesStatus;
-  });
+  })
+    // Orden del edificio: activos primero → edificio → piso (nivel) → cuarto
+    .sort(
+      (a, b) =>
+        Number(b.estado === 'activo') - Number(a.estado === 'activo') ||
+        String(a.habitacion?.edificioNombre ?? '').localeCompare(String(b.habitacion?.edificioNombre ?? '')) ||
+        Number(a.habitacion?.pisoNumero ?? 99) - Number(b.habitacion?.pisoNumero ?? 99) ||
+        compararCodigos(String(a.habitacion?.codigo ?? ''), String(b.habitacion?.codigo ?? ''))
+    );
 
   // Totales para subtitle
   const totalActivos = inquilinos?.filter((i) => i.estado === 'activo').length || 0;
@@ -87,6 +98,16 @@ export function Inquilinos() {
     setSelectedInquilino(inquilino);
     setIsModalOpen(true);
   };
+
+  // Abrir edición directa desde otras ventanas: /inquilinos?editar=<id>
+  useEffect(() => {
+    const id = searchParams.get('editar');
+    if (!id || !inquilinos) return;
+    const inq = inquilinos.find((x) => x.id === id);
+    if (inq) handleEdit(inq);
+    setSearchParams({}, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, inquilinos]);
 
   const handleDelete = (inquilino: Inquilino) => {
     setDeletingInquilino(inquilino);
@@ -219,149 +240,13 @@ export function Inquilinos() {
     }
   };
 
-  if (isLoading) {
-    return <LoadingPage />;
-  }
+  // Piso con su letra (cada letra es un piso): "Piso B"
+  const pisoDe = (inq: Inquilino) => {
+    const letra = inq.habitacion?.codigo ? letraDePiso([inq.habitacion.codigo]) : null;
+    return letra ? `Piso ${letra}` : inq.habitacion?.pisoNumero != null ? `Piso ${inq.habitacion.pisoNumero}` : '';
+  };
 
-  return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between gap-2">
-        <div className="min-w-0">
-          <h1 className="page-title">Inquilinos</h1>
-          <p className="page-subtitle">
-            {totalRegistrados > 0
-              ? `${totalActivos} activos · ${totalRegistrados} registrados`
-              : 'Sin registros todavía'}
-          </p>
-        </div>
-        <button onClick={handleCreate} className="btn btn-primary whitespace-nowrap hidden md:inline-flex">
-          <Plus className="w-4 h-4" />
-          <span>Nuevo Inquilino</span>
-        </button>
-      </div>
-
-      {/* Filtros */}
-      <div className="card p-3 md:p-4">
-        <div className="flex flex-wrap items-center gap-3 md:gap-4">
-          {/* Búsqueda */}
-          <div className="flex-1 min-w-0">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-              <input
-                type="text"
-                placeholder="Buscar por nombre, DNI o teléfono..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="input pl-10"
-              />
-            </div>
-          </div>
-
-          {/* Toggle inactivos */}
-          <label className="flex items-center gap-2 cursor-pointer select-none">
-            <input
-              type="checkbox"
-              checked={showInactivos}
-              onChange={(e) => setShowInactivos(e.target.checked)}
-              className="sr-only"
-            />
-            <div className={cn('w-9 h-5 rounded-full relative transition-colors', showInactivos ? 'bg-primary-600' : 'bg-slate-300')}>
-              <div className={cn('absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-all', showInactivos ? 'left-[18px]' : 'left-0.5')} />
-            </div>
-            <span className="text-sm text-slate-600">Mostrar inactivos</span>
-          </label>
-        </div>
-      </div>
-
-      {/* Tabla de inquilinos */}
-      {filteredInquilinos?.length === 0 ? (
-        <EmptyState
-          icon={User}
-          title="Aún no hay inquilinos"
-          action={
-            <button onClick={handleCreate} className="btn btn-primary">
-              <Plus className="w-4 h-4" />
-              Registrar inquilino
-            </button>
-          }
-        />
-      ) : (
-        <div className="card overflow-hidden overflow-x-auto">
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Inquilino</th>
-                <th className="hidden md:table-cell">Contacto</th>
-                <th>Hab.</th>
-                <th className="hidden sm:table-cell">Ingreso</th>
-                <th>Estado</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredInquilinos?.map((inq) => (
-                <tr key={inq.id}>
-                  <td>
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-lg bg-primary-50 flex items-center justify-center">
-                        <User className="w-4 h-4 text-primary-600" />
-                      </div>
-                      <div>
-                        <p className="font-semibold text-slate-900 text-sm">
-                          {inq.nombre} {inq.apellido}
-                        </p>
-                        <p className="text-xs text-slate-500 tabular-nums">DNI: {inq.dni ? formatDNI(inq.dni) : '—'}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="hidden md:table-cell">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-1 text-sm tabular-nums">
-                        <Phone className="w-3 h-3 text-slate-400" />
-                        {formatPhone(inq.telefono)}
-                      </div>
-                      {inq.email && (
-                        <div className="flex items-center gap-1 text-sm text-slate-500">
-                          <Mail className="w-3 h-3 text-slate-400" />
-                          {inq.email}
-                        </div>
-                      )}
-                    </div>
-                  </td>
-                  <td>
-                    <div className="flex items-start gap-1.5">
-                      <Home className="w-4 h-4 text-slate-400 mt-0.5 shrink-0" />
-                      <div className="min-w-0">
-                        <p className="font-medium text-slate-800">
-                          {inq.habitacion?.codigo || inq.habitacionId}
-                          {inq.habitacion?.pisoNumero != null && (
-                            <span className="font-normal text-slate-400">
-                              {' '}
-                              · Piso {inq.habitacion.pisoNumero}
-                            </span>
-                          )}
-                        </p>
-                        {inq.habitacion?.edificioNombre && (
-                          <p className="text-xs text-slate-500 truncate">
-                            {inq.habitacion.edificioNombre}
-                            {inq.habitacion.ciudadNombre ? ` · ${inq.habitacion.ciudadNombre}` : ''}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  </td>
-                  <td className="hidden sm:table-cell tabular-nums">{formatDate(inq.fechaIngreso)}</td>
-                  <td>
-                    <span
-                      className={`badge ${
-                        inq.estado === 'activo' ? 'badge-success' : 'badge-danger'
-                      }`}
-                    >
-                      {inq.estado === 'activo' ? 'Activo' : 'Inactivo'}
-                    </span>
-                  </td>
-                  <td>
+  const acciones = (inq: Inquilino) => (
                     <div className="flex gap-1">
                       <button
                         onClick={async () => {
@@ -416,12 +301,191 @@ export function Inquilinos() {
                         <Trash2 className="w-4 h-4 text-red-600" />
                       </button>
                     </div>
+  );
+
+  if (isLoading) {
+    return <LoadingPage />;
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between gap-2">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2 mb-2">
+            <IconChip icon={Users} tone="sky" size="sm" />
+            <span className="eyebrow">Operación</span>
+          </div>
+          <h1 className="page-title">Inquilinos</h1>
+          <p className="page-subtitle">
+            {totalRegistrados > 0
+              ? `${totalActivos} activos · ${totalRegistrados} registrados`
+              : 'Sin registros todavía'}
+          </p>
+        </div>
+        <button onClick={handleCreate} className="btn btn-primary whitespace-nowrap hidden md:inline-flex">
+          <Plus className="w-4 h-4" />
+          <span>Nuevo Inquilino</span>
+        </button>
+      </div>
+
+      {/* Filtros */}
+      <div className="card p-3 md:p-4">
+        <div className="flex flex-wrap items-center gap-3 md:gap-4">
+          {/* Búsqueda */}
+          <div className="flex-1 min-w-[220px]">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Buscar por nombre, DNI o teléfono..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="input pl-10"
+              />
+            </div>
+          </div>
+
+          {/* Toggle inactivos */}
+          <label className="flex items-center gap-2 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={showInactivos}
+              onChange={(e) => setShowInactivos(e.target.checked)}
+              className="sr-only"
+            />
+            <div className={cn('w-9 h-5 rounded-full relative transition-colors', showInactivos ? 'bg-primary-600' : 'bg-slate-300')}>
+              <div className={cn('absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-all', showInactivos ? 'left-[18px]' : 'left-0.5')} />
+            </div>
+            <span className="text-sm text-slate-600">Mostrar inactivos</span>
+          </label>
+        </div>
+      </div>
+
+      {/* Tabla de inquilinos */}
+      {filteredInquilinos?.length === 0 ? (
+        <EmptyState
+          icon={User}
+          title="Aún no hay inquilinos"
+          action={
+            <button onClick={handleCreate} className="btn btn-primary">
+              <Plus className="w-4 h-4" />
+              Registrar inquilino
+            </button>
+          }
+        />
+      ) : (
+        <>
+        {/* Celular: tarjetas */}
+        <ul className="md:hidden space-y-2">
+          {filteredInquilinos?.map((inq) => (
+            <li key={inq.id} className="card p-3.5">
+              <div className="flex items-start gap-3">
+                <span className="w-11 h-11 rounded-full bg-slate-900 text-white flex items-center justify-center font-display font-bold text-sm flex-shrink-0">
+                  {inq.habitacion?.codigo || '—'}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="font-semibold text-slate-900 leading-tight">
+                    {inq.nombre} {inq.apellido}
+                  </p>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    {[pisoDe(inq), inq.habitacion?.edificioNombre].filter(Boolean).join(' · ')}
+                  </p>
+                  <p className="text-xs text-slate-500 tabular-nums mt-1">
+                    DNI {inq.dni ? formatDNI(inq.dni) : '—'} · {formatPhone(inq.telefono)}
+                  </p>
+                </div>
+                <span className={`badge ${inq.estado === 'activo' ? 'badge-success' : 'badge-danger'}`}>
+                  {inq.estado === 'activo' ? 'Activo' : 'Inactivo'}
+                </span>
+              </div>
+              <div className="flex items-center justify-between gap-2 mt-3 pt-2.5 border-t border-slate-100">
+                <span className="text-xs text-slate-500">Desde {formatDate(inq.fechaIngreso)}</span>
+                {acciones(inq)}
+              </div>
+            </li>
+          ))}
+        </ul>
+
+        {/* PC: tabla */}
+        <div className="card overflow-hidden overflow-x-auto hidden md:block">
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Inquilino</th>
+                <th className="hidden md:table-cell">Contacto</th>
+                <th>Hab.</th>
+                <th className="hidden sm:table-cell">Ingreso</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredInquilinos?.map((inq) => (
+                <tr key={inq.id}>
+                  <td>
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-lg bg-primary-50 flex items-center justify-center">
+                        <User className="w-4 h-4 text-primary-600" />
+                      </div>
+                      <div>
+                        <p className="font-semibold text-slate-900 text-sm">
+                          {inq.nombre} {inq.apellido}
+                        </p>
+                        <p className="text-xs text-slate-500 tabular-nums">DNI: {inq.dni ? formatDNI(inq.dni) : '—'}</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="hidden md:table-cell">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-1 text-sm tabular-nums">
+                        <Phone className="w-3 h-3 text-slate-400" />
+                        {formatPhone(inq.telefono)}
+                      </div>
+                      {inq.email && (
+                        <div className="flex items-center gap-1 text-sm text-slate-500">
+                          <Mail className="w-3 h-3 text-slate-400" />
+                          {inq.email}
+                        </div>
+                      )}
+                    </div>
+                  </td>
+                  <td>
+                    <div className="flex items-start gap-1.5">
+                      <Home className="w-4 h-4 text-slate-400 mt-0.5 shrink-0" />
+                      <div className="min-w-0">
+                        <p className="font-medium text-slate-800">
+                          {inq.habitacion?.codigo || inq.habitacionId}
+                          {pisoDe(inq) && <span className="font-normal text-slate-400"> · {pisoDe(inq)}</span>}
+                        </p>
+                        {inq.habitacion?.edificioNombre && (
+                          <p className="text-xs text-slate-500 truncate">
+                            {inq.habitacion.edificioNombre}
+                            {inq.habitacion.ciudadNombre ? ` · ${inq.habitacion.ciudadNombre}` : ''}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </td>
+                  <td className="hidden sm:table-cell tabular-nums">{formatDate(inq.fechaIngreso)}</td>
+                  <td>
+                    <span
+                      className={`badge ${
+                        inq.estado === 'activo' ? 'badge-success' : 'badge-danger'
+                      }`}
+                    >
+                      {inq.estado === 'activo' ? 'Activo' : 'Inactivo'}
+                    </span>
+                  </td>
+                  <td>
+                    {acciones(inq)}
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
+        </>
       )}
 
       {/* FAB móvil */}

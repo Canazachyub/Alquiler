@@ -24,6 +24,8 @@ interface MenuItem {
   path: string;
   icon: LucideIcon;
   label: string;
+  /** Color de concepto del ícono activo (DESIGN.md §2) */
+  accent: string;
 }
 
 interface MenuGroup {
@@ -35,21 +37,21 @@ const menuGroups: MenuGroup[] = [
   {
     label: 'Operación',
     items: [
-      { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
-      { path: '/habitaciones', icon: Home, label: 'Habitaciones' },
-      { path: '/inquilinos', icon: Users, label: 'Inquilinos' },
-      { path: '/pagos', icon: CreditCard, label: 'Pagos' },
-      { path: '/gastos', icon: Receipt, label: 'Gastos' },
+      { path: '/', icon: LayoutDashboard, label: 'Dashboard', accent: 'text-primary-400' },
+      { path: '/habitaciones', icon: Home, label: 'Habitaciones', accent: 'text-teal-500' },
+      { path: '/inquilinos', icon: Users, label: 'Inquilinos', accent: 'text-sky-500' },
+      { path: '/pagos', icon: CreditCard, label: 'Pagos', accent: 'text-leaf-500' },
+      { path: '/gastos', icon: Receipt, label: 'Gastos', accent: 'text-coral-500' },
     ],
   },
   {
     label: 'Catálogo',
     items: [
-      { path: '/ciudades', icon: MapPin, label: 'Ciudades' },
-      { path: '/edificios', icon: Building2, label: 'Edificios' },
-      { path: '/pisos', icon: Layers, label: 'Pisos' },
-      { path: '/reportes', icon: FileText, label: 'Reportes' },
-      { path: '/configuracion', icon: Settings, label: 'Config.' },
+      { path: '/ciudades', icon: MapPin, label: 'Ciudades', accent: 'text-pine-500' },
+      { path: '/edificios', icon: Building2, label: 'Edificios', accent: 'text-pine-500' },
+      { path: '/pisos', icon: Layers, label: 'Pisos', accent: 'text-pine-500' },
+      { path: '/reportes', icon: FileText, label: 'Reportes', accent: 'text-olive-500' },
+      { path: '/configuracion', icon: Settings, label: 'Configuración', accent: 'text-slate-300' },
     ],
   },
 ];
@@ -72,7 +74,7 @@ export function Sidebar() {
 
       <aside
         className={cn(
-          'fixed left-0 top-0 h-screen bg-slate-950 text-white transition-all duration-300 z-50 flex flex-col',
+          'fixed left-0 top-0 h-screen bg-slate-900 text-white transition-all duration-300 z-50 flex flex-col',
           'border-r border-white/5',
           'hidden md:flex',
           sidebarCollapsed ? 'md:w-[72px]' : 'md:w-64',
@@ -83,11 +85,13 @@ export function Sidebar() {
         <div className="flex items-center justify-between h-16 px-4 border-b border-white/5">
           {(!sidebarCollapsed || sidebarMobileOpen) && (
             <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center shadow-[0_4px_12px_-2px_rgba(99,102,241,0.5)]">
-                <Home className="w-4 h-4 text-white" strokeWidth={2.5} />
+              <div className="flex items-center -space-x-1.5" aria-hidden>
+                <span className="w-4 h-4 rounded-full bg-teal-500" />
+                <span className="w-4 h-4 rounded-full bg-coral-500" />
+                <span className="w-4 h-4 rounded-full bg-olive-500" />
               </div>
               <div className="flex flex-col leading-tight">
-                <span className="font-bold text-sm tracking-tight">Alquileres</span>
+                <span className="font-display font-bold text-[15px] tracking-tight">Alquileres</span>
                 <span className="text-[10px] text-slate-500 uppercase tracking-wider font-medium">Puno / Juli</span>
               </div>
             </div>
@@ -118,7 +122,7 @@ export function Sidebar() {
             <Fragment key={group.label}>
               {isCollapsed ? (
                 groupIdx === 0 ? null : (
-                  <div className="h-px bg-slate-800 mx-2 my-3" aria-hidden />
+                  <div className="h-px bg-white/10 mx-2 my-3" aria-hidden />
                 )
               ) : (
                 <div
@@ -130,7 +134,7 @@ export function Sidebar() {
                   <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">
                     {group.label}
                   </span>
-                  <div className="flex-1 h-px bg-slate-800" />
+                  <div className="flex-1 h-px bg-white/10" />
                 </div>
               )}
 
@@ -145,8 +149,8 @@ export function Sidebar() {
                       cn(
                         'group relative flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-150 text-sm font-medium',
                         isActive
-                          ? 'bg-white/5 text-white'
-                          : 'text-slate-400 hover:text-white hover:bg-white/5',
+                          ? 'bg-white/[0.08] text-white'
+                          : 'text-slate-400 hover:text-white hover:bg-white/[0.04]',
                         isCollapsed && 'justify-center px-2'
                       )
                     }
@@ -155,7 +159,8 @@ export function Sidebar() {
                       <>
                         <span
                           className={cn(
-                            'absolute left-0 top-1/2 -translate-y-1/2 h-6 w-0.5 rounded-r-full bg-primary-500 transition-opacity',
+                            'absolute left-0 top-1/2 -translate-y-1/2 h-5 w-[3px] rounded-r-full bg-current transition-opacity',
+                            item.accent,
                             isActive ? 'opacity-100' : 'opacity-0'
                           )}
                           aria-hidden
@@ -163,7 +168,7 @@ export function Sidebar() {
                         <item.icon
                           className={cn(
                             'w-5 h-5 flex-shrink-0 transition-colors',
-                            isActive ? 'text-primary-400' : 'text-slate-500 group-hover:text-slate-300'
+                            isActive ? item.accent : 'text-slate-500 group-hover:text-slate-300'
                           )}
                           strokeWidth={isActive ? 2.25 : 2}
                         />
@@ -188,13 +193,13 @@ export function Sidebar() {
         <div className="p-3 border-t border-white/5">
           {isCollapsed ? (
             <div className="flex justify-center">
-              <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-xs font-semibold text-slate-300">
+              <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-xs font-semibold text-slate-200">
                 AC
               </div>
             </div>
           ) : (
             <button className="w-full flex items-center gap-2.5 px-2 py-2 rounded-lg hover:bg-white/5 transition-colors">
-              <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-xs font-semibold text-slate-300 flex-shrink-0">
+              <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-xs font-semibold text-slate-200 flex-shrink-0">
                 AC
               </div>
               <div className="flex-1 text-left min-w-0">

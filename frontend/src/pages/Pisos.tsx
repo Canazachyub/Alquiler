@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { Plus, Edit, Trash2, Layers, Building2, Home } from 'lucide-react';
-import { Modal, ConfirmDialog, LoadingPage, EmptyState } from '@/components/ui';
+import { Modal, ConfirmDialog, LoadingPage, EmptyState, IconChip } from '@/components/ui';
 import { useNotifications } from '@/store';
 import { cn } from '@/utils/cn';
 import type { Piso, PisoInput, Edificio } from '@/types';
 import { useForm } from 'react-hook-form';
-import { useEdificios } from '@/hooks';
+import { useEdificios, useHabitaciones } from '@/hooks';
+import { letraDePiso } from '@/utils/plano';
 import { usePisos, useCreatePiso, useUpdatePiso, useDeletePiso } from '@/hooks/usePisos';
 
 export function Pisos() {
@@ -15,7 +16,14 @@ export function Pisos() {
   const [selectedEdificio, setSelectedEdificio] = useState<string>('');
 
   const { data: edificios, isLoading: loadingEdificios } = useEdificios();
-  const { data: pisos, isLoading: loadingPisos } = usePisos(selectedEdificio || undefined);
+  const { data: pisosSinOrden, isLoading: loadingPisos } = usePisos(selectedEdificio || undefined);
+  const { data: habitacionesTodas } = useHabitaciones();
+  // Letra del piso según sus cuartos (A1, A2… → "A"); cada letra es un piso alquilado
+  const letraDe = (pisoId: string) =>
+    letraDePiso((habitacionesTodas ?? []).filter((h) => h.pisoId === pisoId).map((h) => h.codigo));
+  const pisos = [...(pisosSinOrden ?? [])].sort(
+    (a, b) => a.edificioId.localeCompare(b.edificioId) || Number(a.numero) - Number(b.numero)
+  );
   const createMutation = useCreatePiso();
   const updateMutation = useUpdatePiso();
   const deleteMutation = useDeletePiso();
@@ -80,6 +88,10 @@ export function Pisos() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
+          <div className="flex items-center gap-2 mb-2">
+            <IconChip icon={Layers} tone="pine" size="sm" />
+            <span className="eyebrow">Catálogo</span>
+          </div>
           <h1 className="page-title">Pisos</h1>
           <p className="page-subtitle">
             {edificioNombre
@@ -130,11 +142,14 @@ export function Pisos() {
             <div key={piso.id} className="card p-4">
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-primary-100 flex items-center justify-center">
-                    <span className="text-lg font-bold text-primary-600 tabular-nums">{piso.numero}</span>
+                  <div className="w-10 h-10 rounded-full bg-slate-900 flex items-center justify-center">
+                    <span className="text-base font-display font-bold text-white">{letraDe(piso.id) ?? piso.numero}</span>
                   </div>
                   <div>
-                    <h3 className="font-semibold">Piso {piso.numero}</h3>
+                    <h3 className="font-semibold">
+                      {letraDe(piso.id) ? `Piso ${letraDe(piso.id)}` : `Piso ${piso.numero}`}
+                      <span className="font-normal text-slate-400"> · nivel {piso.numero}</span>
+                    </h3>
                     <div className="flex items-center gap-1 text-xs text-slate-500">
                       <Building2 className="w-3 h-3" />
                       {getEdificioNombre(piso.edificioId)}
@@ -220,7 +235,7 @@ function PisoForm({
   const { register, handleSubmit, formState: { errors } } = useForm<PisoInput>({
     defaultValues: {
       edificioId: initialData?.edificioId || defaultEdificioId || '',
-      numero: initialData?.numero || 1,
+      numero: initialData?.numero ?? 1,
       descripcion: initialData?.descripcion || '',
     },
   });

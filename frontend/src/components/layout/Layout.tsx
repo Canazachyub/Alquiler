@@ -9,7 +9,7 @@ export function Layout() {
   const { sidebarCollapsed } = useConfigStore();
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-canvas">
       <Sidebar />
       <div
         className={cn(

@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Plus, Edit, Trash2, Building2, MapPin, Layers, Receipt, Calendar, DollarSign, Wand2 } from 'lucide-react';
-import { Modal, ConfirmDialog, LoadingPage, EmptyState } from '@/components/ui';
+import { Modal, ConfirmDialog, LoadingPage, EmptyState, IconChip } from '@/components/ui';
 import { EdificioWizard } from '@/components/forms';
+import { VistaTecnicaEdificio } from '@/components/plano/VistaTecnicaEdificio';
 import {
   useEdificios,
   useCreateEdificio,
@@ -179,8 +180,12 @@ export function Edificios() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
+          <div className="flex items-center gap-2 mb-2">
+            <IconChip icon={Building2} tone="pine" size="sm" />
+            <span className="eyebrow">Catálogo</span>
+          </div>
           <h1 className="page-title">Edificios</h1>
           <p className="page-subtitle">
             {totalEdificios > 0
@@ -188,14 +193,15 @@ export function Edificios() {
               : 'Sin registros todavía'}
           </p>
         </div>
-        <div className="flex gap-2">
-          <button onClick={handleCreateSimple} className="btn btn-outline">
+        <div className="flex gap-2 w-full sm:w-auto">
+          <button onClick={handleCreateSimple} className="btn btn-secondary flex-1 sm:flex-none">
             <Plus className="w-4 h-4" />
             Simple
           </button>
-          <button onClick={handleCreate} className="btn btn-primary">
+          <button onClick={handleCreate} className="btn btn-primary flex-1 sm:flex-none">
             <Wand2 className="w-4 h-4" />
-            Nuevo con Asistente
+            <span className="sm:hidden">Asistente</span>
+            <span className="hidden sm:inline">Nuevo con asistente</span>
           </button>
         </div>
       </div>
@@ -391,6 +397,13 @@ export function Edificios() {
           </div>
         </div>
       </div>
+
+      {/* Edificio 3D + planos técnicos del edificio seleccionado */}
+      {selectedEdificio ? (
+        <VistaTecnicaEdificio edificio={selectedEdificio} />
+      ) : (
+        <p className="text-sm text-slate-500 text-center">Selecciona un edificio para ver su vista 3D y sus planos.</p>
+      )}
 
       {/* Modal Wizard de creacion de edificio completo */}
       <Modal

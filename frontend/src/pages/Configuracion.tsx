@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Building2, DollarSign, Bell, Database, Save } from 'lucide-react';
+import { Building2, DollarSign, Bell, Database, Save, Settings } from 'lucide-react';
+import { IconChip } from '@/components/ui';
 import { useNotifications } from '@/store';
 import { cn } from '@/utils/cn';
 
@@ -87,8 +88,12 @@ export function Configuracion() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
+          <div className="flex items-center gap-2 mb-2">
+            <IconChip icon={Settings} tone="ink" size="sm" />
+            <span className="eyebrow">Sistema</span>
+          </div>
           <h1 className="page-title">Configuración</h1>
           <p className="page-subtitle">Parámetros generales del sistema</p>
         </div>
@@ -100,13 +105,13 @@ export function Configuracion() {
 
       {/* Tabs */}
       <div className="card">
-        <div className="flex border-b border-slate-200">
+        <div className="flex border-b border-slate-200 overflow-x-auto no-scrollbar">
           {tabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={cn(
-                'flex items-center gap-2 px-6 py-3 text-sm font-medium border-b-2 transition-colors',
+                'flex items-center gap-2 px-4 sm:px-6 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap',
                 activeTab === tab.id
                   ? 'border-primary-600 text-primary-600'
                   : 'border-transparent text-slate-500 hover:text-slate-700'

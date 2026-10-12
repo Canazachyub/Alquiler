@@ -1,5 +1,9 @@
 import { Home, User, Phone, Wrench, Calendar } from 'lucide-react';
 import { cn } from '@/utils/cn';
+import { IconChip } from '@/components/ui/IconChip';
+import { ESTADO_ESTILO } from '@/components/plano/estadoEstilos';
+import { useCobros } from '@/hooks/useCobros';
+import { CuentaPagoCorta } from '@/components/plano/CicloPago';
 import { formatCurrency } from '@/utils/formatters';
 import type { HabitacionConDetalles } from '@/types';
 
@@ -7,75 +11,48 @@ interface RoomCardProps {
   habitacion: HabitacionConDetalles;
   onClick?: () => void;
   showPaymentStatus?: boolean;
+  /** Oculta "Piso · Edificio" cuando la tarjeta ya está dentro de su grupo de piso */
+  ocultarUbicacion?: boolean;
 }
 
-export function RoomCard({ habitacion, onClick }: RoomCardProps) {
+export function RoomCard({ habitacion, onClick, ocultarUbicacion }: RoomCardProps) {
   const isOccupied = habitacion.estado === 'occupied';
   const isVacant = habitacion.estado === 'vacant';
   const isMaintenance = habitacion.estado === 'maintenance';
-  const hasDebt = isOccupied && (!habitacion.alquilerPagado || !habitacion.internetPagado);
-  const isPaid = isOccupied && habitacion.alquilerPagado && habitacion.internetPagado;
+  const isExonerated = habitacion.estado === 'exonerated';
+  // Estado según el ciclo de pago real (no el mes calendario)
+  const cobros = useCobros();
+  const estado = cobros.estado(habitacion);
+  const st = ESTADO_ESTILO[estado];
 
   // El backend devuelve el numero de piso plano (pisoNumero); el objeto anidado
   // solo llega en los endpoints que hacen join. Se aceptan ambos.
   const pisoNumero = habitacion.piso?.numero ?? habitacion.pisoNumero;
 
-  // El backend no calcula deuda: se deriva de lo que ya viene en la respuesta.
-  const deuda =
-    (habitacion.alquilerPagado ? 0 : Number(habitacion.montoAlquiler || 0)) +
-    (habitacion.internetPagado ? 0 : Number(habitacion.montoInternet || 0));
-
-  // Prioridad: deuda > mantenimiento > pagado > vacante
-  const stateLabel =
-    hasDebt ? 'Con deuda' :
-    isMaintenance ? 'Mantenimiento' :
-    isPaid ? 'Al día' :
-    'Vacante';
+  // Solo cuenta como deuda lo que ya venció
+  const deuda = cobros.deuda(habitacion);
+  const cobro = cobros.cobro(habitacion);
 
   return (
     <div
       onClick={onClick}
       className={cn(
-        'relative card-interactive p-5 ring-1',
-        hasDebt && 'ring-red-200 bg-red-50/40',
-        isMaintenance && 'ring-amber-200 bg-amber-50/40',
-        isPaid && 'ring-emerald-200 bg-emerald-50/30',
-        isVacant && 'ring-slate-200'
+        'relative card-interactive p-5 flex flex-col',
+        st.borde
       )}
     >
-      {/* Dot de estado */}
-      <span
-        className={cn(
-          'absolute top-3 right-3 w-2 h-2 rounded-full',
-          hasDebt && 'bg-red-500',
-          isMaintenance && 'bg-amber-500',
-          isPaid && 'bg-emerald-500',
-          isVacant && 'bg-slate-300'
-        )}
-        aria-hidden
-      />
-
-      {/* Header */}
-      <div className="flex items-center gap-3 mb-3">
-        <div
-          className={cn(
-            'w-10 h-10 rounded-xl ring-1 ring-inset flex items-center justify-center',
-            hasDebt && 'bg-red-50 ring-red-100 text-red-600',
-            isMaintenance && 'bg-amber-50 ring-amber-100 text-amber-600',
-            isPaid && 'bg-emerald-50 ring-emerald-100 text-emerald-600',
-            isVacant && 'bg-slate-50 ring-slate-100 text-slate-400'
-          )}
-        >
-          {isMaintenance ? (
-            <Wrench className="w-5 h-5" />
-          ) : (
-            <Home className="w-5 h-5" />
-          )}
-        </div>
-        <div className="min-w-0">
-          <h3 className="font-semibold text-base tracking-tight text-slate-900">{habitacion.codigo}</h3>
-          {(pisoNumero !== undefined || habitacion.edificioNombre) && (
-            <p className="text-xs text-slate-500 truncate">
+      {/* Header (nodo: ficha + título + meta) */}
+      <div className="flex items-start gap-3 mb-4">
+        <IconChip
+          icon={isMaintenance ? Wrench : Home}
+          tone={st.tone}
+          variant={isVacant ? 'soft' : 'solid'}
+          size="lg"
+        />
+        <div className="min-w-0 flex-1">
+          <h3 className="font-display font-bold text-lg leading-tight tracking-tight text-slate-900">{habitacion.codigo}</h3>
+          {!ocultarUbicacion && (pisoNumero !== undefined || habitacion.edificioNombre) && (
+            <p className="text-xs text-slate-500 truncate mt-0.5">
               {[
                 pisoNumero !== undefined ? `Piso ${pisoNumero}` : null,
                 habitacion.edificioNombre,
@@ -85,60 +62,89 @@ export function RoomCard({ habitacion, onClick }: RoomCardProps) {
             </p>
           )}
         </div>
+        <span
+          className={cn('badge', st.badge)}
+        >
+          <span className="w-1.5 h-1.5 rounded-full bg-current" aria-hidden />
+          {st.label}
+        </span>
       </div>
 
       {/* Inquilino */}
-      {isOccupied && habitacion.nombreInquilino && (
-        <div className="space-y-1.5 mb-3">
-          <div className="flex items-center gap-2 text-sm">
-            <User className="w-3.5 h-3.5 text-slate-400" />
-            <span className="truncate font-medium text-slate-700">{habitacion.nombreInquilino}</span>
+      <div className="flex-1 mb-4">
+        {(isOccupied || isExonerated) && habitacion.nombreInquilino ? (
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-2 text-sm">
+              <User className="w-3.5 h-3.5 text-slate-400" />
+              <span className="truncate font-semibold text-slate-800">{habitacion.nombreInquilino}</span>
+            </div>
+            {habitacion.telefonoInquilino && (
+              <div className="flex items-center gap-2 text-xs text-slate-500">
+                <Phone className="w-3.5 h-3.5 text-slate-400" />
+                <span>{habitacion.telefonoInquilino}</span>
+              </div>
+            )}
+            {isExonerated && (
+              <p className="text-xs text-olive-700">
+                Exonerado{habitacion.motivoExoneracion ? ` · ${habitacion.motivoExoneracion}` : ''}
+              </p>
+            )}
+            {isOccupied && habitacion.diaPago && (
+              <div className="flex items-center gap-2 text-xs text-slate-500">
+                <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                <CuentaPagoCorta habitacion={habitacion} className="!text-xs" />
+              </div>
+            )}
           </div>
-          {habitacion.telefonoInquilino && (
-            <div className="flex items-center gap-2 text-xs text-slate-500">
-              <Phone className="w-3.5 h-3.5 text-slate-400" />
-              <span>{habitacion.telefonoInquilino}</span>
-            </div>
-          )}
-          {habitacion.diaPago && (
-            <div className="flex items-center gap-2 text-xs text-slate-500">
-              <Calendar className="w-3.5 h-3.5 text-slate-400" />
-              <span>Paga el dia {habitacion.diaPago}</span>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Estado y Monto */}
-      <div className="flex items-center justify-between pt-3 border-t border-slate-100">
-        <span
-          className={cn(
-            'badge inline-flex items-center gap-1',
-            hasDebt && 'badge-danger',
-            isMaintenance && 'badge-warning',
-            isPaid && 'badge-success',
-            isVacant && 'badge-neutral'
-          )}
-        >
-          <span className="w-1.5 h-1.5 rounded-full bg-current" />
-          {stateLabel}
-        </span>
-        <span className="font-semibold text-sm text-slate-900 tabular-nums">
-          {formatCurrency(habitacion.montoAlquiler)}
-        </span>
+        ) : (
+          <p className="text-sm text-slate-400">
+            {isExonerated
+              ? `Exonerado${habitacion.motivoExoneracion ? ` · ${habitacion.motivoExoneracion}` : ''}`
+              : isMaintenance
+              ? 'En mantenimiento'
+              : isOccupied
+              ? 'Ocupado sin inquilino registrado'
+              : 'Disponible para alquilar'}
+          </p>
+        )}
       </div>
 
-      {/* Deuda */}
-      {isOccupied && hasDebt && deuda > 0 && (
-        <div className="mt-3 pt-2.5 border-t border-red-100">
-          <div className="flex justify-between items-center text-sm">
-            <span className="text-red-600 font-medium">Deuda del mes:</span>
-            <span className="font-semibold tabular-nums text-red-700">
-              {formatCurrency(deuda)}
-            </span>
-          </div>
+      {/* Métricas en columnas (como "Sent · Delivered · Clicked") */}
+      <div className="grid grid-cols-2 gap-3 pt-3 border-t border-slate-100">
+        <div>
+          <p className="font-display font-bold text-base tabular-nums text-slate-900 leading-tight">
+            {formatCurrency(habitacion.montoAlquiler)}
+          </p>
+          <p className="text-[11px] text-slate-500">Alquiler</p>
         </div>
-      )}
+        <div className="text-right">
+          {isOccupied && deuda > 0 ? (
+            <>
+              <p className="font-display font-bold text-base tabular-nums leading-tight text-red-600">
+                {formatCurrency(deuda)}
+              </p>
+              <p className="text-[11px] text-red-600">Deuda vencida</p>
+            </>
+          ) : isOccupied && cobro?.proximo ? (
+            <>
+              <p
+                className={cn(
+                  'font-display font-bold text-base tabular-nums leading-tight',
+                  estado === 'por-vencer' ? 'text-amber-700' : 'text-emerald-700'
+                )}
+              >
+                {cobro.proximo.vence.toLocaleDateString('es-PE', { day: 'numeric', month: 'short' })}
+              </p>
+              <p className="text-[11px] text-slate-500">Próximo pago</p>
+            </>
+          ) : (
+            <>
+              <p className="font-display font-bold text-base leading-tight text-slate-300">—</p>
+              <p className="text-[11px] text-slate-500">Sin cobro</p>
+            </>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

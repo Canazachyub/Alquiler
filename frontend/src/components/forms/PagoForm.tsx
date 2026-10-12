@@ -3,7 +3,8 @@ import { useForm } from 'react-hook-form';
 import { cn } from '@/utils/cn';
 import type { PagoInput, HabitacionConDetalles } from '@/types';
 import { METODOS_PAGO, CONCEPTOS_PAGO, MESES } from '@/utils/constants';
-import { formatCurrency } from '@/utils/formatters';
+import { formatCurrency, hoyISO } from '@/utils/formatters';
+import { tieneInternet } from '@/utils/habitacion';
 
 interface PagoFormProps {
   habitaciones: HabitacionConDetalles[];
@@ -25,7 +26,7 @@ export function PagoForm({
   isLoading = false,
 }: PagoFormProps) {
   // Fecha actual en formato YYYY-MM-DD
-  const today = new Date().toISOString().split('T')[0];
+  const today = hoyISO();
 
   const {
     register,
@@ -66,7 +67,10 @@ export function PagoForm({
   }, [initialData, habitacionSeleccionada, setValue]);
 
   // Auto-completar monto según concepto
+  // register() + onChange propio: hay que avisar a react-hook-form con setValue,
+  // si no el formulario conserva el valor anterior.
   const handleHabitacionChange = (habitacionId: string) => {
+    setValue('habitacionId', habitacionId, { shouldValidate: true });
     const hab = habitaciones.find((h) => h.id === habitacionId);
     if (hab) {
       if (selectedConcepto === 'alquiler') {
@@ -78,6 +82,7 @@ export function PagoForm({
   };
 
   const handleConceptoChange = (concepto: string) => {
+    setValue('concepto', concepto as PagoInput['concepto']);
     if (habitacionSeleccionada) {
       if (concepto === 'alquiler') {
         setValue('monto', habitacionSeleccionada.montoAlquiler);
@@ -125,7 +130,9 @@ export function PagoForm({
               className="select"
               onChange={(e) => handleConceptoChange(e.target.value)}
             >
-              {CONCEPTOS_PAGO.map((concepto) => (
+              {CONCEPTOS_PAGO.filter(
+                (c) => c.value !== 'internet' || !habitacionSeleccionada || tieneInternet(habitacionSeleccionada)
+              ).map((concepto) => (
                 <option key={concepto.value} value={concepto.value}>
                   {concepto.label}
                 </option>
@@ -242,13 +249,19 @@ export function PagoForm({
             </div>
             <div>
               <span className="text-slate-500 font-medium">Internet:</span>{' '}
-              <span className="font-semibold tabular-nums">
-                {formatCurrency(habitacionSeleccionada.montoInternet)}
-              </span>
-              {habitacionSeleccionada.internetPagado ? (
-                <span className="text-emerald-600 ml-2 font-semibold text-xs">Pagado</span>
+              {tieneInternet(habitacionSeleccionada) ? (
+                <>
+                  <span className="font-semibold tabular-nums">
+                    {formatCurrency(habitacionSeleccionada.montoInternet)}
+                  </span>
+                  {habitacionSeleccionada.internetPagado ? (
+                    <span className="text-emerald-600 ml-2 font-semibold text-xs">Pagado</span>
+                  ) : (
+                    <span className="text-red-600 ml-2 font-semibold text-xs">Pendiente</span>
+                  )}
+                </>
               ) : (
-                <span className="text-red-600 ml-2 font-semibold text-xs">Pendiente</span>
+                <span className="text-slate-400 text-xs">No contratado</span>
               )}
             </div>
           </div>

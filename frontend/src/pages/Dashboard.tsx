@@ -6,12 +6,18 @@ import {
   TrendingDown,
   DollarSign,
   AlertCircle,
+  LayoutDashboard,
+  CreditCard,
 } from 'lucide-react';
+import { useState } from 'react';
 import { StatCard } from '@/components/cards';
-import { LoadingPage, EmptyState } from '@/components/ui';
+import { CobrarModal } from '@/components/forms';
+import { Fab } from '@/components/ui/Fab';
+import { LoadingPage, EmptyState, IconChip } from '@/components/ui';
 import { PaymentCalendar } from '@/components/calendar';
-import { useDashboard, useReporteHistorico, useHabitacionesConEstadoPago, usePagosByMes } from '@/hooks';
+import { useFiltroGlobal, useDashboard, useReporteHistorico, useHabitacionesConEstadoPago, usePagosByMes } from '@/hooks';
 import { useConfigStore } from '@/store';
+import { useNavigate } from 'react-router-dom';
 import { formatCurrency, formatPercentage, getMonthName } from '@/utils/formatters';
 import {
   BarChart,
@@ -25,9 +31,12 @@ import {
 } from 'recharts';
 
 export function Dashboard() {
+  const navigate = useNavigate();
+  const [cobrarOpen, setCobrarOpen] = useState(false);
   const { edificioSeleccionado, mesActual, anioActual, setMesAnio } = useConfigStore();
-  const { data: stats, isLoading } = useDashboard(edificioSeleccionado || undefined);
-  const { data: historico } = useReporteHistorico(6, edificioSeleccionado || undefined);
+  const scope = useFiltroGlobal();
+  const { data: stats, isLoading } = useDashboard(scope);
+  const { data: historico } = useReporteHistorico(6, scope);
   const { data: habitaciones = [] } = useHabitacionesConEstadoPago(mesActual, anioActual, edificioSeleccionado || undefined);
   const { data: pagos = [] } = usePagosByMes(mesActual, anioActual, edificioSeleccionado || undefined);
 
@@ -55,11 +64,20 @@ export function Dashboard() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="page-title">Dashboard</h1>
-        <p className="page-subtitle">
-          Resumen de {getMonthName(mesActual)} {anioActual}
-        </p>
+      <div className="flex items-end justify-between gap-3">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2 mb-2">
+            <IconChip icon={LayoutDashboard} tone="primary" size="sm" />
+            <span className="eyebrow">Resumen general</span>
+          </div>
+          <h1 className="page-title">Dashboard</h1>
+          <p className="page-subtitle">
+            Resumen de {getMonthName(mesActual)} {anioActual}
+          </p>
+        </div>
+        <button onClick={() => setCobrarOpen(true)} className="btn btn-primary btn-lg whitespace-nowrap hidden sm:inline-flex">
+          <CreditCard className="w-4 h-4" /> Registrar pago
+        </button>
       </div>
 
       {/* Fila 1 — 3 KPIs prominentes */}
@@ -69,6 +87,9 @@ export function Dashboard() {
           title="Tasa de Ocupación"
           value={formatPercentage(stats.tasaOcupacion)}
           icon={Building2}
+          tone="teal"
+          progress={stats.tasaOcupacion}
+          onClick={() => navigate('/habitaciones')}
           variant={
             stats.tasaOcupacion >= 80
               ? 'success'
@@ -83,19 +104,24 @@ export function Dashboard() {
           title="Ingresos del mes"
           value={formatCurrency(stats.ingresosMes)}
           icon={TrendingUp}
+          tone="leaf"
           variant="success"
-          subtitle={`Balance: ${formatCurrency(stats.balance)}`}
+          progress={stats.habitacionesOcupadas > 0 ? (stats.habitacionesPagadas / stats.habitacionesOcupadas) * 100 : 0}
+          onClick={() => navigate('/pagos')}
+          subtitle={`${stats.habitacionesPagadas} de ${stats.habitacionesOcupadas} habitaciones cobradas`}
         />
         <StatCard
           prominent
           title="Pagos Pendientes"
           value={stats.habitacionesPendientes}
           icon={AlertCircle}
+          tone={stats.habitacionesPendientes > 0 ? 'coral' : 'leaf'}
           variant={stats.habitacionesPendientes > 0 ? 'danger' : 'success'}
+          onClick={() => navigate('/habitaciones?filtro=deuda')}
           subtitle={
             stats.habitacionesPendientes > 0
-              ? 'Revisa Habitaciones'
-              : 'Al día este mes'
+              ? 'Toca para ver quién debe'
+              : 'Todos al día este mes'
           }
         />
       </div>
@@ -106,24 +132,29 @@ export function Dashboard() {
           title="Total Habitaciones"
           value={stats.totalHabitaciones}
           icon={Home}
+          tone="teal"
           subtitle={`${stats.habitacionesOcupadas} ocupadas`}
         />
         <StatCard
           title="Habitaciones Pagadas"
           value={`${stats.habitacionesPagadas}/${stats.habitacionesOcupadas}`}
           icon={Users}
+          tone="sky"
           variant="success"
         />
         <StatCard
           title="Gastos del mes"
           value={formatCurrency(stats.gastosMes)}
           icon={TrendingDown}
+          tone="coral"
+          onClick={() => navigate('/gastos')}
           variant="danger"
         />
         <StatCard
           title="Balance"
           value={formatCurrency(stats.balance)}
           icon={DollarSign}
+          tone="olive"
           variant={stats.balance >= 0 ? 'success' : 'danger'}
         />
       </div>
@@ -131,30 +162,34 @@ export function Dashboard() {
       {/* Gráfico y Calendario */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
         {/* Gráfico de tendencias */}
-        <div className="lg:col-span-2 card p-6">
-          <h2 className="text-base font-semibold text-slate-900 mb-4">
-            Ingresos vs Gastos (6 meses)
-          </h2>
+        <div className="lg:col-span-2 card p-5 md:p-6">
+          <div className="flex items-start justify-between gap-3 mb-5">
+            <div>
+              <h2 className="text-lg font-bold tracking-tight text-slate-900">Ingresos vs gastos</h2>
+              <p className="text-xs text-slate-500 mt-0.5">Últimos 6 meses</p>
+            </div>
+            <button onClick={() => navigate('/reportes')} className="link-arrow text-xs">Ver reportes</button>
+          </div>
           {chartData.length > 0 ? (
             <div className="h-60 md:h-80">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                  <XAxis dataKey="mes" tick={{ fontSize: 12, fill: '#64748b' }} />
-                  <YAxis tick={{ fontSize: 12, fill: '#64748b' }} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#E7E3DF" vertical={false} />
+                  <XAxis dataKey="mes" tick={{ fontSize: 12, fill: '#6F717B' }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 12, fill: '#A3A3AA' }} axisLine={false} tickLine={false} width={48} />
                   <Tooltip
                     formatter={(value: number) => formatCurrency(value)}
                     contentStyle={{
-                      borderRadius: '8px',
-                      border: '1px solid #e2e8f0',
-                      boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.07)',
+                      borderRadius: '10px',
+                      border: '1px solid #E7E3DF',
+                      boxShadow: '0 24px 48px -24px rgb(27 30 42 / 0.25)',
                       fontSize: '12px',
-                      color: '#1e293b',
+                      color: '#1B1E2A',
                     }}
                   />
-                  <Legend wrapperStyle={{ fontSize: '12px', color: '#475569' }} />
-                  <Bar dataKey="ingresos" name="Ingresos" fill="#059669" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="gastos" name="Gastos" fill="#dc2626" radius={[4, 4, 0, 0]} />
+                  <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '12px', color: '#3F4350' }} />
+                  <Bar dataKey="ingresos" name="Ingresos" fill="#4FA65B" radius={[4, 4, 0, 0]} maxBarSize={28} />
+                  <Bar dataKey="gastos" name="Gastos" fill="#DF5E41" radius={[4, 4, 0, 0]} maxBarSize={28} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -178,24 +213,9 @@ export function Dashboard() {
         </div>
       </div>
 
-      {/* Alertas rápidas */}
-      {stats.habitacionesPendientes > 0 && (
-        <div className="card p-4 bg-red-50 border-red-200">
-          <div className="flex items-start gap-3">
-            <div className="p-2 rounded-lg bg-red-100">
-              <AlertCircle className="w-4 h-4 text-red-600" />
-            </div>
-            <div>
-              <p className="font-semibold text-red-800 text-sm">
-                {stats.habitacionesPendientes} habitación(es) con pagos pendientes
-              </p>
-              <p className="text-xs text-red-600 mt-0.5">
-                Revisa la sección de habitaciones para ver el detalle
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Registrar pago rápido */}
+      <CobrarModal isOpen={cobrarOpen} onClose={() => setCobrarOpen(false)} habitaciones={habitaciones} />
+      <Fab onClick={() => setCobrarOpen(true)} icon={CreditCard} label="Registrar pago" />
     </div>
   );
 }

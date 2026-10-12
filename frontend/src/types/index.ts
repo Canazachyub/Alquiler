@@ -56,6 +56,8 @@ export interface Piso extends BaseEntity {
   edificioId: string;
   numero: number;
   descripcion?: string;
+  /** Distribución del piso: filas separadas por "|", celdas por espacio (ver utils/plano.ts) */
+  plano?: string;
   // Relaciones
   edificio?: Edificio;
 }
@@ -64,13 +66,15 @@ export interface PisoInput {
   edificioId: string;
   numero: number;
   descripcion?: string;
+  plano?: string;
 }
 
 // ============================================
 // HABITACION
 // ============================================
 
-export type EstadoHabitacion = 'vacant' | 'occupied' | 'maintenance';
+/** exonerated: cuarto usado por los propietarios, no se cobra */
+export type EstadoHabitacion = 'vacant' | 'occupied' | 'maintenance' | 'exonerated';
 export type UbicacionHabitacion = 'izquierda' | 'derecha' | 'centro' | 'unica';
 
 export interface Habitacion extends BaseEntity {
@@ -83,6 +87,7 @@ export interface Habitacion extends BaseEntity {
   estado: EstadoHabitacion;
   activo: boolean;
   observaciones?: string;
+  motivoExoneracion?: string;
   // Campos calculados/relacionados
   piso?: Piso;
   inquilinoActual?: Inquilino;
@@ -100,6 +105,7 @@ export interface HabitacionInput {
   estado?: EstadoHabitacion;
   activo?: boolean;
   observaciones?: string;
+  motivoExoneracion?: string;
 }
 
 export interface HabitacionConDetalles extends Habitacion {

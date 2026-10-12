@@ -5,39 +5,30 @@ import {
   TrendingDown,
   DollarSign,
   Home,
-  Calendar,
   Download,
-  ChevronLeft,
-  ChevronRight,
 } from 'lucide-react';
-import { LoadingPage } from '@/components/ui';
-import { useDashboard, useReporteHistorico } from '@/hooks';
+import { LoadingPage, IconChip, SelectorMes, Modal } from '@/components/ui';
+import { AnaliticaCobranza } from '@/components/reportes/AnaliticaCobranza';
+import { ResumenImprimible } from '@/components/voucher';
+import { useDashboard, useReporteHistorico, useFiltroGlobal, useHabitacionesConEstadoPago, useEdificiosByCiudad } from '@/hooks';
 import { useConfigStore } from '@/store';
-import { formatCurrency, formatMonthYear, getMonthName } from '@/utils/formatters';
-import { MESES } from '@/utils/constants';
+import { formatCurrency, getMonthName } from '@/utils/formatters';
 
 export function Reportes() {
-  const { mesActual, anioActual, setMesAnio } = useConfigStore();
+  const { mesActual, anioActual, edificioSeleccionado, ciudadSeleccionada } = useConfigStore();
   const [mesesHistorico, setMesesHistorico] = useState(6);
+  const [exportarOpen, setExportarOpen] = useState(false);
+  const { data: habsEstado } = useHabitacionesConEstadoPago(mesActual, anioActual, edificioSeleccionado || undefined);
+  const { data: edificiosCiudad } = useEdificiosByCiudad(ciudadSeleccionada || '');
+  const habitaciones = (habsEstado ?? []).filter(
+    (h) => edificioSeleccionado || !ciudadSeleccionada || !edificiosCiudad || edificiosCiudad.some((e) => e.id === h.edificioId)
+  );
 
-  const { data: stats, isLoading: loadingStats } = useDashboard();
-  const { data: historico, isLoading: loadingHistorico } = useReporteHistorico(mesesHistorico);
+  const scope = useFiltroGlobal();
+  const { data: stats, isLoading: loadingStats } = useDashboard(scope);
+  const { data: historico, isLoading: loadingHistorico } = useReporteHistorico(mesesHistorico, scope);
 
-  const navigateMonth = (delta: number) => {
-    let newMonth = mesActual + delta;
-    let newYear = anioActual;
-    if (newMonth > 12) {
-      newMonth = 1;
-      newYear++;
-    } else if (newMonth < 1) {
-      newMonth = 12;
-      newYear--;
-    }
-    setMesAnio(newMonth, newYear);
-  };
 
-  const currentYear = new Date().getFullYear();
-  const years = Array.from({ length: 3 }, (_, i) => currentYear - 1 + i);
 
   if (loadingStats || loadingHistorico) {
     return <LoadingPage />;
@@ -50,55 +41,27 @@ export function Reportes() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
+          <div className="flex items-center gap-2 mb-2">
+            <IconChip icon={BarChart3} tone="olive" size="sm" />
+            <span className="eyebrow">Analítica</span>
+          </div>
           <h1 className="page-title">Reportes</h1>
           <p className="page-subtitle">{getMonthName(mesActual)} {anioActual}</p>
         </div>
-        <button className="btn btn-outline">
+        <button onClick={() => setExportarOpen(true)} className="btn btn-secondary">
           <Download className="w-4 h-4" />
-          Exportar
+          Exportar PDF
         </button>
       </div>
 
       {/* Selector de periodo */}
       <div className="card p-4">
-        <div className="flex flex-wrap items-center gap-4">
-          <button onClick={() => navigateMonth(-1)} className="btn btn-outline btn-sm">
-            <ChevronLeft className="w-4 h-4" />
-          </button>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <SelectorMes />
 
           <div className="flex items-center gap-2">
-            <Calendar className="w-4 h-4 text-slate-400" />
-            <select
-              value={mesActual}
-              onChange={(e) => setMesAnio(Number(e.target.value), anioActual)}
-              className="select w-32"
-            >
-              {MESES.map((mes) => (
-                <option key={mes.value} value={mes.value}>
-                  {mes.label}
-                </option>
-              ))}
-            </select>
-            <select
-              value={anioActual}
-              onChange={(e) => setMesAnio(mesActual, Number(e.target.value))}
-              className="select w-24"
-            >
-              {years.map((year) => (
-                <option key={year} value={year}>
-                  {year}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <button onClick={() => navigateMonth(1)} className="btn btn-outline btn-sm">
-            <ChevronRight className="w-4 h-4" />
-          </button>
-
-          <div className="ml-auto flex items-center gap-2">
             <span className="text-sm text-slate-500">Histórico:</span>
             <select
               value={mesesHistorico}
@@ -113,13 +76,8 @@ export function Reportes() {
         </div>
       </div>
 
-      {/* Resumen del mes */}
-      <div className="bg-gradient-to-r from-primary-600 to-primary-700 text-white py-3 px-4 rounded-xl text-center font-semibold tracking-wide shadow-sm">
-        Reporte de {formatMonthYear(mesActual, anioActual)}
-      </div>
-
       {/* Stats cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
         <div className="card p-5">
           <div className="flex items-center justify-between">
             <div>
@@ -128,7 +86,7 @@ export function Reportes() {
                 {formatCurrency(stats?.ingresosMes || 0)}
               </p>
             </div>
-            <div className="w-12 h-12 rounded-xl bg-emerald-100 flex items-center justify-center">
+            <div className="hidden sm:flex w-12 h-12 rounded-xl bg-emerald-100 items-center justify-center">
               <TrendingUp className="w-6 h-6 text-emerald-600" />
             </div>
           </div>
@@ -142,7 +100,7 @@ export function Reportes() {
                 {formatCurrency(stats?.gastosMes || 0)}
               </p>
             </div>
-            <div className="w-12 h-12 rounded-xl bg-red-100 flex items-center justify-center">
+            <div className="hidden sm:flex w-12 h-12 rounded-xl bg-red-100 items-center justify-center">
               <TrendingDown className="w-6 h-6 text-red-600" />
             </div>
           </div>
@@ -160,7 +118,7 @@ export function Reportes() {
                 {formatCurrency(stats?.balance || 0)}
               </p>
             </div>
-            <div className="w-12 h-12 rounded-xl bg-primary-100 flex items-center justify-center">
+            <div className="hidden sm:flex w-12 h-12 rounded-xl bg-primary-100 items-center justify-center">
               <DollarSign className="w-6 h-6 text-primary-600" />
             </div>
           </div>
@@ -174,7 +132,7 @@ export function Reportes() {
                 {(stats?.tasaOcupacion || 0).toFixed(1)}%
               </p>
             </div>
-            <div className="w-12 h-12 rounded-xl bg-primary-100 flex items-center justify-center">
+            <div className="hidden sm:flex w-12 h-12 rounded-xl bg-primary-100 items-center justify-center">
               <Home className="w-6 h-6 text-primary-600" />
             </div>
           </div>
@@ -313,6 +271,15 @@ export function Reportes() {
           </tfoot>
         </table>
       </div>
+
+      {/* Analítica de cobranza */}
+      <AnaliticaCobranza habitaciones={habitaciones} mesFin={mesActual} anioFin={anioActual} meses={mesesHistorico} />
+
+      <Modal isOpen={exportarOpen} onClose={() => setExportarOpen(false)} title="Exportar resumen en PDF" size="2xl">
+        {exportarOpen && (
+          <ResumenImprimible habitaciones={habsEstado ?? []} mesFin={mesActual} anioFin={anioActual} edificioInicial={edificioSeleccionado} />
+        )}
+      </Modal>
     </div>
   );
 }

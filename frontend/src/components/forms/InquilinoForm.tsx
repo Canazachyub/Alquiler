@@ -1,3 +1,4 @@
+import { hoyISO } from '@/utils/formatters';
 import { useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { MapPin, Camera } from 'lucide-react';
@@ -51,7 +52,7 @@ export function InquilinoForm({
       dni: toStr(initialData?.dni),
       telefono: toStr(initialData?.telefono),
       email: toStr(initialData?.email),
-      fechaIngreso: toStr(initialData?.fechaIngreso).split('T')[0] || new Date().toISOString().split('T')[0],
+      fechaIngreso: toStr(initialData?.fechaIngreso).split('T')[0] || hoyISO(),
       contactoEmergencia: toStr(initialData?.contactoEmergencia),
       telefonoEmergencia: toStr(initialData?.telefonoEmergencia),
       observaciones: toStr(initialData?.observaciones),

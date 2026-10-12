@@ -1,11 +1,17 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { MutationCache, QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { BrowserRouter } from 'react-router-dom'
 import App from './App'
 import './index.css'
 
-const queryClient = new QueryClient({
+// Todo cambio puede afectar a otras entidades (el backend borra en cascada y el
+// dashboard/alertas dependen de pagos, gastos e inquilinos), así que tras cualquier
+// mutación se invalida todo. Solo se vuelven a pedir las consultas en pantalla.
+const queryClient: QueryClient = new QueryClient({
+  mutationCache: new MutationCache({
+    onSuccess: () => queryClient.invalidateQueries(),
+  }),
   defaultOptions: {
     queries: {
       staleTime: 1000 * 60 * 5, // 5 minutes

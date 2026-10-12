@@ -1,3 +1,4 @@
+import { hoyISO } from '@/utils/formatters';
 import { useForm } from 'react-hook-form';
 import { cn } from '@/utils/cn';
 import type { GastoInput, Edificio, Habitacion } from '@/types';
@@ -29,7 +30,7 @@ export function GastoForm({
     defaultValues: {
       edificioId: initialData?.edificioId || '',
       habitacionId: initialData?.habitacionId || '',
-      fecha: initialData?.fecha || new Date().toISOString().split('T')[0],
+      fecha: initialData?.fecha || hoyISO(),
       concepto: initialData?.concepto || '',
       categoria: initialData?.categoria || 'mantenimiento',
       monto: initialData?.monto || 0,

@@ -36,8 +36,8 @@ const CONFIG = {
   HEADERS: {
     CIUDADES: ['ID', 'Nombre', 'Departamento', 'Activo', 'CreatedAt', 'UpdatedAt'],
     EDIFICIOS: ['ID', 'CiudadId', 'Nombre', 'Descripcion', 'Direccion', 'TotalPisos', 'Activo'],
-    PISOS: ['ID', 'EdificioId', 'Numero', 'Descripcion'],
-    HABITACIONES: ['ID', 'PisoId', 'Codigo', 'Ubicacion', 'MontoAlquiler', 'MontoInternet', 'MontoServicios', 'Estado', 'Activo', 'Observaciones'],
+    PISOS: ['ID', 'EdificioId', 'Numero', 'Descripcion', 'Plano'],
+    HABITACIONES: ['ID', 'PisoId', 'Codigo', 'Ubicacion', 'MontoAlquiler', 'MontoInternet', 'MontoServicios', 'Estado', 'Activo', 'Observaciones', 'MotivoExoneracion'],
     // Las columnas nuevas van SIEMPRE al final: la auto-migracion sobreescribe la fila 1
     // y correr una columna existente desalinearia todos los datos.
     INQUILINOS: ['ID', 'HabitacionId', 'Nombre', 'Apellido', 'DNI', 'Telefono', 'Email', 'FechaIngreso', 'FechaSalida', 'Estado', 'ContactoEmergencia', 'TelefonoEmergencia', 'Observaciones', 'Garantia', 'LlaveHabitacion', 'LlavePuertaCalle', 'DniFotoFrenteUrl', 'DniFotoReversoUrl', 'ContratoPdfUrl'],
@@ -628,6 +628,8 @@ function getDashboardStats(mes, anio, edificioId, ciudadId) {
   });
 
   const ocupadas = habitaciones.filter(h => h.estado === 'occupied');
+  // Exonerados: cuartos usados por los propietarios; ocupan pero no se cobran
+  const exoneradas = habitaciones.filter(h => h.estado === 'exonerated');
   const pagosResumen = getResumenPagosMes(mes, anio, edificioId, ciudadId);
   const totalGastos = gastos.reduce((sum, g) => sum + Number(g.monto || 0), 0);
 
@@ -637,7 +639,8 @@ function getDashboardStats(mes, anio, edificioId, ciudadId) {
     totalHabitaciones: habitaciones.length,
     habitacionesOcupadas: ocupadas.length,
     habitacionesVacantes: habitaciones.filter(h => h.estado === 'vacant').length,
-    tasaOcupacion: habitaciones.length > 0 ? (ocupadas.length / habitaciones.length) * 100 : 0,
+    habitacionesExoneradas: exoneradas.length,
+    tasaOcupacion: habitaciones.length > 0 ? ((ocupadas.length + exoneradas.length) / habitaciones.length) * 100 : 0,
     ingresosMes: pagosResumen.totalRecaudado,
     gastosMes: totalGastos,
     balance: pagosResumen.totalRecaudado - totalGastos,

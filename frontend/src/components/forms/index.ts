@@ -4,3 +4,7 @@ export { PagoForm } from './PagoForm';
 export { GastoForm } from './GastoForm';
 export { EdificioWizard } from './EdificioWizard';
 export { CapturaDni, type CapturaDniValue } from './CapturaDni';
+export { InquilinoDeHabitacion } from './InquilinoDeHabitacion';
+export { RegistrarPagoHabitacion } from './RegistrarPagoHabitacion';
+export { DocumentoHabitacion } from './DocumentoHabitacion';
+export { CobrarModal } from './CobrarModal';

@@ -22,6 +22,18 @@ export function Header() {
   const { data: ciudades } = useCiudades();
   const { data: edificios } = useEdificiosByCiudad(ciudadSeleccionada || '');
 
+  // Si la ciudad/edificio guardado en el filtro se eliminó, limpiar el filtro
+  useEffect(() => {
+    if (ciudades && ciudadSeleccionada && !ciudades.some((c) => c.id === ciudadSeleccionada)) {
+      setCiudadSeleccionada(null);
+    }
+  }, [ciudades, ciudadSeleccionada, setCiudadSeleccionada]);
+  useEffect(() => {
+    if (edificios && edificioSeleccionado && !edificios.some((e) => e.id === edificioSeleccionado)) {
+      setEdificioSeleccionado(null);
+    }
+  }, [edificios, edificioSeleccionado, setEdificioSeleccionado]);
+
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: 5 }, (_, i) => currentYear - 2 + i);
 
@@ -58,7 +70,7 @@ export function Header() {
   };
 
   return (
-    <header className="bg-white border-b border-slate-200/80 px-3 md:px-6 py-2.5 md:py-0 md:h-16 md:flex md:items-center md:justify-between">
+    <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-slate-200/80 px-3 md:px-6 py-2.5 md:py-0 md:h-16 md:flex md:items-center md:justify-between">
       {/* Mobile row */}
       <div className="flex items-center justify-between gap-3 md:hidden">
         <button
@@ -73,7 +85,7 @@ export function Header() {
           <button
             type="button"
             onClick={() => setFiltersOpen(true)}
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-700 text-xs font-medium hover:bg-slate-50 transition-colors"
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full border border-slate-300 bg-white text-slate-700 text-xs font-semibold hover:bg-slate-50 transition-colors"
           >
             <SlidersHorizontal className="w-4 h-4 text-slate-500" />
             Filtros
@@ -83,7 +95,7 @@ export function Header() {
             <button
               type="button"
               onClick={() => setMonthOpen((v) => !v)}
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-slate-50 border border-slate-200 text-slate-700 text-xs font-medium hover:bg-slate-100 transition-colors"
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full bg-white border border-slate-300 text-slate-700 text-xs font-semibold hover:bg-slate-100 transition-colors"
             >
               <Calendar className="w-4 h-4 text-primary-500" />
               {getMonthName(mesActual)} {anioActual}
@@ -133,7 +145,7 @@ export function Header() {
             <button
               type="button"
               onClick={() => setAlertsOpen((v) => !v)}
-              className="relative p-2 rounded-lg hover:bg-slate-100 transition-colors"
+              className="relative p-2 rounded-full hover:bg-slate-100 transition-colors"
               aria-label={`Notificaciones${alertCount > 0 ? ` (${alertCount})` : ''}`}
               aria-expanded={alertsOpen}
             >
@@ -159,9 +171,9 @@ export function Header() {
         <select
           value={ciudadSeleccionada || ''}
           onChange={(e) => setCiudadSeleccionada(e.target.value || null)}
-          className="select w-40 text-sm !py-2"
+          className="select w-44 text-sm !rounded-full !h-9 font-medium"
         >
-          <option value="">Ciudades</option>
+          <option value="">Todas las ciudades</option>
           {ciudades?.map((ciudad) => (
             <option key={ciudad.id} value={ciudad.id}>
               {ciudad.nombre}
@@ -172,10 +184,10 @@ export function Header() {
         <select
           value={edificioSeleccionado || ''}
           onChange={(e) => setEdificioSeleccionado(e.target.value || null)}
-          className="select w-48 text-sm !py-2"
+          className="select w-48 text-sm !rounded-full !h-9 font-medium"
           disabled={!ciudadSeleccionada}
         >
-          <option value="">Edificios</option>
+          <option value="">Todos los edificios</option>
           {edificios?.map((edificio) => (
             <option key={edificio.id} value={edificio.id}>
               {edificio.nombre}
@@ -186,7 +198,7 @@ export function Header() {
 
       {/* Desktop: mes/ano + notificaciones */}
       <div className="hidden md:flex items-center gap-4">
-        <div className="flex items-center gap-2 bg-slate-50 rounded-lg px-3 py-1.5 border border-slate-200">
+        <div className="flex items-center gap-2 bg-white rounded-full px-3.5 h-9 border border-slate-300">
           <Calendar className="w-4 h-4 text-primary-500" />
           <select
             value={mesActual}
@@ -216,7 +228,7 @@ export function Header() {
           <button
             type="button"
             onClick={() => setAlertsOpen((v) => !v)}
-            className="relative p-2 rounded-lg hover:bg-slate-100 transition-colors"
+            className="relative p-2 rounded-full hover:bg-slate-100 transition-colors"
             aria-label={`Notificaciones${alertCount > 0 ? ` (${alertCount})` : ''}`}
             aria-expanded={alertsOpen}
           >

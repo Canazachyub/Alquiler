@@ -7,15 +7,17 @@ interface ModalProps {
   onClose: () => void;
   title: string;
   children: React.ReactNode;
-  size?: 'sm' | 'md' | 'lg' | 'xl';
+  size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl';
   footer?: React.ReactNode;
 }
 
+// En celular la ventana ocupa todo el ancho y sube desde abajo (hoja inferior)
 const sizes = {
-  sm: 'max-w-[95vw] md:max-w-md',
-  md: 'max-w-[95vw] md:max-w-lg',
-  lg: 'max-w-[95vw] md:max-w-2xl',
-  xl: 'max-w-[95vw] md:max-w-4xl',
+  sm: 'sm:max-w-md',
+  md: 'sm:max-w-lg',
+  lg: 'sm:max-w-2xl',
+  xl: 'sm:max-w-4xl',
+  '2xl': 'sm:max-w-6xl',
 };
 
 const FOCUSABLE_SELECTOR =
@@ -98,7 +100,7 @@ export function Modal({ isOpen, onClose, title, children, size = 'md', footer }:
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity duration-200 ease-out"
@@ -112,32 +114,33 @@ export function Modal({ isOpen, onClose, title, children, size = 'md', footer }:
         role="dialog"
         aria-modal="true"
         className={cn(
-          'relative bg-white rounded-2xl shadow-xl w-full mx-4 border border-slate-200 transition-all duration-200 ease-out',
+          'relative bg-white shadow-popover w-full border border-slate-200 transition-all duration-200 ease-out flex flex-col',
+          'rounded-t-2xl sm:rounded-2xl sm:mx-4 max-h-[94dvh] sm:max-h-[90vh]',
           sizes[size]
         )}
         style={{
           opacity: entered ? 1 : 0,
-          transform: entered ? 'scale(1)' : 'scale(0.96)',
+          transform: entered ? 'none' : window.innerWidth < 640 ? 'translateY(24px)' : 'scale(0.96)',
         }}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
-          <h2 className="text-lg font-semibold text-slate-900">{title}</h2>
+        <div className="flex items-center justify-between gap-3 px-4 sm:px-6 pt-4 sm:pt-5 pb-3 sm:pb-4 border-b border-slate-100 flex-shrink-0">
+          <h2 className="text-lg sm:text-xl font-bold tracking-tight text-slate-900 truncate">{title}</h2>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg hover:bg-slate-100 transition-colors"
+            className="p-1.5 rounded-full hover:bg-slate-100 transition-colors"
             aria-label="Cerrar"
           >
-            <X className="w-4 h-4 text-slate-400" />
+            <X className="w-5 h-5 text-slate-500" />
           </button>
         </div>
 
         {/* Body */}
-        <div className="p-4 md:p-5 max-h-[80vh] md:max-h-[70vh] overflow-y-auto">{children}</div>
+        <div className="p-4 sm:p-6 overflow-y-auto overscroll-contain flex-1 min-h-0">{children}</div>
 
         {/* Footer */}
         {footer && (
-          <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-slate-200 bg-slate-50 rounded-b-2xl">
+          <div className="flex items-center justify-end gap-2 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50 sm:rounded-b-2xl flex-shrink-0">
             {footer}
           </div>
         )}

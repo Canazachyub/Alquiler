@@ -44,7 +44,7 @@ export async function buildContratoDoc(
     qrDataUrl = await QRCode.toDataURL(consultaUrl, {
       width: 200,
       margin: 1,
-      color: { dark: '#37306B', light: '#ffffff' }
+      color: { dark: '#1B1E2A', light: '#ffffff' }
     });
   } catch (err) {
     console.error('Error generating QR:', err);
@@ -57,11 +57,12 @@ export async function buildContratoDoc(
   let y = 0;
 
   // Colores del sistema de diseño (alineados con la app web)
-  const accent: [number, number, number] = [79, 70, 229];    // primary-600 indigo
-  const dark: [number, number, number] = [15, 23, 42];        // slate-900
-  const mid: [number, number, number] = [100, 116, 139];      // slate-500
-  const lightBg: [number, number, number] = [248, 250, 252];  // slate-50
-  const borderColor: [number, number, number] = [226, 232, 240]; // slate-200
+  // Paleta formal (DESIGN.md): azul noche como acento, grises cálidos
+  const accent: [number, number, number] = [27, 30, 42];      // ink
+  const dark: [number, number, number] = [27, 30, 42];        // ink
+  const mid: [number, number, number] = [96, 99, 110];        // gris de texto secundario
+  const lightBg: [number, number, number] = [247, 245, 242];  // fondo cálido
+  const borderColor: [number, number, number] = [200, 196, 191]; // líneas
   const white: [number, number, number] = [255, 255, 255];
 
   // Helper: linea solida fina
@@ -74,46 +75,26 @@ export async function buildContratoDoc(
   // Helper: encabezado de seccion con linea (respeta columna via xStart)
   const sectionHeader = (title: string, yPos: number, xStart: number = margin): number => {
     doc.setFontSize(11);
-    doc.setFont('helvetica', 'bold');
+    doc.setFont('times', 'bold');
     doc.setTextColor(accent[0], accent[1], accent[2]);
     doc.text(title, xStart, yPos);
     const tw = doc.getTextWidth(title);
     doc.setDrawColor(accent[0], accent[1], accent[2]);
-    doc.setLineWidth(0.6);
-    doc.line(xStart, yPos + 2, xStart + tw, yPos + 2);
-    return yPos + 8.5;
-  };
-
-  // Helper: campo con etiqueta y valor en fila
-  const fieldRow = (label: string, value: string, yPos: number, xStart = margin, maxWidth = contentWidth): number => {
-    doc.setFontSize(10.5);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(mid[0], mid[1], mid[2]);
-    doc.text(label, xStart, yPos);
-    const labelW = doc.getTextWidth(label + ' ');
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(dark[0], dark[1], dark[2]);
-    doc.text(String(value || '________'), xStart + labelW, yPos);
-    // linea punteada bajo el valor
-    doc.setDrawColor(borderColor[0], borderColor[1], borderColor[2]);
     doc.setLineWidth(0.3);
-    doc.setLineDashPattern([1, 1], 0);
-    doc.line(xStart + labelW, yPos + 1.2, xStart + maxWidth * 0.5, yPos + 1.2);
-    doc.setLineDashPattern([], 0);
-    return yPos + 7.5;
+    doc.line(xStart, yPos + 1.6, xStart + tw, yPos + 1.6);
+    return yPos + 8.5;
   };
 
   // Helper: checkbox (check dibujado con lineas, helvetica std no soporta ✓)
   const checkbox = (label: string, checked: boolean, xPos: number, yPos: number): number => {
     const boxSize = 5.5;
     const boxY = yPos - 4.2;
-    doc.setDrawColor(accent[0], accent[1], accent[2]);
-    doc.setLineWidth(0.5);
-    doc.roundedRect(xPos, boxY, boxSize, boxSize, 0.7, 0.7, 'S');
+    doc.setDrawColor(dark[0], dark[1], dark[2]);
+    doc.setLineWidth(0.4);
+    doc.rect(xPos, boxY, boxSize, boxSize, 'S');
     if (checked) {
-      // Fondo indigo solido
-      doc.setFillColor(accent[0], accent[1], accent[2]);
-      doc.roundedRect(xPos, boxY, boxSize, boxSize, 0.7, 0.7, 'F');
+      doc.setFillColor(dark[0], dark[1], dark[2]);
+      doc.rect(xPos, boxY, boxSize, boxSize, 'F');
       // Check dibujado con 2 lineas (V corta + larga)
       doc.setDrawColor(white[0], white[1], white[2]);
       doc.setLineWidth(0.8);
@@ -136,15 +117,14 @@ export async function buildContratoDoc(
   // ================================================================
   // BANDA SUPERIOR MINIMAL
   // ================================================================
-  doc.setFillColor(accent[0], accent[1], accent[2]);
-  doc.rect(0, 0, pageWidth, 3, 'F');
-
   y = 18;
 
   // Marco exterior simple (una sola linea sutil)
-  doc.setDrawColor(borderColor[0], borderColor[1], borderColor[2]);
-  doc.setLineWidth(0.4);
-  doc.roundedRect(margin - 3, y - 5, contentWidth + 6, pageHeight - y - 9, 2, 2, 'S');
+  doc.setDrawColor(dark[0], dark[1], dark[2]);
+  doc.setLineWidth(0.6);
+  doc.rect(margin - 4, y - 7, contentWidth + 8, pageHeight - y - 5, 'S');
+  doc.setLineWidth(0.2);
+  doc.rect(margin - 3, y - 6, contentWidth + 6, pageHeight - y - 7, 'S');
 
   // ================================================================
   // HEADER
@@ -160,7 +140,7 @@ export async function buildContratoDoc(
   doc.setFillColor(lightBg[0], lightBg[1], lightBg[2]);
   doc.setDrawColor(borderColor[0], borderColor[1], borderColor[2]);
   doc.setLineWidth(0.3);
-  doc.roundedRect(qrBoxX, qrBoxY, qrBoxW, qrBoxH, 2, 2, 'FD');
+  doc.rect(qrBoxX, qrBoxY, qrBoxW, qrBoxH, 'FD');
 
   // QR centrado dentro de la caja
   const qrX = qrBoxX + (qrBoxW - qrSize) / 2;
@@ -170,7 +150,7 @@ export async function buildContratoDoc(
   } else {
     doc.setDrawColor(mid[0], mid[1], mid[2]);
     doc.setLineWidth(0.4);
-    doc.roundedRect(qrX, qrY, qrSize, qrSize, 1, 1, 'S');
+    doc.rect(qrX, qrY, qrSize, qrSize, 'S');
     doc.setFontSize(6);
     doc.setTextColor(mid[0], mid[1], mid[2]);
     doc.text('QR', qrX + qrSize / 2, qrY + qrSize / 2, { align: 'center' });
@@ -184,20 +164,20 @@ export async function buildContratoDoc(
 
   // Titulo principal (ancho maximo = espacio hasta la caja del QR con 6mm de aire)
   const titleMaxWidth = qrBoxX - margin - 6;
-  doc.setFontSize(20);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(accent[0], accent[1], accent[2]);
+  doc.setFontSize(19);
+  doc.setFont('times', 'bold');
+  doc.setTextColor(dark[0], dark[1], dark[2]);
   const titleLines = doc.splitTextToSize('REGLAMENTO INTERNO DE CONVIVENCIA', titleMaxWidth);
   doc.text(titleLines, margin, y + 6);
 
   // Subtitulo con nombre del edificio
-  const nombreEdificio = String(edificio?.nombre || '');
+  const nombreEdificio = String(edificio?.nombre || (habitacion as Habitacion & { edificioNombre?: string }).edificioNombre || '');
   let headerBottomY = y + 6 + (titleLines.length - 1) * 7;
   if (nombreEdificio) {
-    doc.setFontSize(10.5);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(dark[0], dark[1], dark[2]);
-    doc.text(nombreEdificio.toUpperCase(), margin, headerBottomY + 6);
+    doc.setFontSize(11);
+    doc.setFont('times', 'italic');
+    doc.setTextColor(mid[0], mid[1], mid[2]);
+    doc.text(nombreEdificio, margin, headerBottomY + 6);
     headerBottomY += 6;
   }
 
@@ -212,49 +192,53 @@ export async function buildContratoDoc(
 
   // La linea separadora debe quedar DEBAJO de la caja del QR y de la direccion
   y = Math.max(dirY + 6, qrBoxY + qrBoxH + 5);
-  hLine(y, margin, pageWidth - margin, accent);
+  doc.setDrawColor(dark[0], dark[1], dark[2]);
+  doc.setLineWidth(0.6);
+  doc.line(margin, y, pageWidth - margin, y);
+  doc.setLineWidth(0.2);
+  doc.line(margin, y + 1.2, pageWidth - margin, y + 1.2);
   y += 9;
 
   // ================================================================
   // DECLARACION DEL INQUILINO
   // ================================================================
   const nombreCompleto = `${inquilino.nombre || ''} ${inquilino.apellido || ''}`.trim() || '________________';
-  const dniText = String(inquilino.dni || '') || '________';
+  const dniText = inquilino.dni ? String(inquilino.dni).replace(/\D/g, '').padStart(8, '0') : '________';
 
-  doc.setFontSize(12);
-  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(12.5);
+  doc.setFont('times', 'normal');
   doc.setTextColor(dark[0], dark[1], dark[2]);
 
   // Texto de declaracion en parrafo
   const decl1 = `YO,`;
   doc.text(decl1, margin, y);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(accent[0], accent[1], accent[2]);
+  doc.setFont('times', 'bold');
+  doc.setTextColor(dark[0], dark[1], dark[2]);
   doc.text(` ${nombreCompleto.toUpperCase()}`, margin + doc.getTextWidth(decl1), y);
   const nameEndX = margin + doc.getTextWidth(decl1) + doc.getTextWidth(` ${nombreCompleto.toUpperCase()}`);
-  doc.setFont('helvetica', 'normal');
+  doc.setFont('times', 'normal');
   doc.setTextColor(dark[0], dark[1], dark[2]);
   doc.text(', IDENTIFICADO(A)', nameEndX, y);
 
   // Subrayado del nombre
-  doc.setDrawColor(accent[0], accent[1], accent[2]);
-  doc.setLineWidth(0.5);
+  doc.setDrawColor(dark[0], dark[1], dark[2]);
+  doc.setLineWidth(0.25);
   doc.line(margin + doc.getTextWidth(decl1) + 1, y + 1.3, nameEndX, y + 1.3);
 
   y += 8.5;
 
-  doc.setFontSize(12);
+  doc.setFontSize(12.5);
   doc.text('CON DNI N° ', margin, y);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(accent[0], accent[1], accent[2]);
+  doc.setFont('times', 'bold');
+  doc.setTextColor(dark[0], dark[1], dark[2]);
   const dniStartX = margin + doc.getTextWidth('CON DNI N° ');
   doc.text(dniText, dniStartX, y);
   // Subrayado ajustado al ancho real del texto (sin guiones sobrantes)
   const dniWidth = doc.getTextWidth(dniText);
-  doc.setDrawColor(accent[0], accent[1], accent[2]);
+  doc.setDrawColor(dark[0], dark[1], dark[2]);
   doc.line(dniStartX, y + 1.3, dniStartX + dniWidth, y + 1.3);
 
-  doc.setFont('helvetica', 'normal');
+  doc.setFont('times', 'normal');
   doc.setTextColor(dark[0], dark[1], dark[2]);
   doc.text(', EN CALIDAD DE OCUPANTE,', dniStartX + dniWidth + 1, y);
 
@@ -285,35 +269,53 @@ export async function buildContratoDoc(
   const datosBoxY = yL - 2;
   yL += 2;
 
-  // Campo: Celular
-  yL = fieldRow('Celular:', String(inquilino.telefono || ''), yL, colLeftX + 1, colLeftW - 2);
+  // Datos del ocupante en tabla (etiqueta | valor), con bordes en todas las celdas
+  {
+    const filasDatos: [string, string, boolean][] = [
+      ['Celular', String(inquilino.telefono || ''), false],
+      ['Contacto familiar', String(inquilino.telefonoEmergencia || ''), false],
+      ['Correo', String(inquilino.email || ''), false],
+      ['Habitación N°', String(habitacion.codigo || ''), true],
+    ];
+    const tx = colLeftX + 1;
+    const tw = colLeftW - 2;
+    const wEtiqueta = 27;
+    const hFilaDato = 8.5;
+    const tablaTop = datosBoxY + 3;
+    let ty = tablaTop;
+    filasDatos.forEach(([etiqueta, valor, destacado]) => {
+      const h = destacado ? hFilaDato + 2 : hFilaDato;
+      // Celda de etiqueta (fondo claro) y celda de valor
+      doc.setFillColor(lightBg[0], lightBg[1], lightBg[2]);
+      doc.setDrawColor(borderColor[0], borderColor[1], borderColor[2]);
+      doc.setLineWidth(0.3);
+      doc.rect(tx, ty, wEtiqueta, h, 'FD');
+      doc.rect(tx + wEtiqueta, ty, tw - wEtiqueta, h, 'S');
 
-  // Campo: Celular apoderado
-  yL = fieldRow('Cel. de contacto familiar:', String(inquilino.telefonoEmergencia || ''), yL, colLeftX + 1, colLeftW - 2);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8.5);
+      doc.setTextColor(mid[0], mid[1], mid[2]);
+      doc.text(etiqueta, tx + 2, ty + h / 2 + 1.2);
 
-  // Campo: Correo
-  yL = fieldRow('Correo:', String(inquilino.email || ''), yL, colLeftX + 1, colLeftW - 2);
-
-  yL += 2;
-
-  // Campo: Habitación con caja destacada
-  doc.setFontSize(10.5);
-  doc.setFont('helvetica', 'normal');
-  doc.setTextColor(mid[0], mid[1], mid[2]);
-  doc.text('Habitación N°:', colLeftX + 1, yL);
-
-  // Caja con el codigo
-  const habBoxX = colLeftX + 1 + doc.getTextWidth('Habitación N°: ') + 1;
-  doc.setFillColor(lightBg[0], lightBg[1], lightBg[2]);
-  doc.setDrawColor(accent[0], accent[1], accent[2]);
-  doc.setLineWidth(0.6);
-  doc.roundedRect(habBoxX, yL - 5.5, 22, 9, 1.5, 1.5, 'FD');
-  doc.setFontSize(14);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(accent[0], accent[1], accent[2]);
-  doc.text(habitacion.codigo || '___', habBoxX + 11, yL + 1, { align: 'center' });
-
-  yL += 12;
+      doc.setFont(destacado ? 'times' : 'helvetica', 'bold');
+      doc.setTextColor(dark[0], dark[1], dark[2]);
+      // La letra se achica hasta que el valor quepa entero (p. ej. correos largos)
+      const anchoValor = tw - wEtiqueta - 4;
+      let tam = destacado ? 14 : 9.5;
+      doc.setFontSize(tam);
+      while (tam > 6 && doc.getTextWidth(valor) > anchoValor) {
+        tam -= 0.5;
+        doc.setFontSize(tam);
+      }
+      doc.text(valor, tx + wEtiqueta + 2.5, ty + h / 2 + (destacado ? 1.8 : 1.3));
+      ty += h;
+    });
+    // Borde exterior más marcado
+    doc.setDrawColor(dark[0], dark[1], dark[2]);
+    doc.setLineWidth(0.4);
+    doc.rect(tx, tablaTop, tw, ty - tablaTop, 'S');
+    yL = ty + 9;
+  }
 
   // Seccion ENTREGA
   yL = sectionHeader('ENTREGA', yL, colLeftX + 1);
@@ -346,7 +348,7 @@ export async function buildContratoDoc(
   doc.setFillColor(lightBg[0], lightBg[1], lightBg[2]);
   doc.setDrawColor(borderColor[0], borderColor[1], borderColor[2]);
   doc.setLineWidth(0.4);
-  doc.roundedRect(colLeftX + 1, yL - 4.5, colLeftW - 2, 12, 1.5, 1.5, 'FD');
+  doc.rect(colLeftX + 1, yL - 4.5, colLeftW - 2, 12, 'FD');
 
   doc.setFontSize(12);
   if (fechaPagoText === '____/____/________') {
@@ -364,11 +366,15 @@ export async function buildContratoDoc(
   yL = sectionHeader('APORTE MENSUAL', yL, colLeftX + 1);
 
   // Caja destacada con monto (con padding interno generoso)
-  doc.setFillColor(accent[0], accent[1], accent[2]);
-  doc.roundedRect(colLeftX + 1, yL - 2, colLeftW - 2, 18, 2.5, 2.5, 'F');
-  doc.setFontSize(24);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(white[0], white[1], white[2]);
+  doc.setFillColor(lightBg[0], lightBg[1], lightBg[2]);
+  doc.setDrawColor(dark[0], dark[1], dark[2]);
+  doc.setLineWidth(0.5);
+  doc.rect(colLeftX + 1, yL - 2, colLeftW - 2, 18, 'FD');
+  doc.setLineWidth(0.2);
+  doc.rect(colLeftX + 2, yL - 1, colLeftW - 4, 16, 'S');
+  doc.setFontSize(22);
+  doc.setFont('times', 'bold');
+  doc.setTextColor(dark[0], dark[1], dark[2]);
   const montoText = `S/ ${habitacion.montoAlquiler || '___'}`;
   doc.text(montoText, colLeftX + colLeftW / 2, yL + 9, { align: 'center' });
 
@@ -377,7 +383,7 @@ export async function buildContratoDoc(
   // Marco alrededor de toda la columna izquierda (con padding)
   doc.setDrawColor(borderColor[0], borderColor[1], borderColor[2]);
   doc.setLineWidth(0.4);
-  doc.roundedRect(colLeftX - 2, datosBoxY, colLeftW + 4, yL - datosBoxY + 4, 2, 2, 'S');
+  doc.rect(colLeftX - 2, datosBoxY, colLeftW + 4, yL - datosBoxY + 4, 'S');
 
   // ---- COLUMNA DERECHA: REGLAS ----
   // Header FUERA de la caja (arriba)
@@ -399,16 +405,17 @@ export async function buildContratoDoc(
 
   reglas.forEach((regla, idx) => {
     // Numero de regla
-    doc.setFillColor(accent[0], accent[1], accent[2]);
-    doc.circle(colRightX + 5, yR + 1.2, 3.8, 'F');
-    doc.setFontSize(9);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(white[0], white[1], white[2]);
-    doc.text(String(idx + 1), colRightX + 5, yR + 2.8, { align: 'center' });
+    doc.setDrawColor(dark[0], dark[1], dark[2]);
+    doc.setLineWidth(0.35);
+    doc.circle(colRightX + 5, yR + 1.2, 3.4, 'S');
+    doc.setFontSize(9.5);
+    doc.setFont('times', 'bold');
+    doc.setTextColor(dark[0], dark[1], dark[2]);
+    doc.text(String(idx + 1), colRightX + 5, yR + 2.7, { align: 'center' });
 
     // Texto de la regla
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(11);
+    doc.setFont('times', 'normal');
     doc.setTextColor(dark[0], dark[1], dark[2]);
     const lines = doc.splitTextToSize(regla, colRightW - 18);
     lines.forEach((line: string, lineIdx: number) => {
@@ -421,7 +428,7 @@ export async function buildContratoDoc(
   const reglasBoxH = Math.max(yR - reglasBoxY + 4, yL - datosBoxY + 4);
   doc.setDrawColor(borderColor[0], borderColor[1], borderColor[2]);
   doc.setLineWidth(0.4);
-  doc.roundedRect(colRightX - 2, reglasBoxY, colRightW + 4, reglasBoxH, 2, 2, 'S');
+  doc.rect(colRightX - 2, reglasBoxY, colRightW + 4, reglasBoxH, 'S');
 
   // ================================================================
   // FIRMA DEL OCUPANTE (centrada, sin huella dactilar)
@@ -429,24 +436,38 @@ export async function buildContratoDoc(
   // footerTop considera la banda inferior + texto de footer + disclaimer legal
   const footerTop = pageHeight - 26; // banda + "Constancia..." + disclaimer (2 lineas)
   const firmaBlockHeight = 28; // linea + label + nombre + DNI
-  const separatorY = Math.max(Math.max(yL, yR) + 10, footerTop - firmaBlockHeight - 10);
+  // La firma va bajo las columnas, pero nunca tan abajo que su DNI pise el aviso legal
+  const separatorY = Math.min(
+    Math.max(Math.max(yL, yR) + 5, footerTop - firmaBlockHeight - 10),
+    pageHeight - 54
+  );
 
   // Linea separadora antes de la firma
-  hLine(separatorY, margin, pageWidth - margin, accent);
+  hLine(separatorY, margin, pageWidth - margin, borderColor);
 
   // Firma del ocupante - centrada horizontalmente en la pagina
   const firmaLineWidth = 80;
   const firmaCenterX = pageWidth / 2;
   const firmaLineX1 = firmaCenterX - firmaLineWidth / 2;
   const firmaLineX2 = firmaCenterX + firmaLineWidth / 2;
-  const firmaY = separatorY + 18; // espacio para la firma manuscrita
+  const firmaY = separatorY + 15; // espacio para la firma manuscrita
+
+  doc.setFont('times', 'italic');
+  doc.setFontSize(10.5);
+  doc.setTextColor(dark[0], dark[1], dark[2]);
+  doc.text(
+    `Puno, ${inquilino.fechaIngreso && formatDate(inquilino.fechaIngreso) !== '-' ? formatDate(inquilino.fechaIngreso) : '____ de ______________ de 20____'}`,
+    pageWidth - margin,
+    separatorY + 6,
+    { align: 'right' }
+  );
 
   doc.setDrawColor(dark[0], dark[1], dark[2]);
-  doc.setLineWidth(0.5);
+  doc.setLineWidth(0.4);
   doc.line(firmaLineX1, firmaY, firmaLineX2, firmaY);
 
-  doc.setFontSize(10);
-  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(10.5);
+  doc.setFont('times', 'bold');
   doc.setTextColor(dark[0], dark[1], dark[2]);
   doc.text('FIRMA DEL OCUPANTE', firmaCenterX, firmaY + 5, { align: 'center' });
 
@@ -469,8 +490,6 @@ export async function buildContratoDoc(
   doc.text(disclaimerLines, pageWidth / 2, disclaimerY, { align: 'center' });
 
   // Banda inferior minimal (una sola linea)
-  doc.setFillColor(accent[0], accent[1], accent[2]);
-  doc.rect(0, pageHeight - 3, pageWidth, 3, 'F');
 
   // Texto del footer
   doc.setFontSize(7.5);

@@ -145,8 +145,10 @@ export function ConsultaInquilino() {
     return null;
   }
 
-  const todoAlDia = estado.pagos.alquilerPagado && estado.pagos.internetPagado;
-  const algunPendiente = !estado.pagos.alquilerPagado || !estado.pagos.internetPagado;
+  const conInternet = (estado.habitacion?.montoInternet || 0) > 0;
+  const internetOk = !conInternet || estado.pagos.internetPagado;
+  const todoAlDia = estado.pagos.alquilerPagado && internetOk;
+  const algunPendiente = !estado.pagos.alquilerPagado || !internetOk;
 
   return (
     <div className={`min-h-screen ${todoAlDia ? 'bg-gradient-to-br from-emerald-50 to-emerald-100' : 'bg-gradient-to-br from-amber-50 to-amber-100'} flex items-center justify-center p-4`}>
@@ -208,7 +210,8 @@ export function ConsultaInquilino() {
             )}
           </div>
 
-          {/* Internet */}
+          {/* Internet (solo si el cuarto lo tiene contratado) */}
+          {conInternet && (
           <div className={`flex items-center justify-between p-4 rounded-2xl border-2 ${estado.pagos.internetPagado ? 'border-emerald-100 bg-emerald-50' : 'border-red-100 bg-red-50'}`}>
             <div className="flex items-center gap-3">
               <Calendar className={`w-5 h-5 ${estado.pagos.internetPagado ? 'text-emerald-600' : 'text-red-600'}`} />
@@ -229,6 +232,7 @@ export function ConsultaInquilino() {
               </div>
             )}
           </div>
+          )}
         </div>
 
         {/* Total Pendiente */}
@@ -238,7 +242,7 @@ export function ConsultaInquilino() {
             <p className="text-2xl font-bold text-amber-800 tabular-nums">
               {formatCurrency(
                 (!estado.pagos.alquilerPagado ? (estado.habitacion?.montoAlquiler || 0) : 0) +
-                (!estado.pagos.internetPagado ? (estado.habitacion?.montoInternet || 0) : 0)
+                (!internetOk ? (estado.habitacion?.montoInternet || 0) : 0)
               )}
             </p>
           </div>

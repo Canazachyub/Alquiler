@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Plus, Search, ChevronLeft, ChevronRight, Receipt, Trash2 } from 'lucide-react';
+import { Plus, Search, Receipt, Trash2, Zap } from 'lucide-react';
+import { ServiciosPanel } from '@/components/servicios/ServiciosPanel';
 import { GastoForm } from '@/components/forms';
-import { Modal, ConfirmDialog, LoadingPage, EmptyState } from '@/components/ui';
+import { SelectorMes, Modal, ConfirmDialog, LoadingPage, EmptyState, IconChip } from '@/components/ui';
 import { Fab } from '@/components/ui/Fab';
 import {
   useGastosByMes,
@@ -10,10 +11,12 @@ import {
   useDeleteGasto,
   useEdificios,
   useHabitaciones,
+  useHabitacionesConEstadoPago,
+  useEdificiosByCiudad,
 } from '@/hooks';
 import { useConfigStore, useNotifications } from '@/store';
 import { formatCurrency, formatDate, getMonthName } from '@/utils/formatters';
-import { MESES, CATEGORIAS_GASTO } from '@/utils/constants';
+import { CATEGORIAS_GASTO } from '@/utils/constants';
 import type { Gasto, GastoInput } from '@/types';
 
 export function Gastos() {
@@ -21,8 +24,20 @@ export function Gastos() {
   const [deletingGasto, setDeletingGasto] = useState<Gasto | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [categoriaFilter, setCategoriaFilter] = useState<string>('');
+  const [vista, setVista] = useState<'gastos' | 'servicios'>('gastos');
 
-  const { mesActual, anioActual, edificioSeleccionado, setMesAnio } = useConfigStore();
+  const { mesActual, anioActual, edificioSeleccionado, ciudadSeleccionada } = useConfigStore();
+  const { data: habsEstado } = useHabitacionesConEstadoPago(mesActual, anioActual, edificioSeleccionado || undefined);
+  const { data: edificiosCiudad } = useEdificiosByCiudad(ciudadSeleccionada || '');
+  // Alcance de los filtros globales: edificio elegido, o edificios de la ciudad
+  const edificiosAlcance = edificioSeleccionado
+    ? [edificioSeleccionado]
+    : ciudadSeleccionada && edificiosCiudad
+    ? edificiosCiudad.map((e) => e.id)
+    : undefined;
+  const habsAlcance = (habsEstado ?? []).filter(
+    (h) => !edificiosAlcance || (h.edificioId && edificiosAlcance.includes(h.edificioId))
+  );
   const { notify } = useNotifications();
 
   const { data: gastos, isLoading } = useGastosByMes(
@@ -39,22 +54,6 @@ export function Gastos() {
   const { data: habitaciones } = useHabitaciones();
   const createMutation = useCreateGasto();
   const deleteMutation = useDeleteGasto();
-
-  // Navegar meses
-  const navigateMonth = (delta: number) => {
-    let newMonth = mesActual + delta;
-    let newYear = anioActual;
-
-    if (newMonth > 12) {
-      newMonth = 1;
-      newYear++;
-    } else if (newMonth < 1) {
-      newMonth = 12;
-      newYear--;
-    }
-
-    setMesAnio(newMonth, newYear);
-  };
 
   // Filtrar gastos
   const filteredGastos = gastos?.filter((gasto) => {
@@ -96,9 +95,6 @@ export function Gastos() {
     }
   };
 
-  const currentYear = new Date().getFullYear();
-  const years = Array.from({ length: 3 }, (_, i) => currentYear - 1 + i);
-
   if (isLoading) {
     return <LoadingPage />;
   }
@@ -108,6 +104,10 @@ export function Gastos() {
       {/* Header */}
       <div className="flex items-center justify-between gap-2">
         <div className="min-w-0">
+          <div className="flex items-center gap-2 mb-2">
+            <IconChip icon={Receipt} tone="coral" size="sm" />
+            <span className="eyebrow">Operación</span>
+          </div>
           <h1 className="page-title">Gastos</h1>
           <p className="page-subtitle">
             {formatCurrency(totalMes)} · {getMonthName(mesActual)} {anioActual}
@@ -119,44 +119,24 @@ export function Gastos() {
         </button>
       </div>
 
+      {/* Vista */}
+      <div className="segmented" role="tablist" aria-label="Vista de gastos">
+        <button role="tab" aria-selected={vista === 'gastos'} data-active={vista === 'gastos'} onClick={() => setVista('gastos')} className="segmented-item">
+          <Receipt className="w-3.5 h-3.5" /> Gastos
+        </button>
+        <button role="tab" aria-selected={vista === 'servicios'} data-active={vista === 'servicios'} onClick={() => setVista('servicios')} className="segmented-item">
+          <Zap className="w-3.5 h-3.5" /> Servicios y facturas
+        </button>
+      </div>
+
       {/* Navegación de meses */}
-      <div className="card p-4">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <button onClick={() => navigateMonth(-1)} className="btn btn-outline btn-sm">
-              <ChevronLeft className="w-4 h-4" />
-            </button>
+      <div className="card p-4 md:p-5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <SelectorMes />
 
-            <select
-              value={mesActual}
-              onChange={(e) => setMesAnio(Number(e.target.value), anioActual)}
-              className="select w-32"
-            >
-              {MESES.map((mes) => (
-                <option key={mes.value} value={mes.value}>
-                  {mes.label}
-                </option>
-              ))}
-            </select>
-            <select
-              value={anioActual}
-              onChange={(e) => setMesAnio(mesActual, Number(e.target.value))}
-              className="select w-24"
-            >
-              {years.map((year) => (
-                <option key={year} value={year}>
-                  {year}
-                </option>
-              ))}
-            </select>
-
-            <button onClick={() => navigateMonth(1)} className="btn btn-outline btn-sm">
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </div>
-
-          <div className="text-lg font-bold text-red-700 tabular-nums">
-            Total: {formatCurrency(totalGastos)}
+          <div className="text-right">
+            <p className="text-[11px] font-semibold text-slate-500">Total del mes</p>
+            <p className="font-display text-2xl font-bold text-coral-600 tabular-nums leading-tight">{formatCurrency(totalGastos)}</p>
           </div>
         </div>
 
@@ -175,10 +155,20 @@ export function Gastos() {
         )}
       </div>
 
+      {vista === 'servicios' ? (
+        <ServiciosPanel
+          habitaciones={habsAlcance}
+          gastosDelMes={gastos ?? []}
+          mes={mesActual}
+          anio={anioActual}
+          edificiosIds={edificiosAlcance}
+        />
+      ) : (
+      <>
       {/* Filtros */}
       <div className="card p-3 md:p-4">
         <div className="flex flex-wrap items-center gap-3 md:gap-4">
-          <div className="flex-1 min-w-0">
+          <div className="flex-1 min-w-[220px]">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <input
@@ -258,6 +248,9 @@ export function Gastos() {
             </tbody>
           </table>
         </div>
+      )}
+
+      </>
       )}
 
       {/* FAB móvil */}

@@ -1,25 +1,25 @@
 import { useQuery } from '@tanstack/react-query';
-import { reportesApi } from '@/api';
+import { reportesApi, type ReporteScope } from '@/api/reportes.api';
 
 export const REPORTES_KEY = ['reportes'];
 
-export function useDashboard(edificioId?: string) {
+export function useDashboard(scope: ReporteScope = {}) {
   return useQuery({
-    queryKey: [...REPORTES_KEY, 'dashboard', edificioId],
-    queryFn: () => reportesApi.getDashboard(edificioId),
+    queryKey: [...REPORTES_KEY, 'dashboard', scope],
+    queryFn: () => reportesApi.getDashboard(scope),
   });
 }
 
-export function useReporteMensual(mes: number, anio: number, edificioId?: string) {
+export function useReporteMensual(mes: number, anio: number, edificioId?: string, ciudadId?: string) {
   return useQuery({
-    queryKey: [...REPORTES_KEY, 'mensual', { mes, anio, edificioId }],
-    queryFn: () => reportesApi.getMensual(mes, anio, edificioId),
+    queryKey: [...REPORTES_KEY, 'mensual', { mes, anio, edificioId, ciudadId }],
+    queryFn: () => reportesApi.getMensual(mes, anio, edificioId, ciudadId),
   });
 }
 
-export function useReporteHistorico(meses: number = 6, edificioId?: string) {
+export function useReporteHistorico(meses: number = 6, scope: ReporteScope = {}) {
   return useQuery({
-    queryKey: [...REPORTES_KEY, 'historico', { meses, edificioId }],
-    queryFn: () => reportesApi.getHistorico(meses, edificioId),
+    queryKey: [...REPORTES_KEY, 'historico', { meses, ...scope }],
+    queryFn: () => reportesApi.getHistorico(meses, scope),
   });
 }

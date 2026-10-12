@@ -8,3 +8,5 @@ export * from './useGastos';
 export * from './useGastosFijos';
 export * from './useReportes';
 export * from './useAlertas';
+export * from './useFiltroGlobal';
+export * from './useCobros';

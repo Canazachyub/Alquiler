@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { Plus, Edit, Trash2, MapPin } from 'lucide-react';
-import { Modal, ConfirmDialog, LoadingPage, EmptyState } from '@/components/ui';
+import { Modal, ConfirmDialog, LoadingPage, EmptyState, IconChip } from '@/components/ui';
 import { useCiudades, useCreateCiudad, useUpdateCiudad, useDeleteCiudad } from '@/hooks';
 import { useNotifications } from '@/store';
 import { cn } from '@/utils/cn';
 import type { Ciudad, CiudadInput } from '@/types';
 import { useForm } from 'react-hook-form';
+import { MapaCiudades } from '@/components/ciudades/MapaCiudades';
 
 export function Ciudades() {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -67,8 +68,12 @@ export function Ciudades() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
+          <div className="flex items-center gap-2 mb-2">
+            <IconChip icon={MapPin} tone="pine" size="sm" />
+            <span className="eyebrow">Catálogo</span>
+          </div>
           <h1 className="page-title">Ciudades</h1>
           <p className="page-subtitle">{total} registradas</p>
         </div>
@@ -77,6 +82,9 @@ export function Ciudades() {
           Nueva Ciudad
         </button>
       </div>
+
+      {/* Mapa + desglose */}
+      {ciudades && ciudades.length > 0 && <MapaCiudades ciudades={ciudades} />}
 
       {/* Lista de ciudades */}
       {ciudades?.length === 0 ? (

@@ -58,8 +58,6 @@ export const useConfigStore = create<ConfigState>()(
     {
       name: 'alquiler-config',
       partialize: (state) => ({
-        mesActual: state.mesActual,
-        anioActual: state.anioActual,
         ciudadSeleccionada: state.ciudadSeleccionada,
         edificioSeleccionado: state.edificioSeleccionado,
         sidebarCollapsed: state.sidebarCollapsed,

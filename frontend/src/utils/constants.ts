@@ -22,6 +22,7 @@ export const ESTADOS_HABITACION = {
   vacant: { label: 'Vacante', color: 'gray' },
   occupied: { label: 'Ocupada', color: 'blue' },
   maintenance: { label: 'Mantenimiento', color: 'yellow' },
+  exonerated: { label: 'Exonerado', color: 'olive' },
 } as const;
 
 // Estados de pago

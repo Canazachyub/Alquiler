@@ -5,6 +5,12 @@ import { MESES } from './constants';
 /**
  * Formatea un número como moneda (Soles peruanos)
  */
+/** Fecha local de hoy en YYYY-MM-DD (toISOString usa UTC y adelanta el día después de las 19:00 en Perú) */
+export function hoyISO(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
 export function formatCurrency(amount: number): string {
   return new Intl.NumberFormat('es-PE', {
     style: 'currency',
@@ -104,8 +110,9 @@ export function formatDNI(dni: string | number | undefined | null): string {
   if (!dni && dni !== 0) return '-';
   const dniStr = String(dni);
   const cleaned = dniStr.replace(/\D/g, '');
-  if (cleaned.length === 8) {
-    return `${cleaned.slice(0, 2)}.${cleaned.slice(2, 5)}.${cleaned.slice(5)}`;
+  // DNI peruano: 8 dígitos sin puntos. Google Sheets borra el 0 inicial, se recupera.
+  if (cleaned.length >= 6 && cleaned.length <= 8) {
+    return cleaned.padStart(8, '0');
   }
   return dniStr;
 }

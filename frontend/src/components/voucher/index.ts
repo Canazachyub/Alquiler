@@ -11,3 +11,4 @@ export {
   buildContratoDoc,
   getContratoBlob,
 } from './ContratoAlquiler';
+export { ResumenImprimible } from './ResumenImprimible';
