@@ -14,7 +14,8 @@ Sistema web completo para administrar propiedades de alquiler en multiples ciuda
 | **Estilos** | TailwindCSS (sistema de tokens con paleta slate/indigo) |
 | **Estado** | Zustand + TanStack Query |
 | **Graficos** | Recharts |
-| **PDF** | jsPDF + QRCode |
+| **PDF** | jsPDF + QRCode (vouchers, planillas, tracking, reglamento) |
+| **Mapas** | Leaflet + OpenStreetMap |
 | **Backend** | Google Apps Script (REST API) |
 | **Base de Datos** | Google Sheets |
 | **Deploy** | GitHub Pages + GitHub Actions (CI/CD) |
@@ -23,20 +24,23 @@ Sistema web completo para administrar propiedades de alquiler en multiples ciuda
 
 ## Caracteristicas Principales
 
-- **Multi-ciudad**: Gestiona propiedades en Puno y Juli
-- **Multi-edificio**: Multiples edificios por ciudad
-- **Dashboard interactivo**: 7 KPIs organizados en 2 filas (3 prominentes + 4 secundarios) y grafico de tendencias
-- **Sistema de notificaciones**: Campana con popover que muestra en tiempo real pagos pendientes, vencimientos proximos (3 dias), gastos fijos por vencer y contratos incompletos. Navegacion directa al hacer click en cada alerta
-- **Calendario de pagos**: Dia actual resaltado con ring indigo, fines de semana con shade, overflow `+N` cuando hay muchos inquilinos por dia
-- **Gestion de habitaciones**: Segmented control de filtros (Todas / Con deuda / Al dia / Vacantes), RoomCard con dot de estado y prioridad semantica (deuda > mantenimiento > pagado > vacante)
-- **Gestion de gastos fijos**: Control de servicios recurrentes por edificio con dia de vencimiento
-- **Reglamento Interno de Convivencia**: Generacion de PDF con QR a la consulta publica, checkboxes de entrega (garantia + llaves), firma centrada y disclaimer legal que aclara que no es contrato de arrendamiento
-- **Vouchers PDF**: Generacion de comprobantes de pago termicos
-- **Wizard de edificios**: Creacion rapida de edificio con pisos y habitaciones en un solo paso
-- **Mobile-first**: FAB (boton flotante) en paginas operativas (Inquilinos, Pagos, Gastos), drawer de filtros en header movil
-- **Consulta publica de ocupante**: Ruta `/consulta?hab=X` accesible via QR del PDF, sin login
-- **Deploy automatico**: CI/CD con GitHub Actions hacia GitHub Pages
-- **Auto-migracion de DB**: El backend detecta columnas nuevas en `CONFIG.HEADERS` y las agrega automaticamente a la hoja de Google Sheets
+> Detalle completo de la última versión en [`CHANGELOG.md`](CHANGELOG.md).
+
+- **Multi-ciudad y multi-edificio**, con **mapa de ciudades** y desglose por edificio y piso
+- **Vista Edificio**: edificio 3D animado, plano de cada piso y ficha del cuarto con su ciclo de cobro
+- **Planos técnicos** por piso (estilo plano de arquitectura) con puertas hacia el pasillo
+- **Cobranza por ciclo real** de cada inquilino: al día / por vencer / vencido, con cuenta regresiva
+- **Modalidad de pago** por inquilino: adelantado o mes vencido
+- **Registrar pago** de varios meses a la vez, con método, N° de operación y quién cobró
+- **Historial de pagos editable**, borrar pagos con confirmación
+- **Exoneración** de cuartos usados por los propietarios (con motivo) e **internet opcional** por cuarto
+- **Servicios prorrateados** (luz, agua, internet como % del alquiler) y seguimiento de facturas
+- **Analítica de cobranza** con recomendaciones y fórmulas
+- **Documentos PDF**: voucher para celular con QR que se puede tocar, ticket térmico, planilla para marcar a mano, resumen de pagos, hoja de tracking (2 caras) y reglamento formal
+- **Consulta pública** `/consulta?hab=X` (QR) que muestra solo los datos del inquilino
+- **Responsive**: hojas inferiores en celular, tarjetas en vez de tablas, botones flotantes
+- **Deploy automatico** con GitHub Actions hacia GitHub Pages
+- **Auto-migracion de DB**: el backend agrega a la hoja las columnas nuevas de `CONFIG.HEADERS`
 
 ---
 
@@ -133,18 +137,13 @@ ALQUILER PUNO JULI/
 
 ## Sistema de Diseño
 
-**Paleta:** `primary` indigo (`#4f46e5`), neutro unico `slate`, semanticas `emerald/red/amber` para success/danger/warning.
+Documentado en [`DESIGN.md`](DESIGN.md). Resumen:
 
-**Tokens globales en `src/index.css`:**
-- Botones: `.btn` + variantes `btn-primary`, `btn-outline`/`btn-secondary`, `btn-ghost`, `btn-danger`, `btn-success`. Altura fija `h-10` (sm `h-8`, lg `h-11`).
-- Cards: `.card`, `.card-interactive` (con `hover:-translate-y-px + shadow-elevated`).
-- Tipografia: `.page-title` (2xl/3xl), `.page-subtitle`, `.fieldset-title` (uppercase tracking-wider small).
-- Inputs: `.input`, `.select`, `.label`, `.input-error`, `.form-error`. Focus ring `/40` con offset.
-- Tablas: `.table` con `divide-y divide-slate-100`, headers en `normal-case text-xs`.
-- Badges: `.badge badge-[success|danger|warning|info|neutral]` con `rounded-full`.
-- Sombras: `shadow-soft`, `shadow-card`, `shadow-elevated`, `shadow-popover`.
-
-**Microinteracciones:** `duration-150 ease-out` estandar. Toasts con progress bar via `transform: scaleX()`.
+- **Paleta**: fondo cálido `#F5F3F1`, tinta `#1B1E2A`, acción `primary` azul `#2B5CE6` y **un color por concepto**: `teal` habitaciones, `leaf` pagos, `sky` inquilinos, `coral` gastos, `ochre` plazos, `olive` reportes, `violet` documentos, `pine` edificios.
+- **Estados de cobro** (componentes `estadoEstilos.ts`): verde al día, ámbar por vencer, rojo vencido, gris vacante, oliva exonerado, violeta mantenimiento.
+- **Tipografía**: `Inter Tight` en titulares, `Inter` en cuerpo.
+- **Clases globales** en `src/index.css`: `.btn` (píldora), `.card`, `.card-interactive`, `.page-title`, `.eyebrow`, `.segmented`, `.link-arrow`, `.input`, `.select`, `.table`, `.badge`, `.no-scrollbar`.
+- **Componentes base**: `IconChip`, `SeccionesTabs`, `SelectorMes`, `Modal` (hoja inferior en celular), `EmptyState`.
 
 ---
 
@@ -181,14 +180,18 @@ Al eliminar una entidad, el backend cascadea automaticamente:
 |------|--------|
 | **Ciudades** | ID, Nombre, Departamento, Activo, CreatedAt, UpdatedAt |
 | **Edificios** | ID, CiudadId, Nombre, Descripcion, Direccion, TotalPisos, Activo |
-| **Pisos** | ID, EdificioId, Numero, Descripcion |
-| **Habitaciones** | ID, PisoId, Codigo, Ubicacion, MontoAlquiler, MontoInternet, MontoServicios, Estado, Activo, Observaciones |
-| **Inquilinos** | ID, HabitacionId, Nombre, Apellido, DNI, Telefono, Email, FechaIngreso, FechaSalida, Estado, ContactoEmergencia, TelefonoEmergencia, Observaciones, **Garantia**, **LlaveHabitacion**, **LlavePuertaCalle** |
-| **Pagos** | ID, InquilinoId, HabitacionId, Fecha, Mes, Anio, Concepto, Monto, MetodoPago, Referencia, Estado, Observaciones |
+| **Pisos** | ID, EdificioId, Numero, Descripcion, **Plano** |
+| **Habitaciones** | ID, PisoId, Codigo, Ubicacion, MontoAlquiler, MontoInternet, MontoServicios, Estado, Activo, Observaciones, **MotivoExoneracion** |
+| **Inquilinos** | ID, HabitacionId, Nombre, Apellido, DNI, Telefono, Email, FechaIngreso, FechaSalida, Estado, ContactoEmergencia, TelefonoEmergencia, Observaciones, **Garantia**, **LlaveHabitacion**, **LlavePuertaCalle**, DniFotoFrenteUrl, DniFotoReversoUrl, ContratoPdfUrl, **ModalidadPago** |
+| **Pagos** | ID, InquilinoId, HabitacionId, Fecha, Mes, Anio, Concepto, Monto, MetodoPago, Referencia, Estado, Observaciones, VoucherPdfUrl |
 | **Gastos** | ID, EdificioId, HabitacionId, Fecha, Concepto, Categoria, Monto, ComprobanteUrl, Observaciones |
 | **GastosFijos** | ID, EdificioId, Tipo, Descripcion, Monto, DiaVencimiento, Activo |
 
-> Los 3 campos en negrita (`Garantia`, `LlaveHabitacion`, `LlavePuertaCalle`) son booleanos que alimentan los checkboxes del Reglamento PDF. Si tu hoja de Inquilinos es antigua y no los tiene, ejecuta `migrateSheets()` desde el menu **Sistema Alquiler** en Google Sheets.
+> - `Plano`: distribución del piso en texto (filas separadas por `|`, celdas por espacio; p. ej. `escalera A1 A2|bano pasillo pasillo|A5 A4 A3`).
+> - `MotivoExoneracion`: motivo cuando el cuarto está en estado `exonerated` (usado por los propietarios, no se cobra).
+> - `ModalidadPago`: `adelantado` (por defecto) o `vencido`.
+> - `Garantia`, `LlaveHabitacion`, `LlavePuertaCalle`: booleanos del Reglamento PDF.
+> - Si tu hoja es antigua, ejecuta `migrateSheets()` desde el menu **Sistema Alquiler** o simplemente usa la app: la auto-migración agrega las columnas al final.
 
 ---
 
@@ -290,6 +293,11 @@ Todas las requests se envian como `GET` con parametros `action`, `endpoint` y `d
 | PUT | `/gastos-fijos/{id}` | Actualizar |
 | DELETE | `/gastos-fijos/{id}` | Eliminar |
 
+### Consulta publica (QR)
+| Metodo | Endpoint | Descripcion |
+|--------|----------|-------------|
+| GET | `/consulta/{habitacionId}` | Solo lo que ve el inquilino: codigo, edificio, monto, primer nombre, fecha de ingreso, modalidad y sus pagos de alquiler. Sin DNI ni telefonos |
+
 ### Reportes
 | Metodo | Endpoint | Descripcion |
 |--------|----------|-------------|
@@ -385,73 +393,60 @@ A diferencia del frontend, Apps Script **no se redeploya automaticamente**. Si t
 ## Uso del Sistema
 
 ### Dashboard
-- Fila 1 (3 KPIs prominentes): Tasa de ocupacion, Ingresos del mes, Pagos pendientes
-- Fila 2 (4 KPIs secundarios): Total habitaciones, Pagadas, Gastos, Balance
-- Grafico de barras ingresos vs gastos (ultimos 6 meses)
-- Calendario de pagos con dia actual marcado
-- Alerta visible cuando hay habitaciones con deuda
+- KPIs con color por concepto (ocupación, ingresos, pendientes, gastos, balance) que llevan a su sección al tocarlos
+- Gráfico ingresos vs gastos y calendario de pagos
+- Botón **Registrar pago** (botón flotante en celular)
 
-### Notificaciones (campana del header)
-Click en la campana abre un popover con alertas agrupadas por severidad:
-- **Rojas**: pagos pendientes (habitaciones ocupadas sin pago del mes)
-- **Ambar**: vencimientos en los proximos 3 dias; gastos fijos proximos
-- **Azules**: contratos incompletos (falta DNI, garantia o llaves)
-
-Cada habitacion genera **una sola** alerta: si vence dentro de 3 dias sale en ambar, si no sale en rojo. Los gastos fijos se acotan al edificio seleccionado en el header.
-
-El badge de la campana muestra el conteo total. Click en cada alerta navega a la pagina correspondiente.
+### Ciclo de cobro y modalidad de pago
+- El alquiler de cada mes vence el **día de ingreso** del inquilino (el 31 pasa al último día en meses cortos).
+- **Adelantado** (por defecto): el pago del mes M cubre del día de pago de M al día anterior en M+1.
+- **Mes vencido**: el pago del mes M vence el mismo día pero cubre el mes ya usado (M−1); el primer cobro llega un mes después de entrar.
+- Estado: 🟢 al día · 🟡 por vencer (5 días o menos) · 🔴 vencido (algún mes cuya fecha ya pasó sin pago).
 
 ### Habitaciones
-- Segmented control de filtros: Todas / Con deuda / Al dia / Vacantes
-- Grid de RoomCards con:
-  - Dot de estado top-right (rojo/ambar/emerald/slate)
-  - Shade sutil de fondo segun estado
-  - Prioridad: deuda > mantenimiento > pagado > vacante
-  - Piso y edificio bajo el codigo de habitacion
-  - Deuda del mes calculada como la suma de alquiler + internet no pagados
-- Panel resumen con "Por cobrar" del mes
-- FAB en movil para crear nueva habitacion
+- **Tarjetas** agrupadas por edificio → piso (plegables) o vista **Edificio** (3D + plano + ficha).
+- Filtros: Todas / Vencidos / Por vencer / Al día / Vacantes.
+- Ventana del cuarto con pestañas **Habitación · Inquilino · Registrar pago · Contrato · Tracking · Resumen**.
+- Ficha del cuarto: ciclo de cobro con cuenta regresiva, historial de pagos editable, exonerar, activar/quitar internet, DNI (ambas caras) y contrato.
+- **Planos**: botón "Dibujar/Editar plano" con plantillas; palabras reservadas `pasillo`, `bano`, `escalera`/`gradas`, `entrada`, `cocina`, `lavanderia`, `patio`, `.` (vacío).
 
 ### Inquilinos
-- Tabla con DNI formateado (`70.123.456`) y telefono formateado (`951 234 567`)
-- Toggle switch para mostrar inactivos
-- Acciones: generar Reglamento PDF, editar, eliminar
-- Al registrar, se ofrece descargar el Reglamento Interno de Convivencia
-- FAB en movil
-
-### Reglamento Interno de Convivencia (PDF)
-Al registrar un inquilino o desde la tabla se genera un PDF A4 con:
-- **Titulo**: "Reglamento Interno de Convivencia" (indigo)
-- **QR** en tarjeta slate-50 que lleva a `/consulta?hab=X` (consulta publica)
-- **Datos del Ocupante**: celular, contacto familiar, correo, codigo de habitacion
-- **Entrega**: checkboxes de Garantia, Llave de habitacion, Llave de puerta de calle
-- **Fecha de ingreso** y **Aporte mensual** (caja destacada indigo)
-- **7 normas de convivencia** numeradas
-- **Firma centrada** (sin huella dactilar)
-- **Disclaimer legal**: "El presente documento tiene fines exclusivos de registro interno de convivencia y no constituye contrato de arrendamiento ni titulo equivalente para efectos legales, bancarios o tributarios."
-- Nombre de archivo: `Reglamento_{Nombre}_{Apellido}_{HAB}.pdf`
+- Lista ordenada por edificio → piso → cuarto; tarjetas en celular.
+- Formulario con **¿Cuándo paga?** (adelantado / mes vencido) y vista previa del primer periodo.
+- Acciones: contrato, archivar en Drive, editar, eliminar; "Dar de baja" desde la ventana del cuarto.
 
 ### Pagos
-- Navegacion por mes/año
-- Filtros por concepto (alquiler, internet, servicios)
-- Generacion de voucher PDF termico (80mm)
-- **Envio por WhatsApp**: el boton "Generar PDF y enviar" arma el voucher y lo hace llegar al numero registrado del inquilino. En celular comparte el PDF real via el menu nativo; en escritorio lo descarga y abre el chat con el mensaje escrito para adjuntarlo. WhatsApp no admite adjuntos desde un enlace web, por eso el segundo paso es manual en escritorio
-- Boton "Descargar" para obtener solo el PDF, sin abrir WhatsApp
-- Fecha de pago editable
-- FAB en movil
+- Indicadores del mes: cobrado (con avance vs esperado), falta cobrar, deuda vencida, por vencer.
+- **Cobranza**: cuartos vencidos, por vencer y al día ordenados por urgencia, con botón Cobrar.
+- **Pagos del mes**: N° de pago, cuarto, inquilino, mes que cubre, observaciones, voucher y borrar.
+- **Imprimir resumen**: planilla para marcar a mano o resumen de lo pagado (una hoja A4).
+- **Voucher**: formato celular para WhatsApp/Drive/descarga (QR que se puede tocar) y ticket térmico de 80 mm para imprimir.
+
+### Gastos
+- Gastos del mes por categoría.
+- **Servicios y facturas**: porcentajes por servicio (modo incluido o adicional), aporte de cada cuarto, situación del mes y facturas con cuenta regresiva y registro de pago. Los porcentajes se guardan en el navegador.
+
+### Reportes
+- Histórico de ingresos/gastos y **analítica de cobranza** (puntualidad, atrasos, quién cobra, días de pago, métodos, servicios) con recomendaciones y fórmulas. Exportar PDF.
+
+### Edificios, Pisos y Ciudades
+- Edificios: gastos fijos y **vista técnica** (3D + planos estilo plano técnico, ficha al tocar un cuarto).
+- Pisos: mostrados por letra y nivel.
+- Ciudades: mapa con marcadores por ocupación y desglose por edificio y piso.
+
+### Documentos PDF
+| Documento | Dónde | Uso |
+|---|---|---|
+| Voucher celular | Pagos / Registrar pago | Enviar al inquilino por WhatsApp |
+| Ticket 80 mm | Pagos → Imprimir | Impresora térmica |
+| Planilla para marcar | Pagos → Imprimir resumen | Respaldo físico a mano |
+| Resumen de pagos | Pagos / Reportes → Exportar | Resumen de una hoja |
+| Hoja de tracking | Ventana del cuarto → Tracking | Hoja física de 2 caras |
+| Reglamento / contrato | Ventana del cuarto → Contrato | Firma del ocupante |
 
 ### Consulta publica `/consulta?hab=X`
-- Ruta sin layout (accesible desde el QR del Reglamento)
-- Muestra estado de pago del ocupante (mes actual, historial)
-- No requiere autenticacion
-
-### Calendario de Pagos
-- Fondo **emerald**: todos pagados
-- Fondo **red**: todos pendientes
-- Fondo **amber**: mixto
-- Dots por inquilino (max 5 + `+N` si hay mas)
-- Ring indigo en el dia actual
-- Weekend con `bg-slate-50`
+- Se abre al escanear o **tocar** el QR del voucher o del reglamento; siempre apunta a la página publicada (`URL_PUBLICA` en `utils/constants.ts`).
+- Muestra solo: saludo, cuarto, estado, próximo pago con su cobertura y últimos pagos.
 
 ---
 

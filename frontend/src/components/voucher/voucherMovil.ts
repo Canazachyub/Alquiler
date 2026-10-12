@@ -2,6 +2,7 @@ import { jsPDF } from 'jspdf';
 import QRCode from 'qrcode';
 import { formatCurrency, formatDate, getMonthName } from '@/utils/formatters';
 import { coberturaDePago } from '@/utils/modalidad';
+import { urlConsulta as urlConsultaPublica } from '@/utils/constants';
 import type { Pago, Inquilino, Habitacion } from '@/types';
 
 /**
@@ -98,9 +99,10 @@ export async function buildVoucherMovilDoc({ pago, inquilino, habitacion, negoci
 
   // QR a la consulta pública del cuarto
   let qr = '';
+  let urlConsulta = '';
   try {
-    const base = window.location.origin + window.location.pathname.replace(/\/[^/]*$/, '');
-    qr = await QRCode.toDataURL(`${base}/consulta?hab=${pago.habitacionId}`, { width: 200, margin: 0, color: { dark: '#1B1E2A', light: '#ffffff' } });
+    urlConsulta = urlConsultaPublica(pago.habitacionId);
+    qr = await QRCode.toDataURL(urlConsulta, { width: 200, margin: 0, color: { dark: '#1B1E2A', light: '#ffffff' } });
   } catch {
     /* sin QR */
   }
@@ -223,7 +225,11 @@ export async function buildVoucherMovilDoc({ pago, inquilino, habitacion, negoci
   const yPie = H - 30;
   trazo(LINEA, 0.3);
   doc.line(M, yPie - 3, W - M, yPie - 3);
-  if (qr) doc.addImage(qr, 'PNG', M, yPie, 22, 22);
+  if (qr) {
+    doc.addImage(qr, 'PNG', M, yPie, 22, 22);
+    // Enlace invisible: tocar el QR abre la consulta (en el celular no se puede escanear la propia pantalla)
+    doc.link(M, yPie, 22, 22, { url: urlConsulta });
+  }
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(11);
   color(TINTA);
@@ -231,7 +237,8 @@ export async function buildVoucherMovilDoc({ pago, inquilino, habitacion, negoci
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(7.5);
   color(GRIS);
-  doc.text(doc.splitTextToSize('Escanee el código para ver el estado de pago de su habitación.', W - 2 * M - 27), M + 27, yPie + 12);
+  doc.text(doc.splitTextToSize('Toque o escanee el código para ver el estado de pago de su habitación.', W - 2 * M - 27), M + 27, yPie + 12);
+  if (urlConsulta) doc.link(M + 27, yPie + 9, W - 2 * M - 27, 7, { url: urlConsulta });
   doc.setFontSize(6.5);
   doc.text('Conserve este comprobante.', M + 27, yPie + 18);
   doc.text(`Emitido el ${new Date().toLocaleString('es-PE')}`, M + 27, yPie + 21.5);

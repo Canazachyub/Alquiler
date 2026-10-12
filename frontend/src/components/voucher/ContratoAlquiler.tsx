@@ -1,6 +1,7 @@
 import { jsPDF } from 'jspdf';
 import QRCode from 'qrcode';
 import { formatDate } from '@/utils/formatters';
+import { urlConsulta } from '@/utils/constants';
 import type { Inquilino, Habitacion } from '@/types';
 
 interface ContratoData {
@@ -36,8 +37,7 @@ export async function buildContratoDoc(
   });
 
   // Generar URL de consulta y QR
-  const baseUrl = window.location.origin + window.location.pathname.replace(/\/[^/]*$/, '');
-  const consultaUrl = `${baseUrl}/consulta?hab=${habitacion.id}`;
+  const consultaUrl = urlConsulta(habitacion.id);
 
   let qrDataUrl = '';
   try {
@@ -147,6 +147,8 @@ export async function buildContratoDoc(
   const qrY = qrBoxY + 3;
   if (qrDataUrl) {
     doc.addImage(qrDataUrl, 'PNG', qrX, qrY, qrSize, qrSize);
+    // Enlace invisible sobre el QR: tocarlo abre la consulta
+    doc.link(qrX, qrY, qrSize, qrSize, { url: consultaUrl });
   } else {
     doc.setDrawColor(mid[0], mid[1], mid[2]);
     doc.setLineWidth(0.4);

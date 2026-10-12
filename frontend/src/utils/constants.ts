@@ -80,3 +80,10 @@ export const TIPOS_INCIDENCIA = [
   { value: 'emergencia', label: 'Emergencia' },
   { value: 'otro', label: 'Otro' },
 ] as const;
+
+/**
+ * Dirección pública de la app (GitHub Pages). Los QR y enlaces de vouchers y
+ * reglamentos apuntan aquí aunque el documento se genere desde la PC en local.
+ */
+export const URL_PUBLICA = (import.meta.env.VITE_PUBLIC_URL || 'https://canazachyub.github.io/Alquiler').replace(/\/$/, '');
+export const urlConsulta = (habitacionId: string) => `${URL_PUBLICA}/consulta?hab=${habitacionId}`;
