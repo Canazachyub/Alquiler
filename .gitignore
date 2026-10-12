@@ -40,3 +40,7 @@ coverage/
 
 # Misc
 *.tsbuildinfo
+
+# Recibos de servicios (datos personales)
+miRecibo.pdf
+recibos de agua casa puno/

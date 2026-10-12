@@ -25,16 +25,33 @@ export const SERVICIOS: { clave: ServicioClave; label: string }[] = [
   { clave: 'internet', label: 'Internet' },
 ];
 
+/**
+ * Por defecto según los recibos de Casa Progreso (oct 2026):
+ *   % = recibo promedio ÷ alquileres ocupados × 100, redondeado hacia arriba a 0.5
+ *   luz  S/ 214.53 ÷ S/ 1,910 = 11.2 % → 11.5 %
+ *   agua S/  57.20 ÷ S/ 1,910 =  3.0 % →  3 %
+ */
 export const CONFIG_SERVICIOS_DEFAULT: ConfigServicios = {
-  porcentajes: { luz: 5, agua: 3, internet: 1 },
+  porcentajes: { luz: 11.5, agua: 3, internet: 1 },
   modo: 'incluido',
 };
 
 const LS_KEY = 'alquiler-config-servicios';
+// Al subir la versión, los % guardados de luz y agua se reemplazan por los nuevos por defecto
+const VERSION_CONFIG = 2;
 
 export function leerConfigServicios(): ConfigServicios {
   try {
     const c = JSON.parse(localStorage.getItem(LS_KEY) || 'null');
+    if (c?.porcentajes && c.version !== VERSION_CONFIG) {
+      const migrada: ConfigServicios = {
+        ...CONFIG_SERVICIOS_DEFAULT,
+        modo: c.modo ?? CONFIG_SERVICIOS_DEFAULT.modo,
+        porcentajes: { ...CONFIG_SERVICIOS_DEFAULT.porcentajes, internet: c.porcentajes.internet ?? CONFIG_SERVICIOS_DEFAULT.porcentajes.internet },
+      };
+      guardarConfigServicios(migrada);
+      return migrada;
+    }
     if (c?.porcentajes) return { ...CONFIG_SERVICIOS_DEFAULT, ...c, porcentajes: { ...CONFIG_SERVICIOS_DEFAULT.porcentajes, ...c.porcentajes } };
   } catch {
     /* sin almacenamiento */
@@ -44,7 +61,7 @@ export function leerConfigServicios(): ConfigServicios {
 
 export function guardarConfigServicios(c: ConfigServicios) {
   try {
-    localStorage.setItem(LS_KEY, JSON.stringify(c));
+    localStorage.setItem(LS_KEY, JSON.stringify({ ...c, version: VERSION_CONFIG }));
   } catch {
     /* sin almacenamiento */
   }

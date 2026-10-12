@@ -337,7 +337,147 @@ export function generarPlanillaCobrosPdf(p: PlanillaParams): jsPDF {
   );
   doc.text('Revisado por: ____________________   Fecha: __________', W - M, H - M + 1, { align: 'right' });
 
+  // Segunda hoja: calendario reutilizable para cualquier mes
+  dibujarCalendarioPlantilla(doc, p.edificio, inquilinos);
+
   return doc;
+}
+
+/**
+ * Calendario de cobros como PLANTILLA: sirve para cualquier mes, porque cada cuarto paga
+ * siempre el mismo día. Los días van del 1 al 31 sin día de la semana; el mes y el año
+ * se escriben a mano. Solo negro y grises, pensado para imprimir en blanco y negro.
+ */
+function dibujarCalendarioPlantilla(doc: jsPDF, edificio: string, inquilinos: HabitacionConDetalles[]) {
+  const W = 297;
+  const H = 210;
+  const M = 6;
+  const NEGRO: RGB = [0, 0, 0];
+  const GRIS_LINEA: RGB = [120, 120, 120];
+  const GRIS_TEXTO: RGB = [90, 90, 90];
+  const GRIS_GUIA: RGB = [150, 150, 150];
+  const color = (c: RGB) => doc.setTextColor(c[0], c[1], c[2]);
+  const trazo = (c: RGB, w = 0.2) => {
+    doc.setDrawColor(c[0], c[1], c[2]);
+    doc.setLineWidth(w);
+  };
+
+  // Cuartos por día de pago
+  const porDia = new Map<number, { codigo: string; monto: number }[]>();
+  inquilinos.forEach((h) => {
+    const dia = calcularCobro(h, []).diaPago;
+    const lista = porDia.get(dia) ?? [];
+    lista.push({ codigo: h.codigo, monto: Number(h.montoAlquiler || 0) });
+    porDia.set(dia, lista);
+  });
+  porDia.forEach((l) => l.sort((a, b) => compararCodigos(a.codigo, b.codigo)));
+  const esperado = inquilinos.reduce((s, h) => s + Number(h.montoAlquiler || 0), 0);
+
+  doc.addPage('a4', 'landscape');
+
+  // Encabezado con espacio para escribir mes y año
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(15);
+  color(NEGRO);
+  doc.text(`${edificio} · Calendario de cobros`, M, M + 6);
+  doc.setFontSize(12);
+  doc.text('Mes: ____________________     Año: __________', W - M, M + 6, { align: 'right' });
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8.5);
+  color(GRIS_TEXTO);
+  doc.text(
+    `Cada cuarto paga el mismo día todos los meses. Al cobrar: marque la casilla del cuarto y la inicial de quien cobró (${COBRADORES.map((c) => `${c.inicial} = ${c.nombre}`).join(', ')}).`,
+    M,
+    M + 11.5
+  );
+
+  // Cuadrícula: 7 columnas × 5 filas = 35 celdas; días 1–31 y las 4 últimas para notas
+  const yG = M + 15;
+  const cols = 7;
+  const filas = 5;
+  const wC = (W - 2 * M) / cols;
+  const hC = (H - M - 2 - yG) / filas;
+
+  for (let d = 1; d <= 31; d++) {
+    const i = d - 1;
+    const x = M + (i % cols) * wC;
+    const y = yG + Math.floor(i / cols) * hC;
+
+    // Número del día
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(14);
+    color(NEGRO);
+    doc.text(String(d), x + 2, y + 6);
+    if (d >= 29) {
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(6);
+      color(GRIS_TEXTO);
+      doc.text('si el mes es corto: último día', x + wC - 1.5, y + 4.5, { align: 'right' });
+    }
+
+    // Una línea por cuarto: [ ] código  monto   [Y][J][M]
+    const lista = porDia.get(d) ?? [];
+    if (!lista.length) continue;
+    const hLinea = Math.min(7, (hC - 9) / lista.length);
+    const caja = Math.min(4.6, hLinea - 1.4);
+    lista.forEach((c, k) => {
+      const yl = y + 8.5 + k * hLinea;
+      const mid = yl + hLinea / 2;
+      // Casilla "pagó"
+      trazo(NEGRO, 0.35);
+      doc.rect(x + 2, mid - caja / 2, caja, caja, 'S');
+      // Código y monto
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(Math.min(10, caja * 2.8));
+      color(NEGRO);
+      doc.text(c.codigo, x + 3.5 + caja, mid + caja * 0.35);
+      const wCod = doc.getTextWidth(c.codigo);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(Math.min(7, caja * 2));
+      color(GRIS_TEXTO);
+      doc.text(soles(c.monto), x + 4.5 + caja + wCod, mid + caja * 0.3);
+      // Casillas Y / J / M con la letra guía en gris
+      const lado = caja * 0.9;
+      COBRADORES.forEach((cb, j) => {
+        const bx = x + wC - 1.8 - (COBRADORES.length - j) * (lado + 0.7);
+        trazo(GRIS_LINEA, 0.25);
+        doc.rect(bx, mid - lado / 2, lado, lado, 'S');
+        doc.setFontSize(Math.min(7.5, lado * 1.9));
+        color(GRIS_GUIA);
+        doc.text(cb.inicial, bx + lado / 2, mid + lado * 0.28, { align: 'center' });
+      });
+      // Separador suave entre cuartos
+      if (k < lista.length - 1) {
+        trazo(GRIS_GUIA, 0.1);
+        doc.line(x + 2, yl + hLinea, x + wC - 2, yl + hLinea);
+      }
+    });
+  }
+
+  // Celdas 32–35: notas y totales
+  const xN = M + 3 * wC;
+  const yN = yG + 4 * hC;
+  const wN = 4 * wC;
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(9);
+  color(NEGRO);
+  doc.text('Total del mes', xN + 2.5, yN + 5.5);
+  doc.setFont('helvetica', 'normal');
+  doc.text(`Debe cobrarse: ${soles(esperado)}   ·   Cobrado: S/ ______________   ·   Falta: S/ ______________`, xN + 26, yN + 5.5);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Notas', xN + 2.5, yN + 12);
+  trazo(GRIS_GUIA, 0.2);
+  for (let y = yN + 12; y < yN + hC - 3; y += 6) doc.line(xN + 14, y + 0.5, xN + wN - 2.5, y + 0.5);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(7);
+  color(GRIS_TEXTO);
+  doc.text(`${inquilinos.length} cuartos con inquilino. Si cambia un inquilino o su día de pago, vuelva a imprimir esta hoja.`, xN + 2.5, yN + hC - 1.8);
+
+  // Líneas de la cuadrícula
+  trazo(NEGRO, 0.3);
+  doc.rect(M, yG, W - 2 * M, filas * hC, 'S');
+  for (let f = 1; f < filas; f++) doc.line(M, yG + f * hC, W - M, yG + f * hC);
+  for (let c = 1; c < cols; c++) doc.line(M + c * wC, yG, M + c * wC, c > 3 ? yN : yG + filas * hC);
 }
 
 export function nombreArchivoPlanilla(edificio: string, mes: number, anio: number) {

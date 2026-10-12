@@ -15,6 +15,7 @@ import { CobrarModal } from '@/components/forms';
 import { Fab } from '@/components/ui/Fab';
 import { LoadingPage, EmptyState, IconChip } from '@/components/ui';
 import { PaymentCalendar } from '@/components/calendar';
+import { ServiciosPendientes } from '@/components/servicios/ServiciosPendientes';
 import { useFiltroGlobal, useDashboard, useReporteHistorico, useHabitacionesConEstadoPago, usePagosByMes } from '@/hooks';
 import { useConfigStore } from '@/store';
 import { useNavigate } from 'react-router-dom';
@@ -158,6 +159,9 @@ export function Dashboard() {
           variant={stats.balance >= 0 ? 'success' : 'danger'}
         />
       </div>
+
+      {/* Recibos de luz y agua por pagar */}
+      <ServiciosPendientes habitaciones={habitaciones} />
 
       {/* Gráfico y Calendario */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">

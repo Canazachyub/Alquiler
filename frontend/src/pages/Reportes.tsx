@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { LoadingPage, IconChip, SelectorMes, Modal } from '@/components/ui';
 import { AnaliticaCobranza } from '@/components/reportes/AnaliticaCobranza';
+import { AnalisisServicios } from '@/components/reportes/AnalisisServicios';
 import { ResumenImprimible } from '@/components/voucher';
 import { useDashboard, useReporteHistorico, useFiltroGlobal, useHabitacionesConEstadoPago, useEdificiosByCiudad } from '@/hooks';
 import { useConfigStore } from '@/store';
@@ -274,6 +275,8 @@ export function Reportes() {
 
       {/* Analítica de cobranza */}
       <AnaliticaCobranza habitaciones={habitaciones} mesFin={mesActual} anioFin={anioActual} meses={mesesHistorico} />
+
+      <AnalisisServicios habitaciones={habsEstado ?? []} />
 
       <Modal isOpen={exportarOpen} onClose={() => setExportarOpen(false)} title="Exportar resumen en PDF" size="2xl">
         {exportarOpen && (
