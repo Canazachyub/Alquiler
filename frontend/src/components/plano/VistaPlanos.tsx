@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { PencilRuler, MousePointerClick } from 'lucide-react';
 import { Modal } from '@/components/ui';
 import { PlanoPiso, LeyendaPlano } from './PlanoPiso';
@@ -73,6 +73,18 @@ export function VistaPlanos({ habitaciones, pisos, resaltadas, onHabitacionClick
   // Al cambiar de edificio o piso, cerrar la ficha
   useEffect(() => setHabId(null), [edificio?.id, pisoSel?.pisoId]);
 
+  // En celular la ficha y el plano quedan debajo: se desplaza hasta ellos para que el toque tenga respuesta
+  const fichaRef = useRef<HTMLDivElement>(null);
+  const planoRef = useRef<HTMLElement>(null);
+  const enColumna = () => window.matchMedia('(max-width: 1023px)').matches;
+  useEffect(() => {
+    if (habId && enColumna()) fichaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, [habId]);
+  const elegirPiso = (id: string) => {
+    setPisoId(id);
+    if (enColumna()) requestAnimationFrame(() => planoRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+  };
+
   if (!edificio || !pisoSel) return null;
 
   const planoDe = (p: PisoEdificio & { piso?: Piso }) =>
@@ -133,7 +145,7 @@ export function VistaPlanos({ habitaciones, pisos, resaltadas, onHabitacionClick
             nombre={edificio.nombre}
             pisos={edificio.pisos}
             seleccionado={pisoSel.pisoId}
-            onSeleccionar={setPisoId}
+            onSeleccionar={elegirPiso}
           />
           <div className="mt-4 pt-3 border-t border-slate-100">
             <LeyendaPlano />
@@ -141,7 +153,7 @@ export function VistaPlanos({ habitaciones, pisos, resaltadas, onHabitacionClick
         </div>
 
         {/* Plano + ficha del cuarto */}
-        <section className="card p-4 md:p-5">
+        <section ref={planoRef} className="card p-3 sm:p-4 md:p-5 scroll-mt-20 min-w-0">
           <header className="flex flex-wrap items-start justify-between gap-3 mb-4">
             <div className="flex items-center gap-3 min-w-0">
               <span className="w-11 h-11 rounded-full bg-primary-600 text-white flex items-center justify-center font-display font-bold text-lg flex-shrink-0">
@@ -160,16 +172,16 @@ export function VistaPlanos({ habitaciones, pisos, resaltadas, onHabitacionClick
             </button>
           </header>
 
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
+          <div className="grid grid-cols-4 gap-1.5 sm:gap-2 mb-4">
             {[
               { label: 'Ocupados', valor: cuenta.ocupadas, cls: 'text-slate-900' },
               { label: 'Vencidos', valor: cuenta.deuda, cls: cuenta.deuda ? 'text-red-600' : 'text-slate-900' },
               { label: 'Por vencer', valor: cuenta.porVencer, cls: cuenta.porVencer ? 'text-amber-700' : 'text-slate-900' },
               { label: 'Vacantes', valor: cuenta.vacantes, cls: 'text-slate-900' },
             ].map((m) => (
-              <div key={m.label} className="rounded-lg bg-slate-50 px-3 py-2">
+              <div key={m.label} className="rounded-lg bg-slate-50 px-2 sm:px-3 py-1.5 sm:py-2 min-w-0">
                 <p className={cn('font-display text-xl font-bold tabular-nums leading-tight', m.cls)}>{m.valor}</p>
-                <p className="text-[11px] text-slate-500">{m.label}</p>
+                <p className="text-[10px] sm:text-[11px] text-slate-500 truncate">{m.label}</p>
               </div>
             ))}
           </div>
@@ -189,7 +201,7 @@ export function VistaPlanos({ habitaciones, pisos, resaltadas, onHabitacionClick
             </p>
           )}
 
-          <div className="mt-4">
+          <div ref={fichaRef} className="mt-4 scroll-mt-20">
             {habSel ? (
               <>
                 <FichaHabitacion

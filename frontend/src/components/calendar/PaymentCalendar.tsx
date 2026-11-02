@@ -102,7 +102,7 @@ export function PaymentCalendar({
       <div className="p-4 border-b border-slate-200 flex items-center justify-between">
         <button
           onClick={() => navigateMonth(-1)}
-          className="w-8 h-8 rounded-lg hover:bg-slate-100 flex items-center justify-center"
+          className="w-10 h-10 sm:w-8 sm:h-8 rounded-lg hover:bg-slate-100 active:bg-slate-200 flex items-center justify-center touch-manipulation"
         >
           <ChevronLeft className="w-5 h-5 text-slate-600" />
         </button>
@@ -111,7 +111,7 @@ export function PaymentCalendar({
         </h3>
         <button
           onClick={() => navigateMonth(1)}
-          className="w-8 h-8 rounded-lg hover:bg-slate-100 flex items-center justify-center"
+          className="w-10 h-10 sm:w-8 sm:h-8 rounded-lg hover:bg-slate-100 active:bg-slate-200 flex items-center justify-center touch-manipulation"
         >
           <ChevronRight className="w-5 h-5 text-slate-600" />
         </button>
@@ -186,7 +186,7 @@ export function PaymentCalendar({
                 key={day}
                 onClick={() => setSelectedDay(day === selectedDay ? null : day)}
                 className={cn(
-                  'aspect-square rounded-lg text-sm font-medium transition-all',
+                  'aspect-square rounded-lg text-sm font-medium transition-all touch-manipulation',
                   'flex flex-col items-center justify-center relative',
                   bgClass,
                   isToday && 'ring-2 ring-primary-500 ring-inset',
@@ -204,7 +204,7 @@ export function PaymentCalendar({
                         <span
                           key={`${h.id}-${idx}`}
                           className={cn(
-                            'w-1 h-1 rounded-full',
+                            'w-1.5 h-1.5 rounded-full',
                             pagado ? 'bg-emerald-500' : 'bg-red-500'
                           )}
                         />
@@ -273,17 +273,19 @@ export function PaymentCalendar({
       {totalPendientes > 0 && (
         <div className="border-t border-slate-200 p-3 bg-red-50">
           <p className="text-xs text-red-700 font-medium mb-2">Pendientes de pago:</p>
-          <div className="flex flex-wrap gap-1">
+          <div className="flex flex-wrap gap-1.5 sm:gap-1">
             {habitacionesOcupadas
               .filter((h) => !getPagoStatus(h.id))
               .map((h) => (
                 <span
                   key={h.id}
-                  className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded cursor-pointer hover:bg-red-200"
-                  title={`${h.nombreInquilino} - Dia ${h.diaPago}`}
+                  role="button"
+                  className="text-xs bg-red-100 text-red-700 px-2.5 py-1.5 sm:py-0.5 rounded-md cursor-pointer hover:bg-red-200 active:bg-red-200"
+                  title={`${h.nombreInquilino || 'Sin inquilino'}${h.diaPago ? ` - Día ${h.diaPago}` : ''}`}
                   onClick={() => setSelectedDay(h.diaPago || null)}
                 >
-                  {h.codigo} (dia {h.diaPago})
+                  {h.codigo}
+                  {h.diaPago ? ` (día ${h.diaPago})` : h.nombreInquilino ? '' : ' (sin inquilino)'}
                 </span>
               ))}
           </div>

@@ -26,7 +26,7 @@ const COLOR_COBRADOR: Record<string, string> = { Y: 'bg-primary-600', J: 'bg-tea
 
 function Tarjeta({ icon: Icon, titulo, children, className }: { icon: typeof Users; titulo: string; children: React.ReactNode; className?: string }) {
   return (
-    <section className={cn('card p-4 md:p-5', className)}>
+    <section className={cn('card p-4 md:p-5 min-w-0', className)}>
       <h3 className="flex items-center gap-2 font-bold text-slate-900 mb-3">
         <Icon className="w-4 h-4 text-slate-500" /> {titulo}
       </h3>
@@ -115,12 +115,12 @@ export function AnaliticaCobranza({ habitaciones, mesFin, anioFin, meses }: Prop
         {/* Puntualidad por inquilino */}
         <Tarjeta icon={Clock} titulo="Puntualidad por inquilino">
           <div className="overflow-x-auto -mx-1">
-            <table className="table !min-w-0 text-sm">
+            <table className="table !min-w-0 text-sm [&_th]:!px-2 [&_td]:!px-2 sm:[&_th]:!px-3 sm:[&_td]:!px-3 [&_td]:whitespace-nowrap">
               <thead>
                 <tr>
                   <th>Cuarto</th>
                   <th>Inquilino</th>
-                  <th className="text-right">Atraso prom.</th>
+                  <th className="text-right">Atraso</th>
                   <th className="text-right">Debe</th>
                 </tr>
               </thead>
@@ -128,7 +128,7 @@ export function AnaliticaCobranza({ habitaciones, mesFin, anioFin, meses }: Prop
                 {a.porInquilino.map((x) => (
                   <tr key={x.codigo}>
                     <td className="!py-2 font-semibold">{x.codigo}</td>
-                    <td className="!py-2 truncate max-w-[150px]">{x.nombre}</td>
+                    <td className="!py-2 truncate max-w-[110px] sm:max-w-[150px]">{x.nombre}</td>
                     <td className={cn('!py-2 text-right tabular-nums', x.atrasoPromedio > 3 ? 'text-red-600 font-semibold' : x.atrasoPromedio > 0 ? 'text-amber-700' : 'text-emerald-700')}>
                       {x.pagos ? `${x.atrasoPromedio > 0 ? '+' : ''}${x.atrasoPromedio.toFixed(1)} d` : '—'}
                     </td>

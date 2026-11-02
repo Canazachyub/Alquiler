@@ -252,7 +252,7 @@ export function Edificios() {
                           e.stopPropagation();
                           handleEdit(edificio);
                         }}
-                        className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+                        className="p-3 sm:p-2 hover:bg-slate-100 active:bg-slate-100 rounded-lg transition-colors touch-manipulation"
                       >
                         <Edit className="w-4 h-4 text-slate-500" />
                       </button>
@@ -261,7 +261,7 @@ export function Edificios() {
                           e.stopPropagation();
                           handleDelete(edificio);
                         }}
-                        className="p-2 hover:bg-red-50 rounded-lg transition-colors"
+                        className="p-3 sm:p-2 hover:bg-red-50 active:bg-red-50 rounded-lg transition-colors touch-manipulation"
                       >
                         <Trash2 className="w-4 h-4 text-red-600" />
                       </button>
@@ -356,13 +356,13 @@ export function Edificios() {
                           <div className="flex gap-1">
                             <button
                               onClick={() => handleEditGastoFijo(gasto)}
-                              className="p-1.5 hover:bg-slate-100 rounded transition-colors"
+                              className="p-3 sm:p-1.5 hover:bg-slate-100 active:bg-slate-100 rounded transition-colors touch-manipulation"
                             >
                               <Edit className="w-3.5 h-3.5 text-slate-500" />
                             </button>
                             <button
                               onClick={() => handleDeleteGastoFijo(gasto)}
-                              className="p-1.5 hover:bg-red-50 rounded transition-colors"
+                              className="p-3 sm:p-1.5 hover:bg-red-50 active:bg-red-50 rounded transition-colors touch-manipulation"
                             >
                               <Trash2 className="w-3.5 h-3.5 text-red-600" />
                             </button>

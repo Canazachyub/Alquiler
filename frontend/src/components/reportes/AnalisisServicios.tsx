@@ -27,7 +27,7 @@ const TONO = {
 
 function Tarjeta({ icon: Icon, titulo, children, className }: { icon: typeof Zap; titulo: string; children: React.ReactNode; className?: string }) {
   return (
-    <section className={cn('card p-4 md:p-5', className)}>
+    <section className={cn('card p-4 md:p-5 min-w-0', className)}>
       <h3 className="flex items-center gap-2 font-bold text-slate-900 mb-3">
         <Icon className="w-4 h-4 text-slate-500" /> {titulo}
       </h3>
@@ -249,7 +249,35 @@ export function AnalisisServicios({ habitaciones }: Props) {
         <Tarjeta icon={Scale} titulo="¿Alcanza lo que aportan los cuartos?">
           {a.rentaTotal ? (
             <>
-              <div className="overflow-x-auto">
+              {/* Celular: un bloque por servicio */}
+              <div className="sm:hidden space-y-2">
+                {a.prorrateo.map((s) => (
+                  <div key={s.clave} className="rounded-xl bg-slate-50 p-3">
+                    <div className="flex items-baseline justify-between">
+                      <p className="font-semibold text-slate-900">{s.nombre}</p>
+                      <p className={cn('font-display font-bold tabular-nums', s.diferencia < 0 ? 'text-red-700' : 'text-emerald-700')}>
+                        {s.diferencia >= 0 ? '+' : ''}
+                        {formatCurrency(s.diferencia)}
+                      </p>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2 mt-1.5 text-[11px] text-slate-500">
+                      <p>
+                        Recibo prom.
+                        <span className="block text-sm font-semibold text-slate-900 tabular-nums">{formatCurrency(s.factura)}</span>
+                      </p>
+                      <p>
+                        Aporte ({s.pct}%)
+                        <span className="block text-sm font-semibold text-slate-900 tabular-nums">{formatCurrency(s.aporte)}</span>
+                      </p>
+                      <p className="text-right">
+                        Sugerido
+                        <span className="block text-sm font-semibold text-slate-900 tabular-nums">{s.sugerido}%</span>
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="hidden sm:block overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="text-left text-xs uppercase tracking-wide text-slate-500">

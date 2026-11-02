@@ -256,7 +256,7 @@ export function Inquilinos() {
                             notify.success('Contrato descargado');
                           }
                         }}
-                        className="p-2 hover:bg-primary-50 rounded-lg transition-colors"
+                        className="p-3 sm:p-2 hover:bg-primary-50 active:bg-primary-50 rounded-lg transition-colors touch-manipulation"
                         title="Descargar contrato"
                       >
                         <FileText className="w-4 h-4 text-primary-500" />
@@ -266,7 +266,7 @@ export function Inquilinos() {
                           href={inq.contratoPdfUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="p-2 hover:bg-emerald-50 rounded-lg transition-colors inline-flex"
+                          className="p-3 sm:p-2 hover:bg-emerald-50 active:bg-emerald-50 rounded-lg transition-colors touch-manipulation inline-flex"
                           title="Reglamento archivado en Drive — abrir"
                         >
                           <ExternalLink className="w-4 h-4 text-emerald-600" />
@@ -275,7 +275,7 @@ export function Inquilinos() {
                         <button
                           onClick={() => handleArchivarContrato(inq)}
                           disabled={archivandoId === inq.id}
-                          className="p-2 hover:bg-slate-100 rounded-lg transition-colors disabled:opacity-50"
+                          className="p-3 sm:p-2 hover:bg-slate-100 active:bg-slate-100 rounded-lg transition-colors touch-manipulation disabled:opacity-50"
                           title="Guardar Reglamento en Drive"
                         >
                           <UploadCloud
@@ -288,14 +288,15 @@ export function Inquilinos() {
                       )}
                       <button
                         onClick={() => handleEdit(inq)}
-                        className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+                        className="p-3 sm:p-2 hover:bg-slate-100 active:bg-slate-100 rounded-lg transition-colors touch-manipulation"
                         title="Editar"
                       >
                         <Edit className="w-4 h-4 text-slate-500" />
                       </button>
+                      <span className="w-px self-stretch my-1.5 bg-slate-200 mx-0.5" aria-hidden />
                       <button
                         onClick={() => handleDelete(inq)}
-                        className="p-2 hover:bg-red-50 rounded-lg transition-colors"
+                        className="p-3 sm:p-2 hover:bg-red-50 active:bg-red-50 rounded-lg transition-colors touch-manipulation"
                         title="Eliminar"
                       >
                         <Trash2 className="w-4 h-4 text-red-600" />

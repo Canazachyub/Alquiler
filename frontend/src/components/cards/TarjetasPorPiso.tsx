@@ -81,7 +81,7 @@ export function TarjetasPorPiso({ habitaciones, pisos, onClick }: TarjetasPorPis
     .sort((a, b) => b.pisos.length - a.pisos.length || a.nombre.localeCompare(b.nombre));
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 md:space-y-8">
       {lista.map((ed) => (
         <section key={ed.id} className="space-y-3">
           {lista.length > 1 && (
@@ -105,7 +105,7 @@ export function TarjetasPorPiso({ habitaciones, pisos, onClick }: TarjetasPorPis
                   type="button"
                   onClick={() => alternar(g.pisoId)}
                   aria-expanded={abierto}
-                  className="w-full flex flex-wrap items-center gap-x-3 gap-y-1 px-4 py-3 text-left rounded-2xl hover:bg-white transition-colors"
+                  className="w-full flex flex-wrap items-center gap-x-3 gap-y-1 px-3 sm:px-4 py-3 text-left rounded-2xl hover:bg-white active:bg-white transition-colors touch-manipulation"
                 >
                   <span className="w-9 h-9 rounded-full bg-slate-900 text-white flex items-center justify-center font-display font-bold flex-shrink-0">
                     {g.letra ?? g.numero}
@@ -133,7 +133,7 @@ export function TarjetasPorPiso({ habitaciones, pisos, onClick }: TarjetasPorPis
                 </button>
 
                 {abierto && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-4 px-3 pb-3 md:px-4 md:pb-4 plano-aparecer">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-3 md:gap-4 px-2 pb-2 sm:px-3 sm:pb-3 md:px-4 md:pb-4 plano-aparecer">
                     {g.habitaciones.map((hab) => (
                       <RoomCard key={hab.id} habitacion={hab} onClick={() => onClick(hab)} ocultarUbicacion />
                     ))}

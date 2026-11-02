@@ -114,7 +114,7 @@ export function Header() {
                   <select
                     value={mesActual}
                     onChange={(e) => setMesAnio(Number(e.target.value), anioActual)}
-                    className="select w-full text-sm"
+                    className="select w-full"
                   >
                     {MESES.map((mes) => (
                       <option key={mes.value} value={mes.value}>
@@ -128,7 +128,7 @@ export function Header() {
                   <select
                     value={anioActual}
                     onChange={(e) => setMesAnio(mesActual, Number(e.target.value))}
-                    className="select w-full text-sm"
+                    className="select w-full"
                   >
                     {years.map((year) => (
                       <option key={year} value={year}>
@@ -288,7 +288,7 @@ export function Header() {
                 <select
                   value={ciudadSeleccionada || ''}
                   onChange={(e) => setCiudadSeleccionada(e.target.value || null)}
-                  className="select w-full text-sm"
+                  className="select w-full"
                 >
                   <option value="">Todas</option>
                   {ciudades?.map((ciudad) => (
@@ -306,7 +306,7 @@ export function Header() {
                 <select
                   value={edificioSeleccionado || ''}
                   onChange={(e) => setEdificioSeleccionado(e.target.value || null)}
-                  className="select w-full text-sm"
+                  className="select w-full"
                   disabled={!ciudadSeleccionada}
                 >
                   <option value="">Todos</option>
@@ -326,7 +326,7 @@ export function Header() {
                   <select
                     value={mesActual}
                     onChange={(e) => setMesAnio(Number(e.target.value), anioActual)}
-                    className="select w-full text-sm"
+                    className="select w-full"
                   >
                     {MESES.map((mes) => (
                       <option key={mes.value} value={mes.value}>
@@ -342,7 +342,7 @@ export function Header() {
                   <select
                     value={anioActual}
                     onChange={(e) => setMesAnio(mesActual, Number(e.target.value))}
-                    className="select w-full text-sm"
+                    className="select w-full"
                   >
                     {years.map((year) => (
                       <option key={year} value={year}>

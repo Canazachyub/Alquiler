@@ -16,6 +16,7 @@ import { formatCurrency } from '@/utils/formatters';
 import { parsearPlano, type TipoEspacio } from '@/utils/plano';
 import { textoCuenta } from '@/utils/cobro';
 import { useCobros } from '@/hooks/useCobros';
+import { useEsCelular } from '@/hooks/useEsCelular';
 import { ESTADO_ESTILO, ORDEN_LEYENDA } from './estadoEstilos';
 import type { HabitacionConDetalles } from '@/types';
 
@@ -44,6 +45,7 @@ interface PlanoPisoProps {
 
 export function PlanoPiso({ plano, habitaciones, resaltadas, seleccionada, onHabitacionClick, compacto }: PlanoPisoProps) {
   const cobros = useCobros();
+  const celular = useEsCelular();
   const { areas, templateAreas, columnas, celdas } = parsearPlano(plano);
   const porCodigo = new Map(habitaciones.map((h) => [h.codigo.trim().toLowerCase(), h]));
 
@@ -53,9 +55,9 @@ export function PlanoPiso({ plano, habitaciones, resaltadas, seleccionada, onHab
   );
   const style: CSSProperties = {
     gridTemplateAreas: templateAreas,
-    gridTemplateColumns: `repeat(${columnas}, minmax(${compacto ? 64 : 92}px, 1fr))`,
+    gridTemplateColumns: `repeat(${columnas}, minmax(${compacto ? 64 : celular ? 72 : 92}px, 1fr))`,
     gridTemplateRows: filaTieneHabitacion
-      .map((tiene) => (tiene ? `minmax(${compacto ? 72 : 104}px, auto)` : compacto ? '36px' : '48px'))
+      .map((tiene) => (tiene ? `minmax(${compacto ? 72 : celular ? 88 : 104}px, auto)` : compacto || celular ? '36px' : '48px'))
       .join(' '),
   };
 
@@ -96,7 +98,7 @@ export function PlanoPiso({ plano, habitaciones, resaltadas, seleccionada, onHab
                 style={{ gridArea: area.areaName }}
                 aria-label={`Habitación ${h.codigo}: ${st.label}${h.nombreInquilino ? `, ${h.nombreInquilino}` : ''}`}
                 className={cn(
-                  'group relative rounded-lg border-2 p-2.5 md:p-3 text-left flex flex-col transition-all duration-150',
+                  'group relative rounded-lg border-2 p-2 sm:p-2.5 md:p-3 text-left flex flex-col transition-all duration-150 touch-manipulation active:scale-[0.98]',
                   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-600 focus-visible:ring-offset-1',
                   st.celda,
                   seleccionada === h.id && 'ring-[3px] ring-primary-600 ring-offset-1 scale-[1.02] z-10',
@@ -107,7 +109,7 @@ export function PlanoPiso({ plano, habitaciones, resaltadas, seleccionada, onHab
                   <span
                     className={cn(
                       'font-display font-bold tracking-tight text-slate-900 leading-none',
-                      compacto ? 'text-lg' : 'text-2xl'
+                      compacto ? 'text-lg' : 'text-xl sm:text-2xl'
                     )}
                   >
                     {h.codigo}

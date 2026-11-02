@@ -314,20 +314,34 @@ export function Pagos() {
     const estado = cobros.estado(h);
     const deuda = cobros.deuda(h);
     return (
-      <li key={h.id} className="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3 hover:bg-slate-50 transition-colors">
+      <li key={h.id} className="flex items-center gap-3 sm:gap-4 px-3 sm:px-4 py-3 hover:bg-slate-50 transition-colors">
         <span
           className={cn(
-            'w-11 h-11 rounded-full flex items-center justify-center font-display font-bold text-white flex-shrink-0',
+            'w-10 h-10 sm:w-11 sm:h-11 rounded-full flex items-center justify-center font-display font-bold text-white flex-shrink-0',
             estado === 'vencido' ? 'bg-red-500' : estado === 'por-vencer' ? 'bg-amber-500' : 'bg-emerald-600'
           )}
         >
           {h.codigo}
         </span>
         <div className="min-w-0 flex-1">
-          <p className="font-semibold text-slate-900 truncate">{h.nombreInquilino || 'Sin inquilino registrado'}</p>
-          <p className="text-xs text-slate-500 truncate">{ubicacion(h)}</p>
+          <p className="font-semibold text-slate-900 truncate leading-tight">{h.nombreInquilino || 'Sin inquilino registrado'}</p>
+          <p className="hidden sm:block text-xs text-slate-500 truncate">{ubicacion(h)}</p>
+          {/* Celular: monto y estado debajo del nombre */}
+          <p className="sm:hidden text-xs tabular-nums truncate mt-0.5">
+            {estado === 'vencido' && c ? (
+              <span className="text-red-600">
+                <strong className="font-display">{formatCurrency(deuda)}</strong> ·{' '}
+                {c.atrasados.length > 1 ? `${c.atrasados.length} meses` : textoCuenta(c.dias)}
+              </span>
+            ) : c?.proximo ? (
+              <span className={estado === 'por-vencer' ? 'text-amber-700' : 'text-emerald-700'}>
+                <strong className="font-display">{formatCurrency(Number(h.montoAlquiler || 0))}</strong> ·{' '}
+                {c.proximo.vence.toLocaleDateString('es-PE', { day: 'numeric', month: 'short' })} · {textoCuenta(c.dias)}
+              </span>
+            ) : null}
+          </p>
         </div>
-        <div className="text-right min-w-[150px]">
+        <div className="hidden sm:block text-right min-w-[150px]">
           {estado === 'vencido' && c ? (
             <>
               <p className="font-display font-bold text-red-600 tabular-nums">{formatCurrency(deuda)}</p>
@@ -351,7 +365,8 @@ export function Pagos() {
         <button
           type="button"
           onClick={() => abrirCobro(h)}
-          className={cn('btn btn-sm', estado === 'al-dia' ? 'btn-secondary' : 'btn-primary')}
+          aria-label={`${estado === 'al-dia' ? 'Adelantar pago' : 'Cobrar'} ${h.codigo}`}
+          className={cn('btn btn-sm flex-shrink-0 !px-3 sm:!px-3.5', estado === 'al-dia' ? 'btn-secondary' : 'btn-primary')}
         >
           <CreditCard className="w-3.5 h-3.5" /> {estado === 'al-dia' ? 'Adelantar' : 'Cobrar'}
         </button>
@@ -360,7 +375,7 @@ export function Pagos() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       {/* Header */}
       <div className="flex items-end justify-between gap-2">
         <div className="min-w-0">
@@ -387,13 +402,13 @@ export function Pagos() {
       <div className="card p-4 md:p-5 space-y-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="inline-flex items-center gap-1 rounded-full border border-slate-300 bg-white p-1">
-            <button onClick={() => navigateMonth(-1)} className="p-1.5 rounded-full hover:bg-slate-100" aria-label="Mes anterior">
+            <button onClick={() => navigateMonth(-1)} className="p-2.5 sm:p-1.5 rounded-full hover:bg-slate-100 active:bg-slate-200" aria-label="Mes anterior">
               <ChevronLeft className="w-4 h-4" />
             </button>
             <span className="px-2 text-sm font-bold text-slate-900 min-w-[130px] text-center capitalize">
               {getMonthName(mesActual)} {anioActual}
             </span>
-            <button onClick={() => navigateMonth(1)} className="p-1.5 rounded-full hover:bg-slate-100" aria-label="Mes siguiente">
+            <button onClick={() => navigateMonth(1)} className="p-2.5 sm:p-1.5 rounded-full hover:bg-slate-100 active:bg-slate-200" aria-label="Mes siguiente">
               <ChevronRight className="w-4 h-4" />
             </button>
           </div>
@@ -404,12 +419,12 @@ export function Pagos() {
           )}
         </div>
 
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 [&>*]:min-w-0">
           <div className="rounded-xl bg-emerald-50 border border-emerald-200 p-3.5">
             <p className="text-[11px] font-semibold text-emerald-800 flex items-center gap-1">
               <Wallet className="w-3.5 h-3.5" /> Cobrado en {getMonthName(mesActual).toLowerCase()}
             </p>
-            <p className="font-display text-2xl font-bold text-emerald-700 tabular-nums mt-1">{formatCurrency(cobradoMes)}</p>
+            <p className="font-display text-xl sm:text-2xl font-bold text-emerald-700 tabular-nums mt-1">{formatCurrency(cobradoMes)}</p>
             <div className="mt-2 h-1.5 rounded-full bg-white overflow-hidden">
               <div className="h-full rounded-full bg-emerald-500 transition-all duration-700" style={{ width: `${avance}%` }} />
             </div>
@@ -421,7 +436,7 @@ export function Pagos() {
             <p className="text-[11px] font-semibold text-slate-600 flex items-center gap-1">
               <ListChecks className="w-3.5 h-3.5" /> Falta cobrar del mes
             </p>
-            <p className="font-display text-2xl font-bold text-slate-900 tabular-nums mt-1">{formatCurrency(faltaMonto)}</p>
+            <p className="font-display text-xl sm:text-2xl font-bold text-slate-900 tabular-nums mt-1">{formatCurrency(faltaMonto)}</p>
             <p className="text-[11px] text-slate-500 mt-1">{faltanMes.length} cuartos sin pago de {getMonthName(mesActual).toLowerCase()}</p>
           </div>
           <button
@@ -432,7 +447,7 @@ export function Pagos() {
             <p className="text-[11px] font-semibold text-red-700 flex items-center gap-1">
               <AlertTriangle className="w-3.5 h-3.5" /> Deuda vencida (hoy)
             </p>
-            <p className="font-display text-2xl font-bold text-red-600 tabular-nums mt-1">{formatCurrency(deudaVencida)}</p>
+            <p className="font-display text-xl sm:text-2xl font-bold text-red-600 tabular-nums mt-1">{formatCurrency(deudaVencida)}</p>
             <p className="text-[11px] text-red-700/80 mt-1">{vencidos.length} cuartos con pagos atrasados</p>
           </button>
           <button
@@ -443,7 +458,7 @@ export function Pagos() {
             <p className="text-[11px] font-semibold text-amber-800 flex items-center gap-1">
               <Clock className="w-3.5 h-3.5" /> Por vencer (5 días)
             </p>
-            <p className="font-display text-2xl font-bold text-amber-700 tabular-nums mt-1">{porVencer.length}</p>
+            <p className="font-display text-xl sm:text-2xl font-bold text-amber-700 tabular-nums mt-1">{porVencer.length}</p>
             <p className="text-[11px] text-amber-800/80 mt-1">
               {formatCurrency(porVencer.reduce((s, h) => s + Number(h.montoAlquiler || 0), 0))} por cobrar pronto
             </p>
@@ -453,7 +468,7 @@ export function Pagos() {
 
       {/* Vista + búsqueda */}
       <div className="flex flex-wrap items-center gap-3">
-        <div className="segmented" role="tablist" aria-label="Vista de pagos">
+        <div className="segmented max-w-full overflow-x-auto no-scrollbar" role="tablist" aria-label="Vista de pagos">
           <button role="tab" aria-selected={vista === 'cobranza'} data-active={vista === 'cobranza'} onClick={() => setVista('cobranza')} className="segmented-item">
             <ListChecks className="w-3.5 h-3.5" /> Cobranza
             {vencidos.length > 0 && <span className="px-1.5 rounded-full bg-red-600 text-white text-[10px]">{vencidos.length}</span>}
@@ -499,7 +514,7 @@ export function Pagos() {
                 <button
                   type="button"
                   onClick={() => plegable && setAlDiaAbierto((v) => !v)}
-                  className={cn('w-full flex items-center gap-2 px-4 py-3 border-b text-left', sec.chip, !plegable && 'cursor-default')}
+                  className={cn('w-full flex items-center gap-2 px-3 sm:px-4 py-3 border-b text-left', sec.chip, !plegable && 'cursor-default')}
                   aria-expanded={abierto}
                 >
                   <sec.icon className={cn('w-4 h-4', sec.color)} />
@@ -537,7 +552,41 @@ export function Pagos() {
             }
           />
         ) : (
-          <div className="card overflow-hidden overflow-x-auto">
+          <>
+          {/* Celular: lista de pagos */}
+          <ul className="sm:hidden card divide-y divide-slate-100 overflow-hidden">
+            {pagosFiltrados.map((p) => {
+              const h = habPorId.get(p.habitacionId);
+              const inq = getInquilinoForPago(p);
+              return (
+                <li key={p.id} className="flex items-center gap-3 px-3 py-2.5">
+                  <span className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center font-display font-bold text-slate-900 flex-shrink-0">
+                    {h?.codigo ?? '—'}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold text-slate-900 truncate">{inq ? `${inq.nombre} ${inq.apellido}` : labelConcepto(p.concepto)}</p>
+                    <p className="text-[11px] text-slate-500 truncate tabular-nums">
+                      {formatDate(p.fecha)} · {labelConcepto(p.concepto)} · <span className="capitalize">{getMonthName(Number(p.mes)).slice(0, 3)}</span>
+                    </p>
+                  </div>
+                  <span className="font-display font-bold tabular-nums text-slate-900 text-sm">{formatCurrency(Number(p.monto))}</span>
+                  <button onClick={() => verVoucher(p)} className="p-2.5 -mr-1 rounded-full active:bg-slate-100" aria-label={`Voucher ${p.id}`}>
+                    <Printer className="w-4 h-4 text-slate-500" />
+                  </button>
+                  <button onClick={() => setBorrando(p)} className="p-2.5 -mr-2 rounded-full active:bg-red-50" aria-label={`Eliminar pago ${p.id}`}>
+                    <Trash2 className="w-4 h-4 text-red-500" />
+                  </button>
+                </li>
+              );
+            })}
+            <li className="flex justify-between px-3 py-2.5 bg-slate-50 text-sm">
+              <span className="font-semibold text-slate-600">{pagosFiltrados.length} pagos</span>
+              <span className="font-display font-bold tabular-nums text-slate-900">
+                {formatCurrency(pagosFiltrados.reduce((s, p) => s + Number(p.monto || 0), 0))}
+              </span>
+            </li>
+          </ul>
+          <div className="hidden sm:block card overflow-hidden overflow-x-auto">
             <table className="table">
               <thead>
                 <tr>
@@ -599,6 +648,7 @@ export function Pagos() {
               </tfoot>
             </table>
           </div>
+          </>
         ))}
 
       {/* FAB móvil */}

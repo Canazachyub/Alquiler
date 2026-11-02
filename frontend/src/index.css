@@ -6,8 +6,13 @@
   * {
     @apply border-slate-200;
   }
+  html {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-text-size-adjust: 100%;
+  }
   body {
     @apply bg-canvas text-slate-700 antialiased;
+    overflow-x: hidden;
     font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11', 'ss01';
   }
   h1, h2, h3, h4, h5, h6 {
@@ -30,7 +35,7 @@
 @layer components {
   /* Buttons */
   .btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-full text-sm font-semibold h-10 px-5
+    @apply touch-manipulation select-none inline-flex items-center justify-center gap-2 rounded-full text-sm font-semibold h-10 px-5
            transition-all duration-150
            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-offset-white
            disabled:pointer-events-none disabled:opacity-50;
@@ -56,7 +61,7 @@
            focus-visible:ring-emerald-500/40 shadow-sm;
   }
   .btn-sm {
-    @apply h-8 px-3.5 text-xs gap-1.5;
+    @apply h-9 md:h-8 px-3.5 text-xs gap-1.5;
   }
   .btn-lg {
     @apply h-11 px-6 text-base;
@@ -109,14 +114,14 @@
 
   /* Inputs */
   .input {
-    @apply w-full h-10 px-3.5 border border-slate-300 rounded-[10px] text-sm text-slate-800 bg-white
+    @apply w-full h-11 md:h-10 px-3.5 border border-slate-300 rounded-[10px] text-base md:text-sm text-slate-800 bg-white
            placeholder:text-slate-400
            focus:outline-none focus:ring-2 focus:ring-primary-500/40 focus:border-primary-500
            disabled:bg-slate-50 disabled:text-slate-400 disabled:cursor-not-allowed
            transition-shadow duration-150;
   }
   .select {
-    @apply w-full h-10 px-3.5 border border-slate-300 rounded-[10px] text-sm text-slate-800 bg-white
+    @apply w-full h-11 md:h-10 px-3.5 border border-slate-300 rounded-[10px] text-base md:text-sm text-slate-800 bg-white
            placeholder:text-slate-400
            focus:outline-none focus:ring-2 focus:ring-primary-500/40 focus:border-primary-500
            disabled:bg-slate-50 disabled:text-slate-400 disabled:cursor-not-allowed
@@ -255,4 +260,13 @@
 }
 .no-scrollbar::-webkit-scrollbar {
   display: none;
+}
+
+/* Indica que una fila sigue a la derecha (filtros deslizables en celular) */
+@media (max-width: 639px) {
+  .fade-derecha {
+    -webkit-mask-image: linear-gradient(to right, #000 85%, transparent);
+    mask-image: linear-gradient(to right, #000 85%, transparent);
+    padding-right: 1.5rem;
+  }
 }

@@ -123,12 +123,16 @@ export function Modal({ isOpen, onClose, title, children, size = 'md', footer }:
           transform: entered ? 'none' : window.innerWidth < 640 ? 'translateY(24px)' : 'scale(0.96)',
         }}
       >
+        {/* Asa de la hoja inferior (celular) */}
+        <div className="sm:hidden flex justify-center pt-2" aria-hidden>
+          <span className="h-1 w-10 rounded-full bg-slate-300" />
+        </div>
         {/* Header */}
-        <div className="flex items-center justify-between gap-3 px-4 sm:px-6 pt-4 sm:pt-5 pb-3 sm:pb-4 border-b border-slate-100 flex-shrink-0">
+        <div className="flex items-center justify-between gap-3 px-4 sm:px-6 pt-2 sm:pt-5 pb-3 sm:pb-4 border-b border-slate-100 flex-shrink-0">
           <h2 className="text-lg sm:text-xl font-bold tracking-tight text-slate-900 truncate">{title}</h2>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-full hover:bg-slate-100 transition-colors"
+            className="p-2 -mr-1 rounded-full hover:bg-slate-100 active:bg-slate-200 transition-colors flex-shrink-0"
             aria-label="Cerrar"
           >
             <X className="w-5 h-5 text-slate-500" />
@@ -136,11 +140,11 @@ export function Modal({ isOpen, onClose, title, children, size = 'md', footer }:
         </div>
 
         {/* Body */}
-        <div className="p-4 sm:p-6 overflow-y-auto overscroll-contain flex-1 min-h-0">{children}</div>
+        <div className="p-4 sm:p-6 overflow-y-auto overscroll-contain flex-1 min-h-0 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:pb-6">{children}</div>
 
         {/* Footer */}
         {footer && (
-          <div className="flex items-center justify-end gap-2 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50 sm:rounded-b-2xl flex-shrink-0">
+          <div className="flex items-center justify-end gap-2 px-4 sm:px-6 py-3 sm:py-4 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:pb-4 border-t border-slate-100 bg-slate-50 sm:rounded-b-2xl flex-shrink-0 [&>.btn]:flex-1 sm:[&>.btn]:flex-none">
             {footer}
           </div>
         )}

@@ -53,7 +53,7 @@ export function StatCard({
       className={cn(
         'card text-left w-full',
         onClick && 'card-interactive',
-        prominent ? 'p-5 md:p-6' : 'p-4 md:p-5'
+        prominent ? 'p-4 md:p-6' : 'p-3.5 md:p-5'
       )}
     >
       <div className="flex items-center gap-2.5">
@@ -65,12 +65,12 @@ export function StatCard({
             size={prominent ? 'md' : 'sm'}
           />
         )}
-        <p className="text-[13px] font-semibold text-slate-600 truncate">{title}</p>
+        <p className="text-xs md:text-[13px] font-semibold text-slate-600 truncate">{title}</p>
       </div>
       <p
         className={cn(
           'font-display font-bold tabular-nums tracking-[-0.03em] text-slate-900 truncate',
-          prominent ? 'text-[32px] md:text-[40px] mt-4 leading-none' : 'text-2xl md:text-[28px] mt-3 leading-none'
+          prominent ? 'text-[26px] sm:text-[32px] md:text-[40px] mt-3 md:mt-4 leading-none' : 'text-xl sm:text-2xl md:text-[28px] mt-2.5 md:mt-3 leading-none'
         )}
       >
         {value}
@@ -83,7 +83,7 @@ export function StatCard({
           />
         </div>
       )}
-      {subtitle && <p className="text-xs text-slate-500 mt-2.5">{subtitle}</p>}
+      {subtitle && <p className="text-[11px] md:text-xs text-slate-500 mt-2 md:mt-2.5 leading-snug">{subtitle}</p>}
       {trend && (
         <span
           className={cn(

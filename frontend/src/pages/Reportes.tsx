@@ -40,7 +40,7 @@ export function Reportes() {
   const maxValue = Math.max(maxIngreso, maxGasto);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       {/* Header */}
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
@@ -79,11 +79,11 @@ export function Reportes() {
 
       {/* Stats cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-        <div className="card p-5">
+        <div className="card p-3.5 md:p-5 min-w-0">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-slate-500">Ingresos</p>
-              <p className="text-2xl font-bold text-emerald-600 tabular-nums">
+              <p className="text-xs sm:text-sm text-slate-500">Ingresos</p>
+              <p className="text-lg sm:text-2xl font-bold text-emerald-600 tabular-nums">
                 {formatCurrency(stats?.ingresosMes || 0)}
               </p>
             </div>
@@ -93,11 +93,11 @@ export function Reportes() {
           </div>
         </div>
 
-        <div className="card p-5">
+        <div className="card p-3.5 md:p-5 min-w-0">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-slate-500">Gastos</p>
-              <p className="text-2xl font-bold text-red-600 tabular-nums">
+              <p className="text-xs sm:text-sm text-slate-500">Gastos</p>
+              <p className="text-lg sm:text-2xl font-bold text-red-600 tabular-nums">
                 {formatCurrency(stats?.gastosMes || 0)}
               </p>
             </div>
@@ -107,12 +107,12 @@ export function Reportes() {
           </div>
         </div>
 
-        <div className="card p-5">
+        <div className="card p-3.5 md:p-5 min-w-0">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-slate-500">Balance</p>
+              <p className="text-xs sm:text-sm text-slate-500">Balance</p>
               <p
-                className={`text-2xl font-bold tabular-nums ${
+                className={`text-lg sm:text-2xl font-bold tabular-nums ${
                   (stats?.balance || 0) >= 0 ? 'text-emerald-600' : 'text-red-600'
                 }`}
               >
@@ -125,11 +125,11 @@ export function Reportes() {
           </div>
         </div>
 
-        <div className="card p-5">
+        <div className="card p-3.5 md:p-5 min-w-0">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-slate-500">Ocupación</p>
-              <p className="text-2xl font-bold text-primary-600 tabular-nums">
+              <p className="text-xs sm:text-sm text-slate-500">Ocupación</p>
+              <p className="text-lg sm:text-2xl font-bold text-primary-600 tabular-nums">
                 {(stats?.tasaOcupacion || 0).toFixed(1)}%
               </p>
             </div>
@@ -141,24 +141,24 @@ export function Reportes() {
       </div>
 
       {/* Detalle de habitaciones */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="card p-5 text-center">
-          <div className="text-4xl font-bold text-primary-600 tabular-nums">{stats?.totalHabitaciones || 0}</div>
-          <p className="text-slate-500 mt-1">Total Habitaciones</p>
+      <div className="grid grid-cols-3 gap-2 md:gap-4">
+        <div className="card p-3 md:p-5 text-center">
+          <div className="text-2xl md:text-4xl font-bold text-primary-600 tabular-nums">{stats?.totalHabitaciones || 0}</div>
+          <p className="text-xs md:text-base text-slate-500 mt-1">Habitaciones</p>
         </div>
-        <div className="card p-5 text-center">
-          <div className="text-4xl font-bold text-emerald-600 tabular-nums">{stats?.habitacionesOcupadas || 0}</div>
-          <p className="text-slate-500 mt-1">Ocupadas</p>
+        <div className="card p-3 md:p-5 text-center">
+          <div className="text-2xl md:text-4xl font-bold text-emerald-600 tabular-nums">{stats?.habitacionesOcupadas || 0}</div>
+          <p className="text-xs md:text-base text-slate-500 mt-1">Ocupadas</p>
         </div>
-        <div className="card p-5 text-center">
-          <div className="text-4xl font-bold text-slate-400 tabular-nums">{stats?.habitacionesVacantes || 0}</div>
-          <p className="text-slate-500 mt-1">Vacantes</p>
+        <div className="card p-3 md:p-5 text-center">
+          <div className="text-2xl md:text-4xl font-bold text-slate-400 tabular-nums">{stats?.habitacionesVacantes || 0}</div>
+          <p className="text-xs md:text-base text-slate-500 mt-1">Vacantes</p>
         </div>
       </div>
 
       {/* Grafico de barras historico */}
-      <div className="card p-5">
-        <div className="flex items-center gap-2 mb-6">
+      <div className="card p-4 md:p-5">
+        <div className="flex items-center gap-2 mb-4 md:mb-6">
           <BarChart3 className="w-5 h-5 text-slate-500" />
           <h2 className="text-lg font-semibold">Histórico de Ingresos y Gastos</h2>
         </div>
@@ -223,7 +223,8 @@ export function Reportes() {
         <div className="p-4 border-b border-slate-200">
           <h2 className="text-lg font-semibold">Detalle por Mes</h2>
         </div>
-        <table className="table">
+        <div className="overflow-x-auto">
+        <table className="table !min-w-[420px]">
           <thead>
             <tr>
               <th>Periodo</th>
@@ -271,6 +272,7 @@ export function Reportes() {
             </tr>
           </tfoot>
         </table>
+        </div>
       </div>
 
       {/* Analítica de cobranza */}

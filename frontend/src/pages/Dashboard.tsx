@@ -63,7 +63,7 @@ export function Dashboard() {
     })) || [];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       {/* Header */}
       <div className="flex items-end justify-between gap-3">
         <div className="min-w-0">
@@ -82,7 +82,7 @@ export function Dashboard() {
       </div>
 
       {/* Fila 1 — 3 KPIs prominentes */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-5">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-5 [&>*:first-child]:col-span-2 md:[&>*:first-child]:col-span-1">
         <StatCard
           prominent
           title="Tasa de Ocupación"
@@ -166,7 +166,7 @@ export function Dashboard() {
       {/* Gráfico y Calendario */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
         {/* Gráfico de tendencias */}
-        <div className="lg:col-span-2 card p-5 md:p-6">
+        <div className="lg:col-span-2 card p-4 md:p-6 min-w-0">
           <div className="flex items-start justify-between gap-3 mb-5">
             <div>
               <h2 className="text-lg font-bold tracking-tight text-slate-900">Ingresos vs gastos</h2>
@@ -177,10 +177,10 @@ export function Dashboard() {
           {chartData.length > 0 ? (
             <div className="h-60 md:h-80">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData}>
+                <BarChart data={chartData} margin={{ left: -8, right: 4 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#E7E3DF" vertical={false} />
                   <XAxis dataKey="mes" tick={{ fontSize: 12, fill: '#6F717B' }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fontSize: 12, fill: '#A3A3AA' }} axisLine={false} tickLine={false} width={48} />
+                  <YAxis tick={{ fontSize: 11, fill: '#A3A3AA' }} axisLine={false} tickLine={false} width={40} />
                   <Tooltip
                     formatter={(value: number) => formatCurrency(value)}
                     contentStyle={{

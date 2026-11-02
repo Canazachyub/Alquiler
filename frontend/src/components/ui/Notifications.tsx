@@ -26,7 +26,7 @@ export function Notifications() {
     <div
       role="region"
       aria-label="Notificaciones"
-      className="fixed top-4 right-4 z-50 space-y-2 max-w-sm"
+      className="fixed top-3 inset-x-3 sm:inset-x-auto sm:top-4 sm:right-4 z-[60] space-y-2 sm:max-w-sm"
     >
       {notifications.map((notification) => (
         <NotificationItem

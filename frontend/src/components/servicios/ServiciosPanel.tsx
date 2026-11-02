@@ -163,7 +163,7 @@ export function ServiciosPanel({ habitaciones, gastosDelMes, mes, anio, edificio
                     onChange={(e) =>
                       cambiar({ ...cfg, porcentajes: { ...cfg.porcentajes, [clave]: Math.max(0, Number(e.target.value)) } })
                     }
-                    className="input !h-9 !w-20 pr-6 text-right font-bold tabular-nums bg-white"
+                    className="input !h-10 sm:!h-9 !w-24 pr-7 text-right font-bold tabular-nums bg-white"
                     aria-label={`Porcentaje de ${label}`}
                   />
                   <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-sm text-slate-500">%</span>
@@ -242,7 +242,7 @@ export function ServiciosPanel({ habitaciones, gastosDelMes, mes, anio, edificio
         </div>
         {nueva && (
           <form
-            className="flex flex-wrap items-end gap-2 px-4 py-3 bg-slate-50 border-b border-slate-100"
+            className="grid grid-cols-2 sm:flex sm:flex-wrap items-end gap-2 px-4 py-3 bg-slate-50 border-b border-slate-100 [&_select]:!w-full sm:[&_select]:!w-auto"
             onSubmit={(e) => {
               e.preventDefault();
               agregarFactura();
@@ -338,7 +338,7 @@ export function ServiciosPanel({ habitaciones, gastosDelMes, mes, anio, edificio
                     </div>
                     {pagando === gf.id && (
                       <form
-                        className="mt-3 flex flex-wrap items-end gap-2 rounded-lg bg-slate-50 p-3"
+                        className="mt-3 grid grid-cols-2 sm:flex sm:flex-wrap items-end gap-2 rounded-lg bg-slate-50 p-3 [&_input]:!w-full sm:[&_input]:!w-auto"
                         onSubmit={(e) => {
                           e.preventDefault();
                           registrarPago(gf);
@@ -383,7 +383,34 @@ export function ServiciosPanel({ habitaciones, gastosDelMes, mes, anio, edificio
             {cfg.modo === 'incluido' ? 'Parte del alquiler destinada a servicios' : 'Monto adicional que paga cada inquilino'}
           </p>
         </div>
-        <div className="overflow-x-auto">
+        {/* Celular: una fila por cuarto con el desglose debajo */}
+        <ul className="sm:hidden divide-y divide-slate-100">
+          {filas.map(({ h, a }) => (
+            <li key={h.id} className="px-3 py-2.5">
+              <div className="flex items-center gap-2">
+                <span className="font-display font-bold text-slate-900 w-8">{h.codigo}</span>
+                <span className="text-sm text-slate-700 truncate flex-1">{h.nombreInquilino || '—'}</span>
+                <span className="text-right">
+                  <span className="block font-display font-bold tabular-nums text-slate-900 text-sm">{formatCurrency(a.total)}</span>
+                  <span className="block text-[10px] text-slate-500">servicios</span>
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-500 tabular-nums mt-1 pl-10">
+                Alquiler {formatCurrency(a.alquiler)} · Luz {formatCurrency(a.luz)} · Agua {formatCurrency(a.agua)}
+                {a.internet ? ` · Internet ${formatCurrency(a.internet)}` : ''} ·{' '}
+                {cfg.modo === 'incluido' ? 'neto' : 'total'} <strong className="text-slate-700">{formatCurrency(cfg.modo === 'incluido' ? a.neto : a.pagaInquilino)}</strong>
+              </p>
+            </li>
+          ))}
+          <li className="px-3 py-2.5 bg-slate-50 text-xs text-slate-600 tabular-nums">
+            <div className="flex justify-between font-semibold text-sm text-slate-900">
+              <span>Total ({filas.length} cuartos)</span>
+              <span>{formatCurrency(filas.reduce((s, f) => s + f.a.total, 0))}</span>
+            </div>
+            Luz {formatCurrency(aporteTotal('luz'))} · Agua {formatCurrency(aporteTotal('agua'))} · Internet {formatCurrency(aporteTotal('internet'))}
+          </li>
+        </ul>
+        <div className="hidden sm:block overflow-x-auto">
           <table className="table">
             <thead>
               <tr>

@@ -170,7 +170,7 @@ export function Habitaciones() {
 
       {/* Filtros + selector de vista */}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="segmented max-w-full overflow-x-auto no-scrollbar">
+        <div className="segmented max-w-full overflow-x-auto no-scrollbar fade-derecha">
           {segments.map((seg) => (
             <button
               key={seg.key}

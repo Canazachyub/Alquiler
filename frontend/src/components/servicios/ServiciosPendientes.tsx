@@ -24,7 +24,7 @@ function Anillo({ progreso, color, children }: { progreso: number; color: string
   const r = 40;
   const c = 2 * Math.PI * r;
   return (
-    <div className="relative w-24 h-24 flex-shrink-0">
+    <div className="relative w-20 h-20 sm:w-24 sm:h-24 flex-shrink-0">
       <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
         <circle cx="50" cy="50" r={r} fill="none" stroke="#E7E3DF" strokeWidth="9" />
         <circle
@@ -59,10 +59,12 @@ function CopiarCodigo({ etiqueta, codigo }: { etiqueta: string; codigo: string }
   return (
     <button
       onClick={copiar}
-      title="Copiar"
-      className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs text-slate-600 hover:border-slate-300"
+      title={`Copiar ${etiqueta.toLowerCase()}`}
+      aria-label={`Copiar ${etiqueta.toLowerCase()} ${codigo}`}
+      className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 h-10 sm:h-8 text-xs text-slate-600 hover:border-slate-300 active:bg-slate-50 touch-manipulation min-w-0"
     >
-      {etiqueta}: <span className="font-mono font-semibold text-slate-900">{codigo}</span>
+      <span className="hidden sm:inline">{etiqueta}:</span>
+      <span className="font-mono font-semibold text-slate-900 truncate">{codigo}</span>
       {copiado ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5 text-slate-400" />}
     </button>
   );
@@ -84,7 +86,7 @@ function TarjetaServicio({ s, ahora }: { s: EstadoServicio; ahora: number }) {
   const Icon = s.clave === 'luz' ? Zap : Droplets;
 
   return (
-    <div className={cn('rounded-2xl border p-4 flex flex-col gap-3', pagado ? 'border-slate-200 bg-white' : u.caja)}>
+    <div className={cn('rounded-2xl border p-3.5 sm:p-4 flex flex-col gap-3 min-w-0', pagado ? 'border-slate-200 bg-white' : u.caja)}>
       <div className="flex items-center gap-2">
         <span
           className={cn(
@@ -105,21 +107,21 @@ function TarjetaServicio({ s, ahora }: { s: EstadoServicio; ahora: number }) {
       {pagado ? (
         <p className="font-semibold text-emerald-700">Pagado · próximo recibo ~{ddmm(s.proximoRecibo)}</p>
       ) : (
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3 sm:gap-4">
           <Anillo progreso={ms < 0 ? 1 : progreso} color={u.anillo}>
-            <span className={cn('font-display text-3xl font-bold tabular-nums', u.texto)}>{ms < 0 ? `+${d}` : d}</span>
+            <span className={cn('font-display text-2xl sm:text-3xl font-bold tabular-nums', u.texto)}>{ms < 0 ? `+${d}` : d}</span>
             <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-500 mt-0.5">
               {ms < 0 ? 'días tarde' : d === 1 ? 'día' : 'días'}
             </span>
           </Anillo>
           <div className="min-w-0 flex-1">
-            <p className="font-display text-2xl font-bold tabular-nums text-slate-900">{formatCurrency(s.porPagar)}</p>
+            <p className="font-display text-xl sm:text-2xl font-bold tabular-nums text-slate-900">{formatCurrency(s.porPagar)}</p>
             <p className="text-sm text-slate-600">
               Vence el <strong>{fechaLarga(s.vence)}</strong>
             </p>
-            <p className={cn('mt-1 inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold tabular-nums', u.chip)}>
+            <p className={cn('mt-1 inline-flex whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-semibold tabular-nums', u.chip)}>
               {ms < 0 ? 'Venció hace ' : 'Faltan '}
-              {d} d {String(h).padStart(2, '0')} h {String(m).padStart(2, '0')} min
+              {d} d {String(h).padStart(2, '0')} h<span className="hidden sm:inline"> {String(m).padStart(2, '0')} min</span>
             </p>
             <p className="text-xs text-slate-500 mt-1.5">
               {s.meses.length} {s.meses.length === 1 ? 'mes' : 'meses'} ({s.meses.join(' + ')}) · promedio {formatCurrency(s.promedio)}/mes
@@ -128,13 +130,13 @@ function TarjetaServicio({ s, ahora }: { s: EstadoServicio; ahora: number }) {
         </div>
       )}
 
-      <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-slate-200/70">
+      <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 pt-3 border-t border-slate-200/70">
         <CopiarCodigo etiqueta={s.etiquetaCodigo} codigo={s.codigo} />
         <a
           href={s.consultaUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-1.5 rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-slate-700"
+          className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-slate-900 px-3 h-10 sm:h-8 text-xs font-semibold text-white hover:bg-slate-700 active:bg-slate-800 touch-manipulation"
         >
           Consultar recibo <ExternalLink className="w-3.5 h-3.5" />
         </a>
@@ -170,7 +172,7 @@ export function ServiciosPendientes({ habitaciones }: { habitaciones: Habitacion
               Total <strong className="tabular-nums text-slate-900">{formatCurrency(e.totalPorPagar)}</strong>
             </span>
           )}
-          <button onClick={() => navigate('/reportes')} className="link-arrow text-sm">
+          <button onClick={() => navigate('/reportes')} className="link-arrow text-sm py-2 -my-2">
             Ver análisis
           </button>
         </div>

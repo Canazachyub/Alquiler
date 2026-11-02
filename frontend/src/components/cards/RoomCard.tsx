@@ -1,4 +1,4 @@
-import { Home, User, Phone, Wrench, Calendar } from 'lucide-react';
+import { Home, User, Phone, Wrench, Calendar, ChevronRight } from 'lucide-react';
 import { cn } from '@/utils/cn';
 import { IconChip } from '@/components/ui/IconChip';
 import { ESTADO_ESTILO } from '@/components/plano/estadoEstilos';
@@ -33,11 +33,59 @@ export function RoomCard({ habitacion, onClick, ocultarUbicacion }: RoomCardProp
   const deuda = cobros.deuda(habitacion);
   const cobro = cobros.cobro(habitacion);
 
+  const detalle =
+    (isOccupied || isExonerated) && habitacion.nombreInquilino
+      ? habitacion.nombreInquilino
+      : isExonerated
+      ? 'Exonerado'
+      : isMaintenance
+      ? 'En mantenimiento'
+      : isOccupied
+      ? 'Ocupado sin inquilino'
+      : 'Disponible';
+
   return (
+    <>
+    {/* Celular: fila compacta, toda la fila se toca */}
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        'sm:hidden w-full text-left card flex items-center gap-3 px-3 py-2.5 min-h-[60px] active:bg-slate-50 touch-manipulation',
+        st.borde
+      )}
+    >
+      <span className={cn('w-1 self-stretch rounded-full flex-shrink-0', st.dot)} aria-hidden />
+      <span className="font-display font-bold text-lg text-slate-900 w-9 flex-shrink-0">{habitacion.codigo}</span>
+      <span className="min-w-0 flex-1">
+        <span className={cn('block text-sm truncate', (isOccupied || isExonerated) && habitacion.nombreInquilino ? 'font-semibold text-slate-800' : 'text-slate-400')}>
+          {detalle}
+        </span>
+        <span className="flex items-center gap-1.5 text-[11px] text-slate-500 min-w-0">
+          <span className={cn('badge !px-1.5 !py-0 !text-[10px]', st.badge)}>{st.label}</span>
+          {isOccupied && habitacion.diaPago ? <CuentaPagoCorta habitacion={habitacion} className="!text-[11px] min-w-0" /> : null}
+        </span>
+      </span>
+      <span className="text-right flex-shrink-0">
+        {isOccupied && deuda > 0 ? (
+          <>
+            <span className="block font-display font-bold text-sm tabular-nums text-red-600">{formatCurrency(deuda)}</span>
+            <span className="block text-[10px] text-red-600">debe</span>
+          </>
+        ) : (
+          <>
+            <span className="block font-display font-bold text-sm tabular-nums text-slate-900">{formatCurrency(habitacion.montoAlquiler)}</span>
+            <span className="block text-[10px] text-slate-500">alquiler</span>
+          </>
+        )}
+      </span>
+      <ChevronRight className="w-4 h-4 text-slate-300 flex-shrink-0" />
+    </button>
+
     <div
       onClick={onClick}
       className={cn(
-        'relative card-interactive p-5 flex flex-col',
+        'relative card-interactive p-5 hidden sm:flex flex-col',
         st.borde
       )}
     >
@@ -146,5 +194,6 @@ export function RoomCard({ habitacion, onClick, ocultarUbicacion }: RoomCardProp
         </div>
       </div>
     </div>
+    </>
   );
 }
